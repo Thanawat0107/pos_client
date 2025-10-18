@@ -1,11 +1,11 @@
 import Footer from "./components/layouts/Footer";
-import Header from "./components/layouts/Header";
+import Navber from "./components/layouts/Navber";
 import Routers from "./routers/Routers";
 
 function App() {
   return (
     <>
-      <Header />
+      <Navber />
       <Routers />
       <Footer />
     </>
