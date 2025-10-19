@@ -1,169 +1,105 @@
-// components/layouts/Navbar.tsx
-import * as React from "react";
-import { Link as RouterLink, useLocation } from "react-router-dom";
 import {
-  Box,
-  Sheet,
+  AppBar,
+  Toolbar,
   Typography,
-  IconButton,
   Button,
-  Link,
-  Drawer,
-  List,
-  ListItem,
-  ListDivider,
-} from "@mui/joy";
-import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-
-const NAV_LINKS = [
-  { label: "Home", to: "/" },
-  { label: "Products", to: "/products" },
-  { label: "About", to: "/about" },
-  { label: "Contact", to: "/contact" },
-];
+  Box,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
+import MenuIcon from "@mui/icons-material/Menu";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import AutoModeIcon from "@mui/icons-material/AutoMode";
+import { useColorMode } from "../../contexts/color-mode";
+import { colors } from "./theme";
 
 export default function Navbar() {
-  const [open, setOpen] = React.useState(false);
-  const { pathname } = useLocation();
+  const { mode, toggle } = useColorMode();
+
+  const icon =
+    mode === "light" ? (
+      <LightModeIcon />
+    ) : mode === "dark" ? (
+      <DarkModeIcon />
+    ) : (
+      <AutoModeIcon />
+    );
 
   return (
-    <Sheet
-      component="header"
-      variant="soft"
-      color="neutral"
+    <AppBar
+      position="sticky"
+      elevation={1}
       sx={{
-        position: "sticky",
-        top: 0,
-        zIndex: 1100,
-        backdropFilter: "saturate(120%) blur(6px)",
-        borderBottom: "1px solid",
-        borderColor: "neutral.outlinedBorder",
+        background: (theme) =>
+          theme.palette.mode === "light"
+            ? "rgba(255,255,255,0.9)"
+            : "rgba(18,18,18,0.85)",
+        color: (theme) => theme.palette.text.primary,
+        boxShadow: (theme) =>
+          theme.palette.mode === "light"
+            ? "0 4px 12px rgba(0,0,0,0.08)"
+            : "0 4px 12px rgba(0,0,0,0.4)",
+        backdropFilter: "blur(8px)",
       }}
     >
-      {/* container */}
-      <Box
+      <Toolbar
         sx={{
-          maxWidth: 1200,
-          mx: "auto",
-          px: { xs: 2, sm: 3 },
-          py: 1.5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 1.5,
+          backgroundColor: (theme) =>
+            theme.palette.mode === "light"
+              ? "rgba(255,255,255,0.9)"
+              : "rgba(18,18,18,0.9)",
+          backdropFilter: "blur(8px)", // ทำให้โปร่ง + ฟุ้งนิดๆ
         }}
       >
-        {/* logo */}
-        <Typography
-          level="title-md"
-          sx={{ fontWeight: 700, letterSpacing: 0.2 }}
+        <IconButton
+          edge="start"
+          aria-label="menu"
+          sx={{ display: { xs: "inline-flex", md: "none" } }}
         >
-          your<span style={{ color: "var(--joy-palette-primary-solidBg)" }}>Logo</span>
+          <MenuIcon />
+        </IconButton>
+
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Box
+            component={RouterLink}
+            to="/"
+            sx={{ textDecoration: "none", color: "inherit" }}
+          >
+            POS<span style={{ color: colors.primary }}>.</span>
+          </Box>
         </Typography>
 
-        {/* desktop nav */}
-        <Box
-          sx={{
-            display: { xs: "none", md: "flex" },
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          {NAV_LINKS.map((item) => {
-            const active = pathname === item.to;
-            return (
-              <Button
-                key={item.to}
-                component={RouterLink}
-                to={item.to}
-                size="sm"
-                variant={active ? "soft" : "plain"}
-                color={active ? "primary" : "neutral"}
-              >
-                {item.label}
-              </Button>
-            );
-          })}
-        </Box>
+        <Box sx={{ flexGrow: 1 }} />
 
-        {/* mobile menu button */}
-        <IconButton
-          variant="plain"
-          color="neutral"
-          onClick={() => setOpen(true)}
-          sx={{ display: { xs: "inline-flex", md: "none" } }}
-          aria-label="Open navigation menu"
-        >
-          <MenuRoundedIcon />
-        </IconButton>
-      </Box>
-
-      {/* mobile drawer */}
-      <Drawer
-        anchor="right"
-        open={open}
-        onClose={() => setOpen(false)}
-        size="sm"
-        slotProps={{
-          content: {
-            sx: {
-              bgcolor: "background.body",
-              borderLeft: "1px solid",
-              borderColor: "neutral.outlinedBorder",
-            },
-          },
-        }}
-      >
-        <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography level="title-md" sx={{ fontWeight: 700 }}>
-            Menu
-          </Typography>
-          <Box sx={{ flex: 1 }} />
+        {/* ปุ่มสลับโหมด */}
+        <Tooltip title={`Mode: ${mode} (click to toggle)`}>
           <IconButton
-            variant="plain"
-            color="neutral"
-            onClick={() => setOpen(false)}
-            aria-label="Close navigation menu"
+            onClick={toggle}
+            color="inherit"
+            size="large"
+            aria-label="toggle color mode"
           >
-            <CloseRoundedIcon />
+            {icon}
           </IconButton>
+        </Tooltip>
+
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Button component={RouterLink} to="/" variant="text">
+            หน้าแรก
+          </Button>
+          <Button component={RouterLink} to="/orders" variant="text">
+            Orders
+          </Button>
+          <Button component={RouterLink} to="/products" variant="text">
+            Products
+          </Button>
+          <Button component={RouterLink} to="/settings" variant="contained">
+            Settings
+          </Button>
         </Box>
-        <List
-          size="lg"
-          sx={{
-            px: 1,
-            "& a": { textDecoration: "none" },
-          }}
-        >
-          {NAV_LINKS.map((item, idx) => {
-            const active = pathname === item.to;
-            return (
-              <React.Fragment key={item.to}>
-                <ListItem>
-                  <Link
-                    component={RouterLink}
-                    to={item.to}
-                    onClick={() => setOpen(false)}
-                    sx={{
-                      width: "100%",
-                      px: 1,
-                      py: 1,
-                      borderRadius: "lg",
-                      color: active ? "primary.solidBg" : "text.primary",
-                      fontWeight: active ? 700 : 500,
-                      "&:hover": { bgcolor: "neutral.softBg" },
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                </ListItem>
-                {idx < NAV_LINKS.length - 1 && <ListDivider inset="gutter" />}
-              </React.Fragment>
-            );
-          })}
-        </List>
-      </Drawer>
-    </Sheet>
+      </Toolbar>
+    </AppBar>
   );
 }

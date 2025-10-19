@@ -1,32 +1,29 @@
 import * as React from "react";
-import { CssVarsProvider, useColorScheme } from "@mui/joy/styles";
-import { CssBaseline as JoyBaseline } from "@mui/joy";
-import { ThemeProvider as MaterialThemeProvider } from "@mui/material/styles";
-import { CssBaseline as MaterialBaseline } from "@mui/material";
-import { joyTheme, buildMuiTheme } from "./components/layouts/theme";
+import { CssBaseline, ThemeProvider, useMediaQuery } from "@mui/material";
+import { buildMuiTheme } from "./components/layouts/theme";
+import { ColorModeProvider, useColorMode } from "./contexts/color-mode";
 
-function MaterialThemeBridge({ children }: { children: React.ReactNode }) {
-  const { mode } = useColorScheme(); // 'light' | 'dark' | 'system'
-  const resolvedMode: "light" | "dark" = mode === "dark" ? "dark" : "light";
+function ThemedApp({ children }: { children: React.ReactNode }) {
+  const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
+  const { mode } = useColorMode();
 
-  const muiTheme = React.useMemo(
-    () => buildMuiTheme(resolvedMode),
-    [resolvedMode]
-  );
+  const resolvedMode: "light" | "dark" =
+    mode === "system" ? (prefersDark ? "dark" : "light") : mode;
+
+  const theme = React.useMemo(() => buildMuiTheme(resolvedMode), [resolvedMode]);
 
   return (
-    <MaterialThemeProvider theme={muiTheme}>
-      <MaterialBaseline />
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
       {children}
-    </MaterialThemeProvider>
+    </ThemeProvider>
   );
 }
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <CssVarsProvider defaultMode="system" theme={joyTheme}>
-      <JoyBaseline />
-      <MaterialThemeBridge>{children}</MaterialThemeBridge>
-    </CssVarsProvider>
+    <ColorModeProvider>
+      <ThemedApp>{children}</ThemedApp>
+    </ColorModeProvider>
   );
 }
