@@ -14,6 +14,7 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import AutoModeIcon from "@mui/icons-material/AutoMode";
 import { useColorMode } from "../../contexts/color-mode";
 import { colors } from "./theme";
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 
 export default function Navbar() {
   const { mode, toggle } = useColorMode();
@@ -89,14 +90,14 @@ export default function Navbar() {
           <Button component={RouterLink} to="/" variant="text">
             หน้าแรก
           </Button>
-          <Button component={RouterLink} to="/orders" variant="text">
-            Orders
+          <Button component={RouterLink} to="/menuItem" variant="text">
+            เมนู
           </Button>
-          <Button component={RouterLink} to="/products" variant="text">
-            Products
+          <Button component={RouterLink} to="/cart" variant="text">
+            <ShoppingCartOutlinedIcon />
           </Button>
-          <Button component={RouterLink} to="/settings" variant="contained">
-            Settings
+          <Button component={RouterLink} to="/profile" variant="contained">
+            โปรไฟล์
           </Button>
         </Box>
       </Toolbar>

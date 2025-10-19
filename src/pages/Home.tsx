@@ -4,9 +4,10 @@ import CategoryScroller, {
   demoCategories,
 } from "../components/pages/home/category/CategoryScroller";
 import { Typography, Box } from "@mui/material";
-import ProductScroller, { type Product } from "../components/pages/home/product/ProductScroller";
+import MenuScroller from "../components/pages/home/menu/MenuScroller";
+import type { Menu } from "../components/pages/home/menu/MenuCard";
 
-const items: Product[] = [
+const items: Menu[] = [
   {
     id: "airpods",
     name: "Apple AirPods",
@@ -69,6 +70,7 @@ export default function Home() {
       <div style={{ margin: "10px" }}>
         <Carousel />
       </div>
+      
       <CategoryScroller
         items={demoCategories}
         value={cat}
@@ -80,8 +82,9 @@ export default function Home() {
         <Typography variant="h6">Selected: {cat}</Typography>
       </Box>
 
-      <ProductScroller
+      <MenuScroller
         items={items}
+        currency="THB"
         onAddToCart={(p) => console.log("add", p)}
         maxWidth="xl"
       />
