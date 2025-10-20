@@ -1,5 +1,5 @@
-import type { Menu } from "../components/pages/home/menu/MenuCard";
-import MenuList from "../components/pages/home/menu/MenuList";
+import type { Menu } from "../components/pages/menu/MenuCard";
+import MenuList from "../components/pages/menu/MenuList";
 
 const mock: Menu[] = [
   {

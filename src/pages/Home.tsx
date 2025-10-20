@@ -2,10 +2,10 @@ import { useState } from "react";
 import Carousel from "../components/layouts/Carousel";
 import CategoryScroller, {
   demoCategories,
-} from "../components/pages/home/category/CategoryScroller";
+} from "../components/pages/category/CategoryScroller";
 import { Typography, Box } from "@mui/material";
-import MenuScroller from "../components/pages/home/menu/MenuScroller";
-import type { Menu } from "../components/pages/home/menu/MenuCard";
+import MenuScroller from "../components/pages/menu/MenuScroller";
+import type { Menu } from "../components/pages/menu/MenuCard";
 
 const items: Menu[] = [
   {

@@ -2,7 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import Home from "../pages/Home";
 import NotFound from "../components/pages/NotFound";
 import MenuItem from "../pages/MenuItem";
-import Cart from "../pages/Cart";
+import Cart from "../pages/ShoppingCart";
 import Profile from "../pages/Profile";
 
 export default function Routers() {
