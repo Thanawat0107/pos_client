@@ -6,6 +6,11 @@ import {
   Box,
   IconButton,
   Tooltip,
+  MenuItem,
+  ListItemIcon,
+  Divider,
+  Menu,
+  Fade,
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -15,6 +20,10 @@ import AutoModeIcon from "@mui/icons-material/AutoMode";
 import { useColorMode } from "../../contexts/color-mode";
 import { colors } from "./theme";
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { useState } from "react";
 
 export default function Navbar() {
   const { mode, toggle } = useColorMode();
@@ -27,6 +36,14 @@ export default function Navbar() {
     ) : (
       <AutoModeIcon />
     );
+
+     // --- Profile menu state ---
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleMenuClose = () => setAnchorEl(null);
 
   return (
     <AppBar
@@ -96,9 +113,83 @@ export default function Navbar() {
           <Button component={RouterLink} to="/cart" variant="text">
             <ShoppingCartOutlinedIcon />
           </Button>
-          <Button component={RouterLink} to="/profile" variant="contained">
+
+          {/* ปุ่มโปรไฟล์ */}
+          <Button
+            variant="text"
+            onClick={handleMenuOpen}
+            startIcon={<PersonOutlineIcon />}
+            sx={{ fontWeight: 600, textTransform: "none" }}
+          >
             โปรไฟล์
           </Button>
+
+          {/* Menu โปรไฟล์ */}
+          <Menu
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleMenuClose}
+            TransitionComponent={Fade}
+            PaperProps={{
+              sx: {
+                mt: 1.2,
+                minWidth: 180,
+                borderRadius: 2,
+                boxShadow: (theme) =>
+                  theme.palette.mode === "light"
+                    ? "0px 4px 20px rgba(0,0,0,0.08)"
+                    : "0px 4px 20px rgba(0,0,0,0.5)",
+                bgcolor: (theme) =>
+                  theme.palette.mode === "light" ? "#fff" : "#1E1E1E",
+                overflow: "hidden",
+              },
+            }}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+          >
+            <MenuItem
+              component={RouterLink}
+              to="/profile"
+              onClick={handleMenuClose}
+            >
+              <ListItemIcon>
+                <PersonOutlineIcon fontSize="small" />
+              </ListItemIcon>
+              ข้อมูลส่วนตัว
+            </MenuItem>
+
+            <MenuItem
+              component={RouterLink}
+              to="/settings"
+              onClick={handleMenuClose}
+            >
+              <ListItemIcon>
+                <SettingsOutlinedIcon fontSize="small" />
+              </ListItemIcon>
+              ตั้งค่า
+            </MenuItem>
+
+            <Divider sx={{ my: 0.5 }} />
+
+            <MenuItem
+              onClick={() => {
+                handleMenuClose();
+                console.log("logout clicked");
+              }}
+              sx={{ color: "error.main" }}
+            >
+              <ListItemIcon sx={{ color: "error.main" }}>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              ออกจากระบบ
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>

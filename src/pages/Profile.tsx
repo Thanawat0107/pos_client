@@ -1,5 +1,9 @@
+import ProfileItem from "../components/pages/profile/ProfileItem";
+
 export default function Profile() {
   return (
-    <div>Profile</div>
-  )
+    <>
+      <ProfileItem />
+    </>
+  );
 }
