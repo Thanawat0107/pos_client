@@ -1,14 +1,6 @@
-import * as React from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Stack,
-  Typography,
-} from "@mui/material";
-import type { SxProps, Theme } from '@mui/material';
+import { Box, Card, CardContent, CardActions, Button, Stack, Typography } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material";
+import { memo } from "react";
 
 export type Menu = {
   id: string;
@@ -21,8 +13,8 @@ export type Menu = {
 type Props = {
   menu: Menu;
   onAddToCart?: (p: Menu) => void;
-  currency?: string;                 // default: USD
-  sx?: SxProps<Theme>;               // เผื่ออยาก override style ของการ์ด
+  currency?: string;
+  sx?: SxProps<Theme>;
 };
 
 function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
@@ -36,21 +28,23 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
         boxShadow: 3,
         display: "flex",
         flexDirection: "column",
+        // ✅ มือถือ padding กระชับขึ้น
         ...sx,
       }}
     >
       {/* Image */}
-      <Box sx={{ p: 2, pb: 0 }}>
+      <Box sx={{ p: { xs: 1.25, sm: 2 }, pb: 0 }}>
         <Box
           component="img"
           src={image}
           alt={name}
           loading="lazy"
+          decoding="async"
           sx={{
             width: "100%",
             aspectRatio: "1/1",
             objectFit: "cover",
-            borderRadius: 1,
+            borderRadius: 1.5,
             bgcolor: "grey.100",
             display: "block",
           }}
@@ -58,9 +52,18 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
       </Box>
 
       {/* Content */}
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="subtitle1" fontWeight={700}>
+      <CardContent sx={{ flexGrow: 1, pt: { xs: 1.25, sm: 2 }, pb: { xs: 1, sm: 1.25 } }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={700}
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: "65%",
+            }}
+          >
             {name}
           </Typography>
           <Typography variant="subtitle1" fontWeight={700}>
@@ -69,32 +72,41 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
         </Stack>
 
         {description && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mt: 1,
+              display: "-webkit-box",
+              WebkitLineClamp: { xs: 2, sm: 2 },
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
             {description}
           </Typography>
         )}
       </CardContent>
 
       {/* Button */}
-      <CardActions sx={{ p: 2, pt: 0 }}>
+      <CardActions sx={{ p: { xs: 1.25, sm: 2 }, pt: 0 }}>
         <Button
           fullWidth
-          variant="outlined"
-          color="inherit"
+          variant="contained" // ✅ มือถือกดง่าย มองชัด
+          color="primary"
           onClick={() => onAddToCart?.(menu)}
           sx={{
-            borderRadius: 1,
-            bgcolor: "action.hover",
-            borderColor: "divider",
+            borderRadius: 1.25,
             fontWeight: 700,
-            py: 1.25,
+            py: { xs: 1, sm: 1.15 },
+            textTransform: "none",
           }}
         >
-          ADD TO CART
+          Add to Cart
         </Button>
       </CardActions>
     </Card>
   );
 }
 
-export default React.memo(MenuCard);
+export default memo(MenuCard);

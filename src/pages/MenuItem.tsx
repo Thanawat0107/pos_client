@@ -34,7 +34,7 @@ export default function MenuItem() {
 
   return (
     <>
-      <MenuList items={mock} onAddToCart={handleAdd} currency="THB" />;{" "}
+      <MenuList items={mock} onAddToCart={handleAdd} currency="THB" />
     </>
   );
 }

@@ -9,19 +9,24 @@ import {
   Stack,
   Typography,
   alpha,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+
+// (icons demo) — ลบได้ถ้าใช้ของจริง
 import LocalPizzaIcon from "@mui/icons-material/LocalPizza";
 import SetMealIcon from "@mui/icons-material/SetMeal";
 import RamenDiningIcon from "@mui/icons-material/RamenDining";
 import LocalDrinkIcon from "@mui/icons-material/LocalDrink";
 import EggAltIcon from "@mui/icons-material/EggAlt";
+import { useEffect, useRef } from "react";
 
 export type CategoryItem = {
   id: string;
   label: string;
-  icon?: React.ReactNode;  // ให้ส่งรูป <img/> ก็ได้
+  icon?: React.ReactNode;
 };
 
 type Props = {
@@ -29,6 +34,8 @@ type Props = {
   value?: string;
   onChange?: (id: string) => void;
   maxWidth?: "sm" | "md" | "lg" | "xl" | false;
+  /** ทำให้เต็มขอบจอบนมือถือ (แนะนำ) */
+  mobileFullBleed?: boolean;
 };
 
 export default function CategoryScroller({
@@ -36,15 +43,16 @@ export default function CategoryScroller({
   value,
   onChange,
   maxWidth = "lg",
+  mobileFullBleed = true,
 }: Props) {
-  const ref = React.useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const theme = useTheme();
+  const upSm = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const scrollBy = (px: number) => {
-    ref.current?.scrollBy({ left: px, behavior: "smooth" });
-  };
+  const scrollBy = (px: number) => ref.current?.scrollBy({ left: px, behavior: "smooth" });
 
-  // ให้ล้อเมาส์เลื่อนแนวนอนแบบธรรมชาติ
-  React.useEffect(() => {
+  // ให้ล้อเมาส์เลื่อนแนวนอน (desktop)
+  useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const handler = (e: WheelEvent) => {
@@ -58,11 +66,9 @@ export default function CategoryScroller({
   }, []);
 
   // เลือกแล้วเลื่อน item เข้ากลาง
-  React.useEffect(() => {
+  useEffect(() => {
     if (!value || !ref.current) return;
-    const target = ref.current.querySelector<HTMLDivElement>(
-      `[data-id="${value}"]`
-    );
+    const target = ref.current.querySelector<HTMLDivElement>(`[data-id="${value}"]`);
     target?.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
   }, [value]);
 
@@ -70,14 +76,14 @@ export default function CategoryScroller({
     <Box
       sx={(t) => ({
         position: "relative",
-        py: 2,
-        // เงา gradient ซ้าย/ขวาเพื่อบอกว่ามีของให้เลื่อนต่อ
+        py: { xs: 1.5, sm: 2 },
+        // ขอบแสงบอกว่ามีของให้เลื่อนต่อ (เบาลงบนมือถือ)
         "&::before, &::after": {
           content: '""',
           position: "absolute",
           top: 0,
           bottom: 0,
-          width: 40,
+          width: { xs: 24, sm: 40 },
           pointerEvents: "none",
           zIndex: 1,
         },
@@ -97,8 +103,16 @@ export default function CategoryScroller({
         },
       })}
     >
-      <Container maxWidth={maxWidth} sx={{ position: "relative" }}>
-        {/* ปุ่มเลื่อน */}
+      {/* full-bleed บนมือถือ: ดึงขอบให้เต็มจอ */}
+      <Container
+        maxWidth={maxWidth}
+        disableGutters={mobileFullBleed}
+        sx={{
+          position: "relative",
+          px: { xs: mobileFullBleed ? 0 : 2, sm: 3 },
+        }}
+      >
+        {/* ปุ่มเลื่อน (desktop/tablet เท่านั้น) */}
         <IconButton
           aria-label="scroll left"
           onClick={() => scrollBy(-320)}
@@ -143,13 +157,19 @@ export default function CategoryScroller({
           sx={{
             display: "grid",
             gridAutoFlow: "column",
-            gridAutoColumns: "minmax(88px, max-content)",
-            gap: 16,
+            // mobile-first: ช่องกว้างกำลังดี + แตะง่าย
+            gridAutoColumns: {
+              xs: "minmax(90px, max-content)",
+              sm: "minmax(100px, max-content)",
+            },
+            gap: { xs: 12, sm: 16 },
             overflowX: "auto",
             scrollSnapType: "x mandatory",
             scrollBehavior: "smooth",
-            px: { xs: 1, sm: 5 },
-            // ซ่อน scrollbar
+            px: { xs: mobileFullBleed ? 12 : 8, sm: 5 },
+            // โมเมนตัม + ซ่อนสกรอลบาร์
+            WebkitOverflowScrolling: "touch",
+            overscrollBehaviorX: "contain",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
             "&::-webkit-scrollbar": { display: "none" },
@@ -162,7 +182,7 @@ export default function CategoryScroller({
                 key={it.id}
                 data-id={it.id}
                 alignItems="center"
-                spacing={1}
+                spacing={{ xs: 0.75, sm: 1 }}
                 sx={{ scrollSnapAlign: "center", cursor: "pointer" }}
                 onClick={() => onChange?.(it.id)}
                 role="button"
@@ -174,26 +194,29 @@ export default function CategoryScroller({
                 <Paper
                   variant="outlined"
                   sx={(t) => ({
-                    width: 72,
-                    height: 72,
+                    width: { xs: 68, sm: 76 },
+                    height: { xs: 68, sm: 76 },
                     borderRadius: 3,
                     display: "grid",
                     placeItems: "center",
                     bgcolor: selected
-                      ? alpha(t.palette.primary.light, 0.2)
+                      ? alpha(t.palette.primary.light, 0.22)
                       : alpha(t.palette.primary.light, 0.12),
                     borderColor: selected ? "primary.main" : "divider",
-                    transition: "all .2s",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: 2,
+                    transition: "all .18s",
+                    "&:hover": upSm ? { transform: "translateY(-2px)", boxShadow: 2 } : undefined,
+                    // ขยาย hit area เล็กน้อยบนมือถือ
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      inset: -4,
                     },
                   })}
                 >
                   {/* icon */}
                   <Box
                     sx={{
-                      fontSize: 30,
+                      fontSize: { xs: 28, sm: 32, md: 34 },
                       color: selected ? "primary.main" : "text.primary",
                     }}
                   >
@@ -202,7 +225,14 @@ export default function CategoryScroller({
                 </Paper>
                 <Typography
                   variant="body2"
-                  sx={{ fontWeight: selected ? 700 : 500 }}
+                  sx={{
+                    fontWeight: selected ? 700 : 500,
+                    maxWidth: 88,
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                  }}
                 >
                   {it.label}
                 </Typography>
@@ -215,7 +245,7 @@ export default function CategoryScroller({
   );
 }
 
-/* ---------- ตัวอย่าง data พร้อม icons ของ MUI ---------- */
+/* ---------- ตัวอย่าง data demo ---------- */
 export const demoCategories: CategoryItem[] = [
   { id: "pizza", label: "Pizza", icon: <LocalPizzaIcon /> },
   { id: "meat", label: "Meat", icon: <SetMealIcon /> },
