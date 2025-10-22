@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/layouts/Navbar.tsx
 import * as React from "react";
 import {
@@ -19,7 +20,6 @@ import {
   ListItemText,
   Stack,
   Badge,
-  useMediaQuery,
 } from "@mui/material";
 import { Link as RouterLink, useLocation } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -38,7 +38,6 @@ import { colors } from "./theme";
 export default function Navbar() {
   const { mode, toggle } = useColorMode();
   const location = useLocation();
-  const upMd = useMediaQuery("(min-width:900px)");
 
   const colorModeIcon =
     mode === "light" ? <LightModeIcon /> : mode === "dark" ? <DarkModeIcon /> : <AutoModeIcon />;

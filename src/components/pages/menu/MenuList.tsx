@@ -109,7 +109,7 @@ export default function MenuList({
   };
 
   return (
-    <Box sx={{ px: { xs: 1.5, md: 3 }, pt: { xs: 1.5, md: 2 }, pb: { xs: 8, md: 4 }, maxWidth: 1280, mx: "auto" }}>
+    <Box sx={{ px: { xs: 1.5, md: 3 }, pt: { xs: 1.5, md: 2 }, pb: { xs: 8, md: 4 }, maxWidth: "xl", mx: "auto" }}>
       {/* Toolbar: Search + Sort (sticky บนมือถือ) */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
