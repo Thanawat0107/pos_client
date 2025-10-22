@@ -36,6 +36,7 @@ type Props = {
   maxWidth?: "sm" | "md" | "lg" | "xl" | false;
   /** ทำให้เต็มขอบจอบนมือถือ (แนะนำ) */
   mobileFullBleed?: boolean;
+  defaultValue?: string; // 👈 เพิ่ม option สำหรับ uncontrolled
 };
 
 export default function CategoryScroller({
@@ -44,12 +45,23 @@ export default function CategoryScroller({
   onChange,
   maxWidth = "lg",
   mobileFullBleed = true,
+  defaultValue, // 👈
 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const upSm = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const scrollBy = (px: number) => ref.current?.scrollBy({ left: px, behavior: "smooth" });
+  // 👇 ถ้าไม่ส่ง value มา ให้คอมโพเนนต์ถือ state เอง (uncontrolled)
+  const [innerValue, setInnerValue] = React.useState<string | undefined>(defaultValue);
+  const current = value ?? innerValue;
+
+    const handleSelect = (id: string) => {
+    if (value === undefined) setInnerValue(id); // uncontrolled
+    onChange?.(id);                              // แจ้งพาเรนต์เสมอ
+  };
+
+  const scrollBy = (px: number) =>
+    ref.current?.scrollBy({ left: px, behavior: "smooth" });
 
   // ให้ล้อเมาส์เลื่อนแนวนอน (desktop)
   useEffect(() => {
@@ -65,18 +77,24 @@ export default function CategoryScroller({
     return () => el.removeEventListener("wheel", handler as any);
   }, []);
 
-  // เลือกแล้วเลื่อน item เข้ากลาง
-  useEffect(() => {
-    if (!value || !ref.current) return;
-    const target = ref.current.querySelector<HTMLDivElement>(`[data-id="${value}"]`);
-    target?.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
-  }, [value]);
+ // เลือกแล้วเลื่อนเข้ากลาง (อิง current)
+  React.useEffect(() => {
+    if (!current || !ref.current) return;
+    const target = ref.current.querySelector<HTMLDivElement>(
+      `[data-id="${current}"]`
+    );
+    target?.scrollIntoView({
+      inline: "center",
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [current]);
 
   return (
     <Box
       sx={(t) => ({
         position: "relative",
-        py: { xs: 1.5, sm: 2 },
+        py: { xs: 1.5, sm: 3 },
         // ขอบแสงบอกว่ามีของให้เลื่อนต่อ (เบาลงบนมือถือ)
         "&::before, &::after": {
           content: '""',
@@ -89,17 +107,15 @@ export default function CategoryScroller({
         },
         "&::before": {
           left: 0,
-          background: `linear-gradient(90deg, ${t.palette.background.default}, ${alpha(
-            t.palette.background.default,
-            0
-          )})`,
+          background: `linear-gradient(90deg, ${
+            t.palette.background.default
+          }, ${alpha(t.palette.background.default, 0)})`,
         },
         "&::after": {
           right: 0,
-          background: `linear-gradient(270deg, ${t.palette.background.default}, ${alpha(
-            t.palette.background.default,
-            0
-          )})`,
+          background: `linear-gradient(270deg, ${
+            t.palette.background.default
+          }, ${alpha(t.palette.background.default, 0)})`,
         },
       })}
     >
@@ -176,7 +192,7 @@ export default function CategoryScroller({
           }}
         >
           {items.map((it) => {
-            const selected = value === it.id;
+            const selected = current === it.id; // 👈 ใช้ current
             return (
               <Stack
                 key={it.id}
@@ -184,16 +200,20 @@ export default function CategoryScroller({
                 alignItems="center"
                 spacing={{ xs: 0.75, sm: 1 }}
                 sx={{ scrollSnapAlign: "center", cursor: "pointer" }}
-                onClick={() => onChange?.(it.id)}
+                onClick={() => handleSelect(it.id)} // 👈 ใช้ handler เดียว
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") onChange?.(it.id);
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault(); // กัน scroll ตอนกด space
+                    handleSelect(it.id);
+                  }
                 }}
               >
                 <Paper
                   variant="outlined"
                   sx={(t) => ({
+                    position: "relative", // 👈 ให้ ::after ยึดกับ Paper
                     width: { xs: 68, sm: 76 },
                     height: { xs: 68, sm: 76 },
                     borderRadius: 3,
@@ -204,12 +224,15 @@ export default function CategoryScroller({
                       : alpha(t.palette.primary.light, 0.12),
                     borderColor: selected ? "primary.main" : "divider",
                     transition: "all .18s",
-                    "&:hover": upSm ? { transform: "translateY(-2px)", boxShadow: 2 } : undefined,
+                    "&:hover": upSm
+                      ? { transform: "translateY(-2px)", boxShadow: 2 }
+                      : undefined,
                     // ขยาย hit area เล็กน้อยบนมือถือ
                     "&::after": {
                       content: '""',
                       position: "absolute",
                       inset: -4,
+                      pointerEvents: "none", // 👈 สำคัญ: อย่าบังคลิก
                     },
                   })}
                 >

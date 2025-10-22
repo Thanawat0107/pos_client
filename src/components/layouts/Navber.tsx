@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// src/components/layouts/Navbar.tsx
 import * as React from "react";
 import {
   AppBar,
@@ -20,8 +18,10 @@ import {
   ListItemText,
   Stack,
   Badge,
+  Collapse,
 } from "@mui/material";
 import { Link as RouterLink, useLocation } from "react-router-dom";
+
 import MenuIcon from "@mui/icons-material/Menu";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
@@ -32,38 +32,94 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined";
-import { useColorMode } from "../../contexts/color-mode";
 import { colors } from "./theme";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import { useColorMode } from "../../contexts/color-mode";
+import { useState } from "react";
 
 export default function Navbar() {
   const { mode, toggle } = useColorMode();
   const location = useLocation();
 
   const colorModeIcon =
-    mode === "light" ? <LightModeIcon /> : mode === "dark" ? <DarkModeIcon /> : <AutoModeIcon />;
+    mode === "light" ? (
+      <LightModeIcon />
+    ) : mode === "dark" ? (
+      <DarkModeIcon />
+    ) : (
+      <AutoModeIcon />
+    );
 
   // Drawer (มือถือ)
-  const [openDrawer, setOpenDrawer] = React.useState(false);
+  const [openDrawer, setOpenDrawer] = useState(false);
   const toggleDrawer = (next: boolean) => () => setOpenDrawer(next);
 
   // Profile menu
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openProfile = Boolean(anchorEl);
-  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget);
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) =>
+    setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
+
+  // Manage (desktop) dropdown
+  const [anchorManage, setAnchorManage] = useState<null | HTMLElement>(
+    null
+  );
+  const openManage = Boolean(anchorManage);
+  const handleOpenManage = (e: React.MouseEvent<HTMLButtonElement>) =>
+    setAnchorManage(e.currentTarget);
+  const handleCloseManage = () => setAnchorManage(null);
+
+  // Manage (mobile drawer) collapse
+  const [openManageDrawer, setOpenManageDrawer] = useState(false);
 
   // mock cart count (ต่อกับ state/store จริงได้)
   const cartCount = 2;
 
   const NavLinks = (
-    <Stack component="nav" direction="row" spacing={1.5} sx={{ display: { xs: "none", md: "flex" } }}>
+    <Stack
+      component="nav"
+      direction="row"
+      spacing={1.5}
+      sx={{ display: { xs: "none", md: "flex" } }}
+    >
       <Button component={RouterLink} to="/" variant="text" color="inherit">
         หน้าแรก
       </Button>
-      <Button component={RouterLink} to="/menuItem" variant="text" color="inherit">
+
+      <Button
+        component={RouterLink}
+        to="/menuItem"
+        variant="text"
+        color="inherit"
+      >
         เมนู
       </Button>
-      <Button component={RouterLink} to="/cart" variant="text" color="inherit" aria-label="Cart">
+
+      {/* CHANGED: การจัดการ -> เปิดเมนู */}
+      <Button
+        id="manage-button"
+        variant="text"
+        color="inherit"
+        onClick={handleOpenManage}
+        endIcon={<ExpandMoreIcon />}
+        aria-controls={openManage ? "manage-menu" : undefined}
+        aria-haspopup="true"
+        aria-expanded={openManage ? "true" : undefined}
+      >
+        การจัดการ
+      </Button>
+
+      <Button
+        component={RouterLink}
+        to="/cart"
+        variant="text"
+        color="inherit"
+        aria-label="Cart"
+      >
         <Badge badgeContent={cartCount} color="primary">
           <ShoppingCartOutlinedIcon />
         </Badge>
@@ -74,11 +130,27 @@ export default function Navbar() {
         variant="contained"
         color="primary"
         onClick={handleMenuOpen}
-        sx={{ fontWeight: 600, textTransform: "none", display: { xs: "none", md: "inline-flex" } }}
+        sx={{
+          fontWeight: 600,
+          textTransform: "none",
+          display: { xs: "none", md: "inline-flex" },
+        }}
         startIcon={<PersonOutlineIcon />}
       >
         โปรไฟล์
       </Button>
+
+      {/* สลับโหมด */}
+      <Tooltip title={`Mode: ${mode} (tap to toggle)`}>
+        <IconButton
+          onClick={toggle}
+          color="inherit"
+          size="large"
+          aria-label="toggle color mode"
+        >
+          {colorModeIcon}
+        </IconButton>
+      </Tooltip>
     </Stack>
   );
 
@@ -89,7 +161,9 @@ export default function Navbar() {
         elevation={1}
         sx={{
           background: (theme) =>
-            theme.palette.mode === "light" ? "rgba(255,255,255,0.9)" : "rgba(18,18,18,0.85)",
+            theme.palette.mode === "light"
+              ? "rgba(255,255,255,0.9)"
+              : "rgba(18,18,18,0.85)",
           color: (theme) => theme.palette.text.primary,
           boxShadow: (theme) =>
             theme.palette.mode === "light"
@@ -104,7 +178,9 @@ export default function Navbar() {
             minHeight: { xs: 56, sm: 64 },
             px: { xs: 1.5, sm: 2.5, md: 3 },
             backgroundColor: (theme) =>
-              theme.palette.mode === "light" ? "rgba(255,255,255,0.9)" : "rgba(18,18,18,0.9)",
+              theme.palette.mode === "light"
+                ? "rgba(255,255,255,0.9)"
+                : "rgba(18,18,18,0.9)",
             backdropFilter: "blur(8px)",
           }}
         >
@@ -123,7 +199,12 @@ export default function Navbar() {
             <Box
               component={RouterLink}
               to="/"
-              sx={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center" }}
+              sx={{
+                textDecoration: "none",
+                color: "inherit",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
             >
               POS
               <Box component="span" sx={{ color: colors.primary, ml: 0.25 }}>
@@ -135,16 +216,21 @@ export default function Navbar() {
           <Box sx={{ flexGrow: 1 }} />
 
           {/* ไอคอนขวา (มือถือ) */}
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ display: { xs: "flex", md: "none" } }}>
-            {/* สลับโหมด */}
-            <Tooltip title={`Mode: ${mode} (tap to toggle)`}>
-              <IconButton onClick={toggle} color="inherit" size="large" aria-label="toggle color mode">
-                {colorModeIcon}
-              </IconButton>
-            </Tooltip>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{ display: { xs: "flex", md: "none" } }}
+          >
 
             {/* Cart */}
-            <IconButton component={RouterLink} to="/cart" color="inherit" size="large" aria-label="Cart">
+            <IconButton
+              component={RouterLink}
+              to="/cart"
+              color="inherit"
+              size="large"
+              aria-label="Cart"
+            >
               <Badge badgeContent={cartCount} color="primary">
                 <ShoppingCartOutlinedIcon />
               </Badge>
@@ -159,12 +245,77 @@ export default function Navbar() {
             >
               <PersonOutlineIcon />
             </IconButton>
+
+             {/* สลับโหมด */}
+            <Tooltip title={`Mode: ${mode} (tap to toggle)`}>
+              <IconButton
+                onClick={toggle}
+                color="inherit"
+                size="large"
+                aria-label="toggle color mode"
+              >
+                {colorModeIcon}
+              </IconButton>
+            </Tooltip>
           </Stack>
 
           {/* ลิงก์เต็ม (เดสก์ท็อป) */}
           {NavLinks}
         </Toolbar>
       </AppBar>
+
+      {/* Manage Menu (เดสก์ท็อป) */}
+      <Menu
+        id="manage-menu"
+        anchorEl={anchorManage}
+        open={openManage}
+        onClose={handleCloseManage}
+        TransitionComponent={Fade}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        PaperProps={{ sx: { mt: 1, minWidth: 240, borderRadius: 2 } }}
+      >
+        <MenuItem
+          component={RouterLink}
+          to="manage-menuItem"
+          onClick={handleCloseManage}
+        >
+          <ListItemIcon>
+            <RestaurantMenuOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          จัดการเมนู
+        </MenuItem>
+        <MenuItem
+          component={RouterLink}
+          to="/manage-category"
+          onClick={handleCloseManage}
+        >
+          <ListItemIcon>
+            <CategoryOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          จัดการหมวดหมู่
+        </MenuItem>
+        <MenuItem
+          component={RouterLink}
+          to="/manage-order"
+          onClick={handleCloseManage}
+        >
+          <ListItemIcon>
+            <ReceiptLongOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          จัดการออเดอร์
+        </MenuItem>
+        <MenuItem
+          component={RouterLink}
+          to="#"
+          onClick={handleCloseManage}
+        >
+          <ListItemIcon>
+            <Inventory2OutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          สินค้า/สต็อก
+        </MenuItem>
+      </Menu>
 
       {/* Profile Menu (ใช้ร่วมกันได้ทั้งมือถือ/เดสก์ท็อป) */}
       <Menu
@@ -181,25 +332,25 @@ export default function Navbar() {
               theme.palette.mode === "light"
                 ? "0px 4px 20px rgba(0,0,0,0.08)"
                 : "0px 4px 20px rgba(0,0,0,0.5)",
-            bgcolor: (theme) => (theme.palette.mode === "light" ? "#fff" : "#1E1E1E"),
+            bgcolor: (theme) =>
+              theme.palette.mode === "light" ? "#fff" : "#1E1E1E",
             overflow: "hidden",
           },
         }}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem component={RouterLink} to="/profile" onClick={handleMenuClose}>
+        <MenuItem
+          component={RouterLink}
+          to="/profile"
+          onClick={handleMenuClose}
+        >
           <ListItemIcon>
             <PersonOutlineIcon fontSize="small" />
           </ListItemIcon>
           ข้อมูลส่วนตัว
         </MenuItem>
-        <MenuItem component={RouterLink} to="/settings" onClick={handleMenuClose}>
-          <ListItemIcon>
-            <SettingsOutlinedIcon fontSize="small" />
-          </ListItemIcon>
-          ตั้งค่า
-        </MenuItem>
+        
         <Divider sx={{ my: 0.5 }} />
         <MenuItem
           onClick={() => {
@@ -224,7 +375,9 @@ export default function Navbar() {
           sx: {
             width: 280,
             borderRight: (theme) =>
-              theme.palette.mode === "light" ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.1)",
+              theme.palette.mode === "light"
+                ? "1px solid rgba(0,0,0,0.08)"
+                : "1px solid rgba(255,255,255,0.1)",
           },
         }}
       >
@@ -259,6 +412,76 @@ export default function Navbar() {
             <ListItemText primary="เมนู" />
           </ListItemButton>
 
+          {/* การจัดการ (พับได้) */}
+          <ListItemButton onClick={() => setOpenManageDrawer((v) => !v)}>
+            <ListItemIcon>
+              <SettingsOutlinedIcon />
+            </ListItemIcon>
+            <ListItemText primary="การจัดการ" />
+            <ExpandMoreIcon
+              sx={{
+                transform: openManageDrawer ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "0.2s",
+                ml: "auto",
+              }}
+            />
+          </ListItemButton>
+          <Collapse in={openManageDrawer} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              <ListItemButton
+                sx={{ pl: 6 }}
+                component={RouterLink}
+                to="/manage-menuItem"
+                onClick={toggleDrawer(false)}
+                selected={location.pathname.startsWith("/manage-menuItem")}
+              >
+                <ListItemIcon>
+                  <RestaurantMenuOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText primary="จัดการเมนู" />
+              </ListItemButton>
+
+              <ListItemButton
+                sx={{ pl: 6 }}
+                component={RouterLink}
+                to="/manage-category"
+                onClick={toggleDrawer(false)}
+                selected={location.pathname.startsWith("/manage-category")}
+              >
+                <ListItemIcon>
+                  <CategoryOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText primary="จัดการหมวดหมู่" />
+              </ListItemButton>
+
+              <ListItemButton
+                sx={{ pl: 6 }}
+                component={RouterLink}
+                to="/manage-order"
+                onClick={toggleDrawer(false)}
+                selected={location.pathname.startsWith("/manage-order")}
+              >
+                <ListItemIcon>
+                  <ReceiptLongOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText primary="จัดการออเดอร์" />
+              </ListItemButton>
+
+              <ListItemButton
+                sx={{ pl: 6 }}
+                component={RouterLink}
+                to="#"
+                onClick={toggleDrawer(false)}
+                selected={location.pathname.startsWith("#")}
+              >
+                <ListItemIcon>
+                  <Inventory2OutlinedIcon />
+                </ListItemIcon>
+                <ListItemText primary="สินค้า/สต็อก" />
+              </ListItemButton>
+            </List>
+          </Collapse>
+
           <ListItemButton
             component={RouterLink}
             to="/cart"
@@ -278,18 +501,17 @@ export default function Navbar() {
 
         {/* โซนโปรไฟล์บน Drawer */}
         <List sx={{ py: 0.5 }}>
-          <ListItemButton component={RouterLink} to="/profile" onClick={toggleDrawer(false)}>
+          <ListItemButton
+            component={RouterLink}
+            to="/profile"
+            onClick={toggleDrawer(false)}
+          >
             <ListItemIcon>
               <PersonOutlineIcon />
             </ListItemIcon>
             <ListItemText primary="ข้อมูลส่วนตัว" />
           </ListItemButton>
-          <ListItemButton component={RouterLink} to="/settings" onClick={toggleDrawer(false)}>
-            <ListItemIcon>
-              <SettingsOutlinedIcon />
-            </ListItemIcon>
-            <ListItemText primary="ตั้งค่า" />
-          </ListItemButton>
+    
           <ListItemButton
             onClick={() => {
               console.log("logout clicked");
