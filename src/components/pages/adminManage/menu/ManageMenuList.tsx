@@ -14,16 +14,16 @@ import {
   TableContainer,
   Paper,
   Pagination,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
-import FormMenu, {
-  type MenuItemEntity,
-  type MenuCategory,
-} from "./FormMenu";
-import ManageMenuItem, {type Row as RowType} from "./ManageMenuItem";
+import FormMenu, { type MenuItemEntity, type MenuCategory } from "./FormMenu";
+import ManageMenuItem, { type Row as RowType } from "./ManageMenuItem";
 import MenuFilterBar from "../MenuFilterBar";
+import MobileMenuItem from "./MobileMenuItem"; // 👈 เพิ่มไฟล์ใหม่ด้านล่าง
 
 const CATEGORIES: MenuCategory[] = [
   { id: "main", name: "อาหารจานหลัก" },
@@ -69,20 +69,21 @@ const MOCK: RowType[] = [
 ];
 
 export default function ManageMenuList() {
+  const theme = useTheme();
+  const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
+
   const [rows, setRows] = React.useState<RowType[]>(MOCK);
   const [q, setQ] = React.useState("");
   const [cat, setCat] = React.useState<string>("all");
-  const [status, setStatus] = React.useState<"all" | "active" | "inactive">(
-    "all"
-  );
+  const [status, setStatus] = React.useState<"all" | "active" | "inactive">("all");
 
   // drawer form
   const [openForm, setOpenForm] = React.useState(false);
   const [editing, setEditing] = React.useState<RowType | null>(null);
 
-  // pagination (mock)
+  // pagination
   const [page, setPage] = React.useState(1);
-  const pageSize = 8;
+  const pageSize = isSmUp ? 8 : 6; // 👈 มือถือให้สั้นลงหน่อย
   const handlePage = (_: any, p: number) => setPage(p);
 
   const filtered = rows.filter((r) => {
@@ -91,8 +92,7 @@ export default function ManageMenuList() {
       r.name.toLowerCase().includes(q.toLowerCase()) ||
       r.description?.toLowerCase().includes(q.toLowerCase());
     const byCat = cat === "all" || r.categoryId === cat;
-    const byStatus =
-      status === "all" || (status === "active" ? r.isActive : !r.isActive);
+    const byStatus = status === "all" || (status === "active" ? r.isActive : !r.isActive);
     return byQ && byCat && byStatus;
   });
 
@@ -130,8 +130,7 @@ export default function ManageMenuList() {
             ? {
                 ...x,
                 ...data,
-                categoryName: CATEGORIES.find((c) => c.id === data.categoryId)
-                  ?.name,
+                categoryName: CATEGORIES.find((c) => c.id === data.categoryId)?.name,
                 updatedAt: new Date().toLocaleString("th-TH"),
               }
             : x
@@ -159,28 +158,20 @@ export default function ManageMenuList() {
           spacing={2}
           sx={{ mb: 2 }}
         >
-          <Typography variant="h5" fontWeight={800}>
+          <Typography variant={isSmUp ? "h5" : "h6"} fontWeight={800}>
             จัดการเมนู
           </Typography>
           <Stack direction="row" spacing={1}>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={refresh}
-            >
+            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={refresh}>
               รีเฟรช
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreate}
-            >
+            <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate}>
               เพิ่มเมนู
             </Button>
           </Stack>
         </Stack>
 
-        {/* Toolbar ฟิลเตอร์ */}
+        {/* Filter bar */}
         <MenuFilterBar
           q={q}
           cat={cat}
@@ -191,63 +182,91 @@ export default function ManageMenuList() {
           onStatusChange={setStatus}
         />
 
-        {/* Table */}
-        <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
-          <TableContainer>
-            <Table size="medium">
-              <TableHead>
-                <TableRow>
-                  <TableCell width={72}>รูป</TableCell>
-                  <TableCell>ชื่อเมนู</TableCell>
-                  <TableCell width={160} align="right">
-                    ราคา
-                  </TableCell>
-                  <TableCell width={180}>หมวดหมู่</TableCell>
-                  <TableCell width={120}>สถานะ</TableCell>
-                  <TableCell width={180}>อัปเดตล่าสุด</TableCell>
-                  <TableCell width={120} align="right">
-                    การทำงาน
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {pageRows.map((r) => (
-                  <ManageMenuItem
-                    key={r.id}
-                    row={r}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onToggleActive={handleToggleActive}
-                  />
-                ))}
-
-                {pageRows.length === 0 && (
+        {/* Content */}
+        {isSmUp ? (
+          // ---- Desktop: Table ----
+          <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
+            <TableContainer>
+              <Table size="medium">
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={7}>
-                      <Box sx={{ py: 6, textAlign: "center" }}>
-                        <Typography color="text.secondary">
-                          ไม่พบรายการตรงกับเงื่อนไข
-                        </Typography>
-                      </Box>
-                    </TableCell>
+                    <TableCell width={72}>รูป</TableCell>
+                    <TableCell>ชื่อเมนู</TableCell>
+                    <TableCell width={160} align="right">ราคา</TableCell>
+                    <TableCell width={180}>หมวดหมู่</TableCell>
+                    <TableCell width={120}>สถานะ</TableCell>
+                    <TableCell width={180}>อัปเดตล่าสุด</TableCell>
+                    <TableCell width={120} align="right">การทำงาน</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
 
-          <Stack alignItems="center" sx={{ p: 1.5 }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={handlePage}
-              color="primary"
-              siblingCount={0}
-              boundaryCount={1}
-            />
+                <TableBody>
+                  {pageRows.map((r) => (
+                    <ManageMenuItem
+                      key={r.id}
+                      row={r}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onToggleActive={handleToggleActive}
+                    />
+                  ))}
+
+                  {pageRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7}>
+                        <Box sx={{ py: 6, textAlign: "center" }}>
+                          <Typography color="text.secondary">ไม่พบรายการตรงกับเงื่อนไข</Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Stack alignItems="center" sx={{ p: 1.5 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={handlePage}
+                color="primary"
+                siblingCount={0}
+                boundaryCount={1}
+              />
+            </Stack>
+          </Paper>
+        ) : (
+          // ---- Mobile: Card list ----
+          <Stack spacing={1.25}>
+            {pageRows.length === 0 ? (
+              <Paper variant="outlined" sx={{ p: 4, borderRadius: 2, textAlign: "center" }}>
+                <Typography color="text.secondary">ไม่พบรายการตรงกับเงื่อนไข</Typography>
+              </Paper>
+            ) : (
+              pageRows.map((r) => (
+                <MobileMenuItem
+                  key={r.id}
+                  row={r}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggleActive={handleToggleActive}
+                />
+              ))
+            )}
+
+            <Stack alignItems="center" sx={{ pt: 1 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={handlePage}
+                color="primary"
+                siblingCount={0}
+                boundaryCount={1}
+                size="small"
+              />
+            </Stack>
           </Stack>
-        </Paper>
+        )}
       </Container>
 
       {/* Drawer Form */}

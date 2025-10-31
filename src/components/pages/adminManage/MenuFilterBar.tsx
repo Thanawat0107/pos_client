@@ -6,7 +6,9 @@ import {
   FormControl,
   Select,
   MenuItem,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 import type { MenuCategory } from "./menu/FormMenu";
 
@@ -29,14 +31,21 @@ export default function MenuFilterBar({
   onCategoryChange,
   onStatusChange,
 }: Props) {
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md")); // มือถือ < md
+
   return (
     <Stack
-      direction={{ xs: "column", md: "row" }}
-      spacing={1.5}
-      sx={{ mb: 2 }}
+      direction={isMdUp ? "row" : "column"}
+      spacing={1.25}
+      sx={{
+        mb: 2,
+        width: "100%",
+      }}
     >
       {/* ค้นหา */}
       <TextField
+        size={isMdUp ? "medium" : "small"}
         placeholder="ค้นหาชื่อเมนู / คำอธิบาย"
         value={q}
         onChange={(e) => onSearch(e.target.value)}
@@ -44,18 +53,25 @@ export default function MenuFilterBar({
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon />
+              <SearchIcon fontSize="small" />
             </InputAdornment>
           ),
+        }}
+        sx={{
+          "& input": { fontSize: isMdUp ? 14 : 13 },
         }}
       />
 
       {/* หมวดหมู่ */}
-      <FormControl sx={{ minWidth: 180 }}>
+      <FormControl fullWidth sx={{ minWidth: isMdUp ? 180 : "100%" }}>
         <Select
+          size={isMdUp ? "medium" : "small"}
           value={cat}
           onChange={(e) => onCategoryChange(String(e.target.value))}
           displayEmpty
+          sx={{
+            fontSize: isMdUp ? 14 : 13,
+          }}
         >
           <MenuItem value="all">หมวดหมู่ทั้งหมด</MenuItem>
           {categories.map((c) => (
@@ -67,11 +83,15 @@ export default function MenuFilterBar({
       </FormControl>
 
       {/* สถานะ */}
-      <FormControl sx={{ minWidth: 160 }}>
+      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
         <Select
+          size={isMdUp ? "medium" : "small"}
           value={status}
           onChange={(e) => onStatusChange(e.target.value as any)}
           displayEmpty
+          sx={{
+            fontSize: isMdUp ? 14 : 13,
+          }}
         >
           <MenuItem value="all">สถานะทั้งหมด</MenuItem>
           <MenuItem value="active">พร้อมขาย</MenuItem>

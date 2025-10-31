@@ -1,22 +1,11 @@
 import {
-  Avatar,
-  Chip,
-  IconButton,
-  Stack,
-  Switch,
-  Tooltip,
-  Typography,
-  TableRow,
-  TableCell,
+  Avatar, Chip, IconButton, Stack, Switch, Tooltip, Typography, TableRow, TableCell,
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { MenuItemEntity } from "./FormMenu";
 
-export type Row = MenuItemEntity & {
-  categoryName?: string;
-  updatedAt?: string;
-};
+export type Row = MenuItemEntity & { categoryName?: string; updatedAt?: string };
 
 function formatCurrencyTHB(n: number) {
   return n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
@@ -29,12 +18,7 @@ type Props = {
   onToggleActive: (id: string, next: boolean) => void;
 };
 
-export default function ManageMenuItem({
-  row,
-  onEdit,
-  onDelete,
-  onToggleActive,
-}: Props) {
+export default function ManageMenuItem({ row, onEdit, onDelete, onToggleActive }: Props) {
   return (
     <TableRow hover>
       <TableCell>
@@ -46,9 +30,9 @@ export default function ManageMenuItem({
         />
       </TableCell>
 
-      <TableCell>
+      <TableCell sx={{ maxWidth: 360 }}>
         <Stack spacing={0.3}>
-          <Typography fontWeight={700}>{row.name}</Typography>
+          <Typography fontWeight={700} noWrap>{row.name}</Typography>
           {row.description && (
             <Typography variant="body2" color="text.secondary" noWrap>
               {row.description}
@@ -57,48 +41,33 @@ export default function ManageMenuItem({
         </Stack>
       </TableCell>
 
-      <TableCell align="right">
+      <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
         <Typography fontWeight={700}>{formatCurrencyTHB(row.price)}</Typography>
       </TableCell>
 
-      <TableCell>
-        <Chip
-          size="small"
-          label={row.categoryName ?? row.categoryId}
-          variant="outlined"
-        />
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
+        <Chip size="small" label={row.categoryName ?? row.categoryId} variant="outlined" />
       </TableCell>
 
-      <TableCell>
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Switch
-            checked={row.isActive}
-            onChange={(_, v) => onToggleActive(row.id!, v)}
-          />
+          <Switch checked={row.isActive} onChange={(_, v) => onToggleActive(row.id!, v)} />
           <Typography variant="body2" color="text.secondary">
             {row.isActive ? "พร้อมขาย" : "ปิดขาย"}
           </Typography>
         </Stack>
       </TableCell>
 
-      <TableCell>
-        <Typography variant="body2" color="text.secondary">
-          {row.updatedAt}
-        </Typography>
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
+        <Typography variant="body2" color="text.secondary">{row.updatedAt}</Typography>
       </TableCell>
 
-      <TableCell align="right">
+      <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
         <Tooltip title="แก้ไข">
-          <IconButton onClick={() => onEdit(row)} size="small">
-            <EditOutlinedIcon />
-          </IconButton>
+          <IconButton onClick={() => onEdit(row)} size="small"><EditOutlinedIcon /></IconButton>
         </Tooltip>
         <Tooltip title="ลบ">
-          <IconButton
-            onClick={() => onDelete(row.id!)}
-            size="small"
-            color="error"
-          >
+          <IconButton onClick={() => onDelete(row.id!)} size="small" color="error">
             <DeleteOutlineIcon />
           </IconButton>
         </Tooltip>
