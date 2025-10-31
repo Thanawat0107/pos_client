@@ -3,8 +3,10 @@ import * as React from "react";
 import {
   Box, Container, Typography, Stack, Button,
   Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
-  Paper, Pagination, Divider, Drawer, IconButton, List, ListItem, ListItemText
+  Paper, Pagination, Divider, Drawer, IconButton, List, ListItem, ListItemText,
+  useMediaQuery
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloseIcon from "@mui/icons-material/Close";
 import OrderFilterBar from "../OrderFilterBar";
@@ -16,20 +18,19 @@ export type Channel = "DINE_IN" | "TAKEAWAY" | "DELIVERY";
 
 export type OrderRow = {
   id: string;
-  code: string;              // รหัสออเดอร์ เช่น POS-000123
+  code: string;
   customerName?: string;
   phone?: string;
   channel: Channel;
   itemsCount: number;
   subtotal: number;
   discount: number;
-  shipping: number;          // ค่าจัดส่ง (เดลิเวอรี่)
-  total: number;             // สรุปสุทธิจ่าย
+  shipping: number;
+  total: number;
   paymentStatus: PayStatus;
   status: OrderStatus;
   orderedAt: string;
   updatedAt: string;
-  // สามารถมี field เพิ่ม เช่น tableNo, riderName ฯลฯ
 };
 
 function nowTH() { return new Date().toLocaleString("th-TH"); }
@@ -76,6 +77,9 @@ const MOCK: OrderRow[] = [
 ];
 
 export default function ManageOrderList() {
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+
   // state หลัก
   const [rows, setRows] = React.useState<OrderRow[]>(MOCK);
 
@@ -129,13 +133,11 @@ export default function ManageOrderList() {
   };
 
   const handlePrint = (id: string) => {
-    // TODO: open/print receipt
     console.log("print receipt for", id);
     window.print?.();
   };
 
   const handleRefund = (id: string) => {
-    // TODO: call refund API
     setRows((xs) =>
       xs.map((x) =>
         x.id === id ? { ...x, paymentStatus: "REFUNDED", updatedAt: nowTH() } : x
@@ -174,58 +176,91 @@ export default function ManageOrderList() {
           onChannelChange={setChannel}
         />
 
-        {/* Table */}
-        <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
-          <TableContainer>
-            <Table size="medium">
-              <TableHead>
-                <TableRow>
-                  <TableCell width={180}>รหัส/เวลา</TableCell>
-                  <TableCell>ลูกค้า</TableCell>
-                  <TableCell width={100} align="center">จำนวน</TableCell>
-                  <TableCell width={140}>ช่องทาง</TableCell>
-                  <TableCell width={160} align="right">ยอดสุทธิ</TableCell>
-                  <TableCell width={140}>สถานะออเดอร์</TableCell>
-                  <TableCell width={120}>การชำระ</TableCell>
-                  <TableCell width={110} align="right">การทำงาน</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {pageRows.map((r) => (
-                  <ManageOrderItem
-                    key={r.id}
-                    row={r}
-                    onChangeStatus={handleChangeStatus}
-                    onViewDetail={handleViewDetail}
-                    onPrint={handlePrint}
-                    onRefund={handleRefund}
-                  />
-                ))}
-
-                {pageRows.length === 0 && (
+        {/* ตาราง (เดสก์ท็อป) หรือ การ์ด (มือถือ) */}
+        {isMdUp ? (
+          <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
+            <TableContainer>
+              <Table size="medium">
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={8}>
-                      <Box sx={{ py: 6, textAlign: "center" }}>
-                        <Typography color="text.secondary">ไม่พบออเดอร์</Typography>
-                      </Box>
-                    </TableCell>
+                    <TableCell width={180}>รหัส/เวลา</TableCell>
+                    <TableCell>ลูกค้า</TableCell>
+                    <TableCell width={100} align="center">จำนวน</TableCell>
+                    <TableCell width={140}>ช่องทาง</TableCell>
+                    <TableCell width={160} align="right">ยอดสุทธิ</TableCell>
+                    <TableCell width={140}>สถานะออเดอร์</TableCell>
+                    <TableCell width={120}>การชำระ</TableCell>
+                    <TableCell width={150} align="right">การทำงาน</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {pageRows.map((r) => (
+                    <ManageOrderItem
+                      key={r.id}
+                      row={r}
+                      onChangeStatus={handleChangeStatus}
+                      onViewDetail={handleViewDetail}
+                      onPrint={handlePrint}
+                      onRefund={handleRefund}
+                    />
+                  ))}
 
-          <Stack alignItems="center" sx={{ p: 1.5 }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={handlePage}
-              color="primary"
-              siblingCount={0}
-              boundaryCount={1}
-            />
+                  {pageRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8}>
+                        <Box sx={{ py: 6, textAlign: "center" }}>
+                          <Typography color="text.secondary">ไม่พบออเดอร์</Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Stack alignItems="center" sx={{ p: 1.5 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={handlePage}
+                color="primary"
+                siblingCount={0}
+                boundaryCount={1}
+              />
+            </Stack>
+          </Paper>
+        ) : (
+          <Stack spacing={1.25}>
+            {pageRows.map((r) => (
+              <ManageOrderItem
+                key={r.id}
+                row={r}
+                onChangeStatus={handleChangeStatus}
+                onViewDetail={handleViewDetail}
+                onPrint={handlePrint}
+                onRefund={handleRefund}
+              />
+            ))}
+
+            {pageRows.length === 0 && (
+              <Paper variant="outlined" sx={{ p: 4, borderRadius: 2, textAlign: "center" }}>
+                <Typography color="text.secondary">ไม่พบออเดอร์</Typography>
+              </Paper>
+            )}
+
+            {/* Pagination สำหรับมือถือ */}
+            <Stack alignItems="center" sx={{ pt: 1 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={handlePage}
+                color="primary"
+                siblingCount={0}
+                boundaryCount={1}
+              />
+            </Stack>
           </Stack>
-        </Paper>
+        )}
       </Container>
 
       {/* Drawer รายละเอียดออเดอร์ */}
@@ -246,39 +281,17 @@ export default function ManageOrderList() {
         {selected ? (
           <Box sx={{ p: 2 }}>
             <List dense>
-              <ListItem>
-                <ListItemText primary="ลูกค้า" secondary={selected.customerName ?? "-"} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="เบอร์" secondary={selected.phone ?? "-"} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="ช่องทาง" secondary={selected.channel} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="จำนวนรายการ" secondary={selected.itemsCount} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="ยอดรวม" secondary={fmtTHB(selected.subtotal)} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="ส่วนลด" secondary={fmtTHB(selected.discount)} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="ค่าจัดส่ง" secondary={fmtTHB(selected.shipping)} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="สุทธิ" secondary={fmtTHB(selected.total)} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="การชำระ" secondary={selected.paymentStatus} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="สถานะออเดอร์" secondary={selected.status} />
-              </ListItem>
-              <ListItem>
-                <ListItemText primary="อัปเดตล่าสุด" secondary={selected.updatedAt} />
-              </ListItem>
+              <ListItem><ListItemText primary="ลูกค้า" secondary={selected.customerName ?? "-"} /></ListItem>
+              <ListItem><ListItemText primary="เบอร์" secondary={selected.phone ?? "-"} /></ListItem>
+              <ListItem><ListItemText primary="ช่องทาง" secondary={selected.channel} /></ListItem>
+              <ListItem><ListItemText primary="จำนวนรายการ" secondary={selected.itemsCount} /></ListItem>
+              <ListItem><ListItemText primary="ยอดรวม" secondary={fmtTHB(selected.subtotal)} /></ListItem>
+              <ListItem><ListItemText primary="ส่วนลด" secondary={fmtTHB(selected.discount)} /></ListItem>
+              <ListItem><ListItemText primary="ค่าจัดส่ง" secondary={fmtTHB(selected.shipping)} /></ListItem>
+              <ListItem><ListItemText primary="สุทธิ" secondary={fmtTHB(selected.total)} /></ListItem>
+              <ListItem><ListItemText primary="การชำระ" secondary={selected.paymentStatus} /></ListItem>
+              <ListItem><ListItemText primary="สถานะออเดอร์" secondary={selected.status} /></ListItem>
+              <ListItem><ListItemText primary="อัปเดตล่าสุด" secondary={selected.updatedAt} /></ListItem>
             </List>
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
               <Button variant="contained" fullWidth onClick={() => window.print?.()}>พิมพ์</Button>

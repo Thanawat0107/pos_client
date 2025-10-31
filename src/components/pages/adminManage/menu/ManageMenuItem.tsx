@@ -13,23 +13,48 @@ function formatCurrencyTHB(n: number) {
 
 type Props = {
   row: Row;
+  orderNo?: number;
   onEdit: (row: Row) => void;
   onDelete: (id: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
 };
 
-export default function ManageMenuItem({ row, onEdit, onDelete, onToggleActive }: Props) {
+export default function ManageMenuItem({
+  row,
+  orderNo,
+  onEdit,
+  onDelete,
+  onToggleActive,
+}: Props) {
   return (
     <TableRow hover>
-      <TableCell>
+      {/* ลำดับ */}
+      <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 80 }}>
+        <Typography fontWeight={800}>{orderNo ?? "-"}</Typography>
+      </TableCell>
+
+      {/* รูปใหญ่ขึ้น + fallback */}
+      <TableCell width={100}>
         <Avatar
           variant="rounded"
-          src={row.image}
+          src={row.image || "https://via.placeholder.com/96x96.png?text=Menu"}
           alt={row.name}
-          sx={{ width: 48, height: 48, borderRadius: 1, bgcolor: "grey.100" }}
+          imgProps={{
+            onError: (e) => {
+              e.currentTarget.src = "https://via.placeholder.com/96x96.png?text=Menu";
+            },
+          }}
+          sx={{
+            width: 80,
+            height: 80,
+            borderRadius: 2,
+            bgcolor: "grey.100",
+            flexShrink: 0,
+          }}
         />
       </TableCell>
 
+      {/* ชื่อ/คำอธิบาย */}
       <TableCell sx={{ maxWidth: 360 }}>
         <Stack spacing={0.3}>
           <Typography fontWeight={700} noWrap>{row.name}</Typography>
@@ -41,15 +66,18 @@ export default function ManageMenuItem({ row, onEdit, onDelete, onToggleActive }
         </Stack>
       </TableCell>
 
-      <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+      {/* ราคา */}
+      <TableCell align="right" sx={{ whiteSpace: "nowrap", width: 140 }}>
         <Typography fontWeight={700}>{formatCurrencyTHB(row.price)}</Typography>
       </TableCell>
 
-      <TableCell sx={{ whiteSpace: "nowrap" }}>
+      {/* หมวดหมู่ */}
+      <TableCell sx={{ whiteSpace: "nowrap", width: 160 }}>
         <Chip size="small" label={row.categoryName ?? row.categoryId} variant="outlined" />
       </TableCell>
 
-      <TableCell sx={{ whiteSpace: "nowrap" }}>
+      {/* สถานะ */}
+      <TableCell sx={{ whiteSpace: "nowrap", width: 140 }}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Switch checked={row.isActive} onChange={(_, v) => onToggleActive(row.id!, v)} />
           <Typography variant="body2" color="text.secondary">
@@ -58,11 +86,13 @@ export default function ManageMenuItem({ row, onEdit, onDelete, onToggleActive }
         </Stack>
       </TableCell>
 
-      <TableCell sx={{ whiteSpace: "nowrap" }}>
+      {/* อัปเดตล่าสุด */}
+      <TableCell sx={{ whiteSpace: "nowrap", width: 180 }}>
         <Typography variant="body2" color="text.secondary">{row.updatedAt}</Typography>
       </TableCell>
 
-      <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+      {/* การทำงาน */}
+      <TableCell align="right" sx={{ whiteSpace: "nowrap", width: 120 }}>
         <Tooltip title="แก้ไข">
           <IconButton onClick={() => onEdit(row)} size="small"><EditOutlinedIcon /></IconButton>
         </Tooltip>

@@ -1,6 +1,6 @@
 // src/components/menus/MobileMenuItem.tsx
 import {
-  Avatar, Chip, IconButton, Paper, Stack, Switch, Tooltip, Typography,
+  Avatar, Chip, IconButton, Paper, Stack, Switch, Tooltip, Typography, Box
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -10,21 +10,49 @@ const moneyTHB = (n: number) => n.toLocaleString("th-TH", { style: "currency", c
 
 type Props = {
   row: Row;
+  orderNo?: number;
   onEdit: (row: Row) => void;
   onDelete: (id: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
 };
 
-export default function MobileMenuItem({ row, onEdit, onDelete, onToggleActive }: Props) {
+export default function MobileMenuItem({ row, orderNo, onEdit, onDelete, onToggleActive }: Props) {
   return (
     <Paper variant="outlined" sx={{ borderRadius: 2, p: 1.5 }}>
       <Stack direction="row" spacing={1.25} alignItems="center">
-        <Avatar
-          variant="rounded"
-          src={row.image}
-          alt={row.name}
-          sx={{ width: 64, height: 64, borderRadius: 2, flexShrink: 0, bgcolor: "grey.100" }}
-        />
+        {/* รูป + ลำดับซ้อนมุม */}
+        <Box sx={{ position: "relative", flexShrink: 0 }}>
+          <Avatar
+            variant="rounded"
+            src={row.image}
+            alt={row.name}
+            sx={{ width: 80, height: 80, borderRadius: 2, bgcolor: "grey.100" }}
+            imgProps={{
+              onError: (e) => (e.currentTarget.src = "https://via.placeholder.com/96x96.png?text=Menu"),
+            }}
+          />
+          {typeof orderNo === "number" && (
+            <Box
+              aria-label={`ลำดับที่ ${orderNo}`}
+              sx={{
+                position: "absolute",
+                top: 4,
+                left: 4,
+                px: 0.75,
+                py: 0.25,
+                borderRadius: 1,
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+                lineHeight: 1,
+              }}
+            >
+              <Typography variant="caption" fontWeight={800}>
+                {orderNo}
+              </Typography>
+            </Box>
+          )}
+        </Box>
 
         <Stack spacing={0.25} sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="body1" fontWeight={800} noWrap>{row.name}</Typography>
@@ -37,17 +65,18 @@ export default function MobileMenuItem({ row, onEdit, onDelete, onToggleActive }
             </Typography>
           )}
 
+          {/* 👇 แพทเทิร์นชิปเหมือน MobileCategoryItem */}
           <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
             <Chip
               size="small"
-              label={row.categoryName ?? row.categoryId}
               variant="outlined"
+              label={row.categoryName ?? row.categoryId}
               sx={{ height: 22, "& .MuiChip-label": { px: 0.75, fontSize: 12 } }}
             />
             <Chip
               size="small"
-              color={row.isActive ? "success" : "default"}
-              label={row.isActive ? "เปิดขาย" : "ปิดขาย"}
+              variant="outlined"
+              label={`ลำดับ ${orderNo ?? "-"}`}       // 👈 ชิป "ลำดับ n"
               sx={{ height: 22, "& .MuiChip-label": { px: 0.75, fontSize: 12 } }}
             />
           </Stack>

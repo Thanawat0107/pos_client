@@ -6,7 +6,9 @@ import {
   FormControl,
   Select,
   MenuItem,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 
 export type OrderStatus = "PENDING" | "COOKING" | "READY" | "COMPLETED" | "CANCELLED";
@@ -28,9 +30,17 @@ export default function OrderFilterBar({
   q, status, pay, channel,
   onSearch, onStatusChange, onPayChange, onChannelChange,
 }: Props) {
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+
   return (
-    <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ mb: 2 }}>
+    <Stack
+      direction={isMdUp ? "row" : "column"}
+      spacing={1.25}
+      sx={{ mb: 2, width: "100%" }}
+    >
       <TextField
+        size={isMdUp ? "medium" : "small"}
         placeholder="ค้นหา: โค้ด, ชื่อลูกค้า, เบอร์"
         value={q}
         onChange={(e) => onSearch(e.target.value)}
@@ -38,14 +48,21 @@ export default function OrderFilterBar({
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon />
+              <SearchIcon fontSize="small" />
             </InputAdornment>
           ),
         }}
+        sx={{ "& input": { fontSize: isMdUp ? 14 : 13 } }}
       />
 
-      <FormControl sx={{ minWidth: 180 }}>
-        <Select value={status} onChange={(e) => onStatusChange(e.target.value as any)} displayEmpty>
+      <FormControl fullWidth sx={{ minWidth: isMdUp ? 180 : "100%" }}>
+        <Select
+          size={isMdUp ? "medium" : "small"}
+          value={status}
+          onChange={(e) => onStatusChange(e.target.value as any)}
+          displayEmpty
+          sx={{ fontSize: isMdUp ? 14 : 13 }}
+        >
           <MenuItem value="all">สถานะออเดอร์ทั้งหมด</MenuItem>
           <MenuItem value="PENDING">รอรับออเดอร์</MenuItem>
           <MenuItem value="COOKING">กำลังทำ</MenuItem>
@@ -55,8 +72,14 @@ export default function OrderFilterBar({
         </Select>
       </FormControl>
 
-      <FormControl sx={{ minWidth: 160 }}>
-        <Select value={pay} onChange={(e) => onPayChange(e.target.value as any)} displayEmpty>
+      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
+        <Select
+          size={isMdUp ? "medium" : "small"}
+          value={pay}
+          onChange={(e) => onPayChange(e.target.value as any)}
+          displayEmpty
+          sx={{ fontSize: isMdUp ? 14 : 13 }}
+        >
           <MenuItem value="all">การชำระทั้งหมด</MenuItem>
           <MenuItem value="UNPAID">ยังไม่จ่าย</MenuItem>
           <MenuItem value="PAID">จ่ายแล้ว</MenuItem>
@@ -64,8 +87,14 @@ export default function OrderFilterBar({
         </Select>
       </FormControl>
 
-      <FormControl sx={{ minWidth: 160 }}>
-        <Select value={channel} onChange={(e) => onChannelChange(e.target.value as any)} displayEmpty>
+      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
+        <Select
+          size={isMdUp ? "medium" : "small"}
+          value={channel}
+          onChange={(e) => onChannelChange(e.target.value as any)}
+          displayEmpty
+          sx={{ fontSize: isMdUp ? 14 : 13 }}
+        >
           <MenuItem value="all">ช่องทางทั้งหมด</MenuItem>
           <MenuItem value="DINE_IN">ทานที่ร้าน</MenuItem>
           <MenuItem value="TAKEAWAY">สั่งกลับบ้าน</MenuItem>

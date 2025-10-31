@@ -1,5 +1,12 @@
 import {
-  Chip, IconButton, Stack, Switch, Tooltip, Typography, TableRow, TableCell,
+  Chip,
+  IconButton,
+  Stack,
+  Switch,
+  Tooltip,
+  Typography,
+  TableRow,
+  TableCell,
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
@@ -17,41 +24,74 @@ type Props = {
   onToggleActive: (id: string, next: boolean) => void;
 };
 
-export default function ManageCategoryItem({ row, onEdit, onDelete, onToggleActive }: Props) {
+export default function ManageCategoryItem({
+  row,
+  onEdit,
+  onDelete,
+  onToggleActive,
+}: Props) {
   return (
     <TableRow hover>
-      <TableCell>
+      {/* ชื่อ / slug */}
+      <TableCell sx={{ maxWidth: 420 }}>
         <Stack spacing={0.3}>
-          <Typography fontWeight={700}>{row.name}</Typography>
-          <Typography variant="body2" color="text.secondary">/{row.slug}</Typography>
+          <Typography fontWeight={700} noWrap>
+            {row.name}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            noWrap
+            sx={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            /{row.slug}
+          </Typography>
         </Stack>
       </TableCell>
 
-      <TableCell align="center">
+      {/* จำนวนเมนู */}
+      <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
         <Chip size="small" label={row.itemsCount ?? 0} />
       </TableCell>
 
-      <TableCell align="center">{row.displayOrder}</TableCell>
+      {/* ลำดับแสดง */}
+      <TableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+        {row.displayOrder}
+      </TableCell>
 
-      <TableCell>
+      {/* สถานะ */}
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Switch checked={row.isActive} onChange={(_, v) => onToggleActive(row.id!, v)} />
+          <Switch
+            checked={row.isActive}
+            onChange={(_, v) => onToggleActive(row.id!, v)}
+          />
           <Typography variant="body2" color="text.secondary">
             {row.isActive ? "พร้อมใช้" : "ปิดใช้งาน"}
           </Typography>
         </Stack>
       </TableCell>
 
-      <TableCell>
-        <Typography variant="body2" color="text.secondary">{row.updatedAt}</Typography>
+      {/* อัปเดตล่าสุด */}
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
+        <Typography variant="body2" color="text.secondary">
+          {row.updatedAt}
+        </Typography>
       </TableCell>
 
-      <TableCell align="right">
+      {/* การทำงาน */}
+      <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
         <Tooltip title="แก้ไข">
-          <IconButton onClick={() => onEdit(row)} size="small"><EditOutlinedIcon /></IconButton>
+          <IconButton size="small" onClick={() => onEdit(row)}>
+            <EditOutlinedIcon />
+          </IconButton>
         </Tooltip>
         <Tooltip title="ลบ">
-          <IconButton onClick={() => onDelete(row.id!)} size="small" color="error">
+          <IconButton
+            size="small"
+            color="error"
+            onClick={() => onDelete(row.id!)}
+          >
             <DeleteOutlineIcon />
           </IconButton>
         </Tooltip>
