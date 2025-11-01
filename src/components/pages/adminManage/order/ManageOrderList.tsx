@@ -374,7 +374,7 @@ export default function ManageOrderList() {
               <ManageOrderItem
                 key={r.id}
                 row={r}
-                index={start + i + 1} // << มือถือก็มีลำดับ
+                index={start + i + 1}
                 refundingId={refundingId}
                 onChangeStatus={handleChangeStatus}
                 onViewDetail={handleViewDetail}
