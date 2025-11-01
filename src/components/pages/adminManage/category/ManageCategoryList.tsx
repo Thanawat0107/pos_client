@@ -147,10 +147,18 @@ export default function ManageCategoryList() {
             จัดการหมวดหมู่
           </Typography>
           <Stack direction="row" spacing={1}>
-            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={refresh}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={refresh}
+            >
               รีเฟรช
             </Button>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreate}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCreate}
+            >
               เพิ่มหมวดหมู่
             </Button>
           </Stack>
@@ -189,17 +197,20 @@ export default function ManageCategoryList() {
 
         {/* Desktop / Mobile */}
         {isSmUp ? (
-          <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
+          <Paper
+            variant="outlined"
+            sx={{ borderRadius: 2, overflow: "hidden" }}
+          >
             <TableContainer>
               <Table size="medium">
                 <TableHead>
                   <TableRow>
+                    <TableCell width={80} align="center">
+                      ลำดับแสดง
+                    </TableCell>
                     <TableCell>ชื่อ / slug</TableCell>
                     <TableCell width={120} align="center">
                       จำนวนเมนู
-                    </TableCell>
-                    <TableCell width={140} align="center">
-                      ลำดับแสดง
                     </TableCell>
                     <TableCell width={160}>สถานะ</TableCell>
                     <TableCell width={180}>อัปเดตล่าสุด</TableCell>
@@ -208,11 +219,13 @@ export default function ManageCategoryList() {
                     </TableCell>
                   </TableRow>
                 </TableHead>
+
                 <TableBody>
-                  {pageRows.map((r) => (
+                  {pageRows.map((r, i) => (
                     <ManageCategoryItem
                       key={r.id}
                       row={r}
+                      index={start + i + 1} // 👈 ส่งลำดับแบบหน้าเดียวกับ MenuItem
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}

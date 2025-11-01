@@ -13,7 +13,7 @@ function formatCurrencyTHB(n: number) {
 
 type Props = {
   row: Row;
-  orderNo?: number;
+  index?: number;
   onEdit: (row: Row) => void;
   onDelete: (id: string) => void;
   onToggleActive: (id: string, next: boolean) => void;
@@ -21,7 +21,7 @@ type Props = {
 
 export default function ManageMenuItem({
   row,
-  orderNo,
+  index,
   onEdit,
   onDelete,
   onToggleActive,
@@ -30,7 +30,7 @@ export default function ManageMenuItem({
     <TableRow hover>
       {/* ลำดับ */}
       <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 80 }}>
-        <Typography fontWeight={800}>{orderNo ?? "-"}</Typography>
+        <Typography fontWeight={800}>{index ?? "-"}</Typography>
       </TableCell>
 
       {/* รูปใหญ่ขึ้น + fallback */}

@@ -284,7 +284,7 @@ export default function ManageMenuList() {
                     <ManageMenuItem
                       key={r.id}
                       row={r}
-                      orderNo={start + i + 1}
+                      index={start + i + 1}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
@@ -334,7 +334,7 @@ export default function ManageMenuList() {
                 <MobileMenuItem
                   key={r.id}
                   row={r}
-                  orderNo={start + i + 1}
+                  index={start + i + 1}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onToggleActive={handleToggleActive}
