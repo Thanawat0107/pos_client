@@ -23,6 +23,7 @@ import {
 import { Link as RouterLink, useLocation } from "react-router-dom";
 
 import MenuIcon from "@mui/icons-material/Menu";
+import LoginIcon from '@mui/icons-material/Login';
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import AutoModeIcon from "@mui/icons-material/AutoMode";
@@ -360,9 +361,9 @@ export default function Navbar() {
           sx={{ color: "error.main" }}
         >
           <ListItemIcon sx={{ color: "error.main" }}>
-            <LogoutIcon fontSize="small" />
+            <LoginIcon fontSize="small" />
           </ListItemIcon>
-          ออกจากระบบ
+          เข้าสู่ระบบ
         </MenuItem>
       </Menu>
 
