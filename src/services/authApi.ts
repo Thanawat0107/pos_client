@@ -1,10 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { baseUrlAPI } from "../helpers/SD";
-import type { Register } from "react-router-dom";
 import type { Login } from "../@types/dto/Login";
 import type { ApiResponse } from "../@types/Responsts/ApiResponse";
 import type { LoginResponse } from "../@types/Responsts/LoginResponse";
 import type { RegisterResponse } from "../@types/Responsts/RegisterResponse";
+import type { Register } from "../@types/dto/Register";
 
 const authApi = createApi({
   reducerPath: "authApi",

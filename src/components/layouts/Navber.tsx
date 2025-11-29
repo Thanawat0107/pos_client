@@ -20,7 +20,7 @@ import {
   Badge,
   Collapse,
 } from "@mui/material";
-import { Link as RouterLink, useLocation } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 
 import MenuIcon from "@mui/icons-material/Menu";
 import LoginIcon from '@mui/icons-material/Login';
@@ -40,10 +40,20 @@ import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import { useColorMode } from "../../contexts/color-mode";
 import { useState } from "react";
+import { useAppDispatch, useAppSelector } from "../../hooks/useAppHookState";
+import { logout } from "../../stores/slices/authSlice";
+import { storage } from "../../helpers/storageHelper";
+import { SD_Roles } from "../../@types/Enum";
 
 export default function Navbar() {
-  const { mode, toggle } = useColorMode();
+  const { role, isAuthenticated, token } = useAppSelector(
+    (state) => state.auth
+  );
+  const isAdmin = !!token && isAuthenticated && role === SD_Roles.Admin;
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const location = useLocation();
+  const { mode, toggle } = useColorMode();
 
   const colorModeIcon =
     mode === "light" ? (
@@ -66,9 +76,7 @@ export default function Navbar() {
   const handleMenuClose = () => setAnchorEl(null);
 
   // Manage (desktop) dropdown
-  const [anchorManage, setAnchorManage] = useState<null | HTMLElement>(
-    null
-  );
+  const [anchorManage, setAnchorManage] = useState<null | HTMLElement>(null);
   const openManage = Boolean(anchorManage);
   const handleOpenManage = (e: React.MouseEvent<HTMLButtonElement>) =>
     setAnchorManage(e.currentTarget);
@@ -101,6 +109,7 @@ export default function Navbar() {
       </Button>
 
       {/* CHANGED: การจัดการ -> เปิดเมนู */}
+       {isAdmin && (
       <Button
         id="manage-button"
         variant="text"
@@ -113,6 +122,7 @@ export default function Navbar() {
       >
         การจัดการ
       </Button>
+      )}
 
       <Button
         component={RouterLink}
@@ -223,7 +233,6 @@ export default function Navbar() {
             alignItems="center"
             sx={{ display: { xs: "flex", md: "none" } }}
           >
-
             {/* Cart */}
             <IconButton
               component={RouterLink}
@@ -247,7 +256,7 @@ export default function Navbar() {
               <PersonOutlineIcon />
             </IconButton>
 
-             {/* สลับโหมด */}
+            {/* สลับโหมด */}
             <Tooltip title={`Mode: ${mode} (tap to toggle)`}>
               <IconButton
                 onClick={toggle}
@@ -266,59 +275,56 @@ export default function Navbar() {
       </AppBar>
 
       {/* Manage Menu (เดสก์ท็อป) */}
-      <Menu
-        id="manage-menu"
-        anchorEl={anchorManage}
-        open={openManage}
-        onClose={handleCloseManage}
-        TransitionComponent={Fade}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        transformOrigin={{ vertical: "top", horizontal: "left" }}
-        PaperProps={{ sx: { mt: 1, minWidth: 240, borderRadius: 2 } }}
-      >
-        <MenuItem
-          component={RouterLink}
-          to="manage-menuItem"
-          onClick={handleCloseManage}
-        >
-          <ListItemIcon>
-            <RestaurantMenuOutlinedIcon fontSize="small" />
-          </ListItemIcon>
-          จัดการเมนู
-        </MenuItem>
-        <MenuItem
-          component={RouterLink}
-          to="/manage-category"
-          onClick={handleCloseManage}
-        >
-          <ListItemIcon>
-            <CategoryOutlinedIcon fontSize="small" />
-          </ListItemIcon>
-          จัดการหมวดหมู่
-        </MenuItem>
-        <MenuItem
-          component={RouterLink}
-          to="/manage-order"
-          onClick={handleCloseManage}
-        >
-          <ListItemIcon>
-            <ReceiptLongOutlinedIcon fontSize="small" />
-          </ListItemIcon>
-          จัดการออเดอร์
-        </MenuItem>
-        <MenuItem
-          component={RouterLink}
-          to="#"
-          onClick={handleCloseManage}
-        >
-          <ListItemIcon>
-            <Inventory2OutlinedIcon fontSize="small" />
-          </ListItemIcon>
-          สินค้า/สต็อก
-        </MenuItem>
-      </Menu>
 
+        <Menu
+          id="manage-menu"
+          anchorEl={anchorManage}
+          open={openManage}
+          onClose={handleCloseManage}
+          TransitionComponent={Fade}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          PaperProps={{ sx: { mt: 1, minWidth: 240, borderRadius: 2 } }}
+        >
+          <MenuItem
+            component={RouterLink}
+            to="manage-menuItem"
+            onClick={handleCloseManage}
+          >
+            <ListItemIcon>
+              <RestaurantMenuOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            จัดการเมนู
+          </MenuItem>
+          <MenuItem
+            component={RouterLink}
+            to="/manage-category"
+            onClick={handleCloseManage}
+          >
+            <ListItemIcon>
+              <CategoryOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            จัดการหมวดหมู่
+          </MenuItem>
+          <MenuItem
+            component={RouterLink}
+            to="/manage-order"
+            onClick={handleCloseManage}
+          >
+            <ListItemIcon>
+              <ReceiptLongOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            จัดการออเดอร์
+          </MenuItem>
+          <MenuItem component={RouterLink} to="#" onClick={handleCloseManage}>
+            <ListItemIcon>
+              <Inventory2OutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            สินค้า/สต็อก
+          </MenuItem>
+        </Menu>
       {/* Profile Menu (ใช้ร่วมกันได้ทั้งมือถือ/เดสก์ท็อป) */}
+      
       <Menu
         anchorEl={anchorEl}
         open={openProfile}
@@ -351,19 +357,56 @@ export default function Navbar() {
           </ListItemIcon>
           ข้อมูลส่วนตัว
         </MenuItem>
-        
-        <Divider sx={{ my: 0.5 }} />
+
         <MenuItem
+          component={RouterLink}
+          to="/profile"
+          onClick={handleMenuClose}
+        >
+          <ListItemIcon>
+            <PersonOutlineIcon fontSize="small" />
+          </ListItemIcon>
+          ข้อมูลส่วนตัว
+        </MenuItem>
+
+        <MenuItem
+          component={RouterLink}
+          to="/profile"
+          onClick={handleMenuClose}
+        >
+          <ListItemIcon>
+            <PersonOutlineIcon fontSize="small" />
+          </ListItemIcon>
+          ข้อมูลส่วนตัว
+        </MenuItem>
+
+        <Divider sx={{ my: 0.5 }} />
+
+        <MenuItem
+          component={RouterLink}
+          to={token ? "/" : "/login"}
           onClick={() => {
             handleMenuClose();
-            console.log("logout clicked");
+
+            if (token) {
+              dispatch(logout());
+              storage.remove("token");
+              console.log("logout clicked");
+            } else {
+              console.log("login clicked");
+            }
           }}
-          sx={{ color: "error.main" }}
+          sx={{ color: token ? "error.main" : "primary.main" }}
         >
-          <ListItemIcon sx={{ color: "error.main" }}>
-            <LoginIcon fontSize="small" />
+          <ListItemIcon sx={{ color: token ? "error.main" : "primary.main" }}>
+            {token ? (
+              <LogoutIcon fontSize="small" />
+            ) : (
+              <LoginIcon fontSize="small" />
+            )}
           </ListItemIcon>
-          เข้าสู่ระบบ
+
+          {token ? "ออกจากระบบ" : "เข้าสู่ระบบ"}
         </MenuItem>
       </Menu>
 
@@ -414,19 +457,24 @@ export default function Navbar() {
           </ListItemButton>
 
           {/* การจัดการ (พับได้) */}
-          <ListItemButton onClick={() => setOpenManageDrawer((v) => !v)}>
-            <ListItemIcon>
-              <SettingsOutlinedIcon />
-            </ListItemIcon>
-            <ListItemText primary="การจัดการ" />
-            <ExpandMoreIcon
-              sx={{
-                transform: openManageDrawer ? "rotate(180deg)" : "rotate(0deg)",
-                transition: "0.2s",
-                ml: "auto",
-              }}
-            />
-          </ListItemButton>
+          {isAdmin && (
+            <ListItemButton onClick={() => setOpenManageDrawer((v) => !v)}>
+              <ListItemIcon>
+                <SettingsOutlinedIcon />
+              </ListItemIcon>
+              <ListItemText primary="การจัดการ" />
+              <ExpandMoreIcon
+                sx={{
+                  transform: openManageDrawer
+                    ? "rotate(180deg)"
+                    : "rotate(0deg)",
+                  transition: "0.2s",
+                  ml: "auto",
+                }}
+              />
+            </ListItemButton>
+          )}
+
           <Collapse in={openManageDrawer} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
               <ListItemButton
@@ -512,18 +560,27 @@ export default function Navbar() {
             </ListItemIcon>
             <ListItemText primary="ข้อมูลส่วนตัว" />
           </ListItemButton>
-    
+
           <ListItemButton
             onClick={() => {
-              console.log("logout clicked");
               setOpenDrawer(false);
+
+              if (token) {
+                console.log("logout clicked");
+                dispatch(logout());
+                storage.remove("token");
+              } else {
+                console.log("login clicked");
+                navigate("/login");
+              }
             }}
-            sx={{ color: "error.main" }}
+            sx={{ color: token ? "error.main" : "primary.main" }}
           >
-            <ListItemIcon sx={{ color: "error.main" }}>
-              <LogoutIcon />
+            <ListItemIcon sx={{ color: token ? "error.main" : "primary.main" }}>
+              {token ? <LogoutIcon /> : <LoginIcon />}
             </ListItemIcon>
-            <ListItemText primary="ออกจากระบบ" />
+
+            <ListItemText primary={token ? "ออกจากระบบ" : "เข้าสู่ระบบ"} />
           </ListItemButton>
         </List>
 

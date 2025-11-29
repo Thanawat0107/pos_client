@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { SD_Roles } from "../../@types/Enum";
 import type { RegisterResponse } from "../../@types/Responsts/RegisterResponse";
+import type { SD_Roles } from "../../@types/Enum";
 
 interface AuthState extends RegisterResponse {
   role: SD_Roles | "";

@@ -2,6 +2,8 @@ import * as React from "react";
 import { CssBaseline, ThemeProvider, useMediaQuery } from "@mui/material";
 import { buildMuiTheme } from "./components/layouts/theme";
 import { ColorModeProvider, useColorMode } from "./contexts/color-mode";
+import { Provider } from "react-redux";
+import { store } from "./stores/store";
 
 function ThemedApp({ children }: { children: React.ReactNode }) {
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
@@ -22,8 +24,10 @@ function ThemedApp({ children }: { children: React.ReactNode }) {
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <ColorModeProvider>
-      <ThemedApp>{children}</ThemedApp>
-    </ColorModeProvider>
+    <Provider store={store}>
+      <ColorModeProvider>
+        <ThemedApp>{children}</ThemedApp>
+      </ColorModeProvider>
+    </Provider>
   );
 }

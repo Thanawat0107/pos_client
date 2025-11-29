@@ -1,16 +1,20 @@
-export enum SD_Roles {
-  Role_Admin = "admin",
-  Role_Employee = "employee",
-  Role_Customer = "customer",
-}
+export const SD_Roles = {
+  Admin: "admin",
+  Customer: "customer",
+  Employee: "exployee",
+} as const;
 
-export enum SD_OrderStatus {
-  OrderStatus_InProgress = "inProgress",
-  OrderStatus_Ordered = "ordered",
-  OrderStatus_Cooking = "cooking",
-  OrderStatus_Ready = "ready",
-  OrderStatus_Served = "served",
-  OrderStatus_Paid = "paid",
-  OrderStatus_Cancelled = "cancelled",
-  OrderStatus_Closed = "closed",
-}
+export type SD_Roles = (typeof SD_Roles)[keyof typeof SD_Roles];
+
+export const SD_OrderStatus = {
+  InProgress: "inProgress",
+  Ordered: "ordered",
+  Cooking: "cooking",
+  Ready: "ready",
+  Served: "served",
+  Paid: "paid",
+  Cancelled: "cancelled",
+  Closed: "closed",
+} as const;
+
+export type SD_OrderStatus = (typeof SD_OrderStatus)[keyof typeof SD_OrderStatus];

@@ -83,7 +83,7 @@ export default function Footer() {
                   color="text.secondary"
                   sx={{ maxWidth: 420 }}
                 >
-                  ร้านอาหารขนาดเล็กตั้งอยู่ที่หน้ามหาวิทยาลัยราชภัฏกาญจนบุรี
+                  ร้านก๋วยเตี๋ยวแชมป์ บริเวณหน้ามหาวิทยาลัยราชภัฏกาญจนบุรี
                 </Typography>
               </Stack>
             </Grid>
@@ -153,7 +153,11 @@ export default function Footer() {
                       "& .MuiAccordionSummary-content": { my: 0.5 },
                     }}
                   >
-                    <Typography variant="subtitle2" fontWeight={800} color="text.secondary">
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={800}
+                      color="text.secondary"
+                    >
                       {sec.title}
                     </Typography>
                   </AccordionSummary>
@@ -192,7 +196,8 @@ export default function Footer() {
           spacing={2}
         >
           <Typography variant="body2" color="text.secondary">
-            © {year} Dev. by Mr. Thanawat Butseree & Asst. Prof. Teeradet Tavarpinun
+            © {year} Dev. by Mr. Thanawat Butseree & Asst. Prof. Teeradet
+            Tavarpinun
           </Typography>
 
           <Stack direction="row" spacing={1}>
@@ -212,7 +217,7 @@ export default function Footer() {
                   borderColor: "divider",
                   bgcolor: "background.paper",
                   "&:hover": { bgcolor: "action.hover" },
-                  width: 40,           // ✅ hit-area ใหญ่ กดง่ายบนมือถือ
+                  width: 40, // ✅ hit-area ใหญ่ กดง่ายบนมือถือ
                   height: 40,
                 }}
               >
