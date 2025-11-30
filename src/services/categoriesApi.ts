@@ -5,6 +5,7 @@ import type { ApiResponse } from "../@types/Responsts/ApiResponse";
 import type { CreateMenuCategory } from "../@types/createDto/CreateMenuCategory";
 import type { UpdateMenuCategory } from "../@types/UpdateDto/updateMenuCategory";
 import type { PaginationMeta } from "../@types/Responsts/PaginationMeta";
+import { unwrapResult } from "../helpers/res";
 
 export const categoriesApi = createApi({
   reducerPath: "categoriesApi",
@@ -14,7 +15,7 @@ export const categoriesApi = createApi({
   tagTypes: ["Category"],
   endpoints: (builder) => ({
     getCategories: builder.query<
-      { result: MenuCategory[]; meta: PaginationMeta },
+      { result: MenuCategory[]; meta?: PaginationMeta },
       { pageNumber?: number; pageSize?: number }
     >({
       query: (params) => ({
@@ -22,19 +23,18 @@ export const categoriesApi = createApi({
         method: "GET",
         params,
       }),
-      transformResponse: (response: ApiResponse<MenuCategory[]>) => ({
+      transformResponse: (
+        response: ApiResponse<MenuCategory[], PaginationMeta>
+      ) => ({
         result: response.result ?? [],
-        meta: response.meta as PaginationMeta,
+        meta: response.meta,
       }),
       providesTags: ["Category"],
     }),
 
     getCategoryById: builder.query<MenuCategory, number>({
       query: (id) => `menucategories/getby/${id}`,
-      transformResponse: (response: ApiResponse<MenuCategory>) => {
-        if (response.result) return response.result;
-        throw new Error(response.message);
-      },
+      transformResponse: unwrapResult<MenuCategory>,
       providesTags: (result, error, id) => [{ type: "Category", id }],
     }),
 
@@ -44,10 +44,7 @@ export const categoriesApi = createApi({
         method: "POST",
         body,
       }),
-      transformResponse: (response: ApiResponse<MenuCategory>) => {
-        if (response.result) return response.result;
-        throw new Error(response.message);
-      },
+      transformResponse: unwrapResult<MenuCategory>,
       invalidatesTags: ["Category"],
     }),
 
@@ -60,10 +57,7 @@ export const categoriesApi = createApi({
         method: "PUT",
         body: data,
       }),
-      transformResponse: (response: ApiResponse<MenuCategory>) => {
-        if (response.result) return response.result;
-        throw new Error(response.message);
-      },
+      transformResponse: unwrapResult<MenuCategory>,
       invalidatesTags: ["Category"],
     }),
 
@@ -72,6 +66,11 @@ export const categoriesApi = createApi({
         url: `menucategories/delete/${id}`,
         method: "DELETE",
       }),
+      transformResponse: (response: ApiResponse<unknown>) => {
+        if (!response.isSuccess) {
+          throw new Error(response.message || "Delete failed");
+        }
+      },
       invalidatesTags: ["Category"],
     }),
   }),

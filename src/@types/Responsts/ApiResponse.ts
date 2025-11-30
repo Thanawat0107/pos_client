@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
-export type ApiResponse<T> = {
+export type ApiResponse<T, M = unknown> = {
   isSuccess: boolean;
   message?: string;
   result?: T;
-  meta?: any;
-}
+  meta?: M;
+};

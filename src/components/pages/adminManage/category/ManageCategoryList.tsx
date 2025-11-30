@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import {
   Box,
   Container,
@@ -30,8 +32,8 @@ import {
   useGetCategoriesQuery,
   useUpdateCategoryMutation,
 } from "../../../../services/categoriesApi";
+import PaginationBar from "../../../layouts/PaginationBar";
 
-/** debounce hook (local, เบา ๆ ไม่ต้องแยกไฟล์) */
 function useDebounced<T>(value: T, delay = 300) {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -45,63 +47,66 @@ export default function ManageCategoryList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  /** state หลัก */
-  const [rows, setRows] = useState<MenuCategory[]>([]);
-
-  /** filters */
   const [q, setQ] = useState("");
   const dq = useDebounced(q, 300);
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
 
-  /** drawer / dialog form */
   const [openForm, setOpenForm] = useState(false);
   const [editing, setEditing] = useState<MenuCategory | null>(null);
 
-  /** pagination (ฝั่ง client) */
   const [page, setPage] = useState(1);
-  const pageSize = isSmUp ? 8 : 6;
+  const [pageSize, setPageSize] = useState(isSmUp ? 8 : 6);
 
-  /** API hooks (ดึงทั้งหมด แล้วมาจัดการ filter + pagination ในหน้า) */
-  const { data, isLoading, refetch } = useGetCategoriesQuery({}); // ให้ backend คืนมาทั้งหมด
-  const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
-  const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
-  const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();
+  const { data, isLoading, isFetching, refetch } = useGetCategoriesQuery({
+    pageNumber: 1,
+    pageSize: 1000,
+  });
+  const [createCategory, { isLoading: isCreating }] =
+    useCreateCategoryMutation();
+  const [updateCategory, { isLoading: isUpdating }] =
+    useUpdateCategoryMutation();
+  const [deleteCategory, { isLoading: isDeleting }] =
+    useDeleteCategoryMutation();
 
-  /** ซิงค์ข้อมูลจาก API ลง state local */
-  useEffect(() => {
-    if (data?.result) {
-      setRows(data.result as MenuCategory[]);
-    }
-  }, [data]);
+  const rows: MenuCategory[] = data?.result ?? [];
 
-  /** รีเซ็ตหน้าเมื่อฟิลเตอร์เปลี่ยน */
   useEffect(() => {
     setPage(1);
-  }, [dq, status]);
+  }, [dq, status, pageSize]);
 
-  /** filter logic (memo) */
+  useEffect(() => {
+    setPageSize(isSmUp ? 8 : 6);
+    setPage(1);
+  }, [isSmUp]);
+
   const filtered = useMemo(() => {
+    const search = dq.trim().toLowerCase();
+
     return rows.filter((r) => {
-      const search = dq.trim().toLowerCase();
       const byQ =
         !search ||
         r.name.toLowerCase().includes(search) ||
         (r.slug ?? "").toLowerCase().includes(search);
 
       const byStatus =
-        status === "all" ||
-        (status === "active" ? r.isUsed : !r.isUsed);
+        status === "all" || (status === "active" ? r.isUsed : !r.isUsed);
 
       return byQ && byStatus;
     });
   }, [rows, dq, status]);
 
-  /** client-side pagination */
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const start = (page - 1) * pageSize;
+  const totalCount = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
   const pageRows = filtered.slice(start, start + pageSize);
 
-  /** actions */
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   const refresh = () => {
     refetch();
   };
@@ -120,8 +125,10 @@ export default function ManageCategoryList() {
     if (!confirm("ยืนยันลบหมวดหมู่นี้?")) return;
     try {
       await deleteCategory(id).unwrap();
+      // TODO: แทรก Swal/Toast แสดงว่า “ลบสำเร็จ”
     } catch (err) {
       console.error("delete category failed", err);
+      // TODO: Swal.fire("ลบไม่สำเร็จ", "ลองใหม่อีกครั้ง", "error");
     }
   };
 
@@ -139,36 +146,40 @@ export default function ManageCategoryList() {
           isUsed: next,
         },
       }).unwrap();
+      // TODO: จะใส่ toast เบา ๆ ก็ได้
     } catch (err) {
       console.error("toggle active failed", err);
+      // TODO: แจ้ง error + อาจจะ revert toggle ถ้าอยากทำให้เนียน
     }
   };
 
-const handleSubmit = async (data: MenuCategory) => {
-  try {
-    if (data.id) {
-      await updateCategory({
-        id: data.id,
-        data: {
-          id: data.id,
-          name: data.name,
-          slug: data.slug,
-          isUsed: data.isUsed,
-        },
-      }).unwrap();
-    } else {
-      await createCategory({
-        name: data.name,
-        slug: data.slug,
-      }).unwrap();
-    }
+  const handleSubmit = async (formData: MenuCategory) => {
+    try {
+      if (formData.id) {
+        await updateCategory({
+          id: formData.id,
+          data: {
+            id: formData.id,
+            name: formData.name,
+            slug: formData.slug,
+            isUsed: formData.isUsed,
+          },
+        }).unwrap();
+      } else {
+        await createCategory({
+          name: formData.name,
+          slug: formData.slug,
+        }).unwrap();
+      }
 
-    setOpenForm(false);
-    setEditing(null);
-  } catch (err) {
-    console.error("save category failed", err);
-  }
-};
+      setOpenForm(false);
+      setEditing(null);
+      // TODO: แสดง Swal/Toast ว่า "บันทึกสำเร็จ"
+    } catch (err) {
+      console.error("save category failed", err);
+      // TODO: Swal.fire("บันทึกไม่สำเร็จ", "ลองใหม่อีกครั้ง", "error");
+    }
+  };
 
   return (
     <Box sx={{ py: { xs: 2, md: 4 } }}>
@@ -315,16 +326,20 @@ const handleSubmit = async (data: MenuCategory) => {
               </Table>
             </TableContainer>
 
-            <Stack alignItems="center" sx={{ p: 1.5 }}>
-              <Pagination
-                count={totalPages}
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <PaginationBar
                 page={page}
-                onChange={(_, p) => setPage(p)}
-                color="primary"
-                siblingCount={0}
-                boundaryCount={1}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setPage(1);
+                }}
+                showSummary
+                showPageSizeSelect
               />
-            </Stack>
+            </Box>
           </Paper>
         ) : (
           <>
@@ -350,16 +365,18 @@ const handleSubmit = async (data: MenuCategory) => {
               )}
             </Stack>
 
-            <Stack alignItems="center" sx={{ pt: 1 }}>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(_, p) => setPage(p)}
-                size="small"
-                siblingCount={0}
-                boundaryCount={1}
-              />
-            </Stack>
+            <PaginationBar
+              page={page}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+              showSummary
+              showPageSizeSelect
+            />
           </>
         )}
       </Container>
