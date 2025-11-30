@@ -4,6 +4,7 @@ import type { MenuCategory } from "../@types/dto/MenuCategory";
 import type { ApiResponse } from "../@types/Responsts/ApiResponse";
 import type { CreateMenuCategory } from "../@types/createDto/CreateMenuCategory";
 import type { UpdateMenuCategory } from "../@types/UpdateDto/updateMenuCategory";
+import type { PaginationMeta } from "../@types/Responsts/PaginationMeta";
 
 export const categoriesApi = createApi({
   reducerPath: "categoriesApi",
@@ -12,18 +13,34 @@ export const categoriesApi = createApi({
   }),
   tagTypes: ["Category"],
   endpoints: (builder) => ({
-    getCategories: builder.query<MenuCategory[], void>({
-      query: () => "category/getall",
-      transformResponse: (response: ApiResponse<MenuCategory[]>) => {
+    getCategories: builder.query<
+      { result: MenuCategory[]; meta: PaginationMeta },
+      { pageNumber?: number; pageSize?: number }
+    >({
+      query: (params) => ({
+        url: "menucategories/getall",
+        method: "GET",
+        params,
+      }),
+      transformResponse: (response: ApiResponse<MenuCategory[]>) => ({
+        result: response.result ?? [],
+        meta: response.meta as PaginationMeta,
+      }),
+      providesTags: ["Category"],
+    }),
+
+    getCategoryById: builder.query<MenuCategory, number>({
+      query: (id) => `menucategories/getby/${id}`,
+      transformResponse: (response: ApiResponse<MenuCategory>) => {
         if (response.result) return response.result;
         throw new Error(response.message);
       },
-      providesTags: ["Category"],
+      providesTags: (result, error, id) => [{ type: "Category", id }],
     }),
 
     createCategory: builder.mutation<MenuCategory, CreateMenuCategory>({
       query: (body) => ({
-        url: "category/create",
+        url: "menucategories/create",
         method: "POST",
         body,
       }),
@@ -39,7 +56,7 @@ export const categoriesApi = createApi({
       { id: number; data: UpdateMenuCategory }
     >({
       query: ({ id, data }) => ({
-        url: `category/update/${id}`,
+        url: `menucategories/update/${id}`,
         method: "PUT",
         body: data,
       }),
@@ -52,7 +69,7 @@ export const categoriesApi = createApi({
 
     deleteCategory: builder.mutation<void, number>({
       query: (id) => ({
-        url: `category/delete/${id}`,
+        url: `menucategories/delete/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Category"],
@@ -62,6 +79,7 @@ export const categoriesApi = createApi({
 
 export const {
     useGetCategoriesQuery,
+    useGetCategoryByIdQuery,
     useCreateCategoryMutation,
     useUpdateCategoryMutation,
     useDeleteCategoryMutation,

@@ -6,44 +6,34 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { useEffect } from "react";
-
-export type CategoryEntity = {
-  id?: string;
-  name: string;
-  slug: string;
-  description?: string;
-  displayOrder: number;
-  isActive: boolean;
-};
+import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  initial?: Partial<CategoryEntity>;
-  onSubmit: (data: CategoryEntity) => Promise<void> | void;
+  initial?: Partial<MenuCategory>;
+  onSubmit: (data: MenuCategory) => Promise<void> | void;
+  isLoading?: boolean;
 };
 
 const schema = yup.object({
   name: yup.string().trim().required("กรุณากรอกชื่อหมวดหมู่"),
   slug: yup.string().trim().required("กรุณากรอก slug"),
-  description: yup.string().nullable().optional(),
-  displayOrder: yup.number().min(0).required(),
-  isActive: yup.boolean().required(),
+  isUsed: yup.boolean().required(),
 });
 
 const toSlug = (s: string) =>
   s.trim().toLowerCase().replace(/[^a-z0-9ก-๙\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
 
-export default function FormCategory({ open, onClose, initial, onSubmit }: Props) {
-  const formik = useFormik<CategoryEntity>({
+export default function FormCategory({ open, onClose, initial, onSubmit, isLoading = false }: Props) {
+  const formik = useFormik<MenuCategory>({
     initialValues: {
-      id: initial?.id,
+      id: initial?.id ?? 0,
       name: initial?.name ?? "",
       slug: initial?.slug ?? "",
-      description: initial?.description ?? "",
-      displayOrder: initial?.displayOrder ?? 0,
-      isActive: initial?.isActive ?? true,
-    },
+      isUsed: initial?.isUsed ?? true,
+      isDeleted: initial?.isDeleted ?? false,
+    } as MenuCategory,
     enableReinitialize: true,
     validationSchema: schema,
     onSubmit: async (values, { setSubmitting }) => {
@@ -79,7 +69,7 @@ export default function FormCategory({ open, onClose, initial, onSubmit }: Props
       <Box component="form" onSubmit={formik.handleSubmit} sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2, pt: "calc(env(safe-area-inset-top) + 8px)" }}>
           <Typography variant="h6" fontWeight={800}>{values.id ? "แก้ไขหมวดหมู่" : "เพิ่มหมวดหมู่"}</Typography>
-          <IconButton onClick={onClose}><CloseIcon /></IconButton>
+          <IconButton onClick={onClose} disabled={isSubmitting}><CloseIcon /></IconButton>
         </Stack>
         <Divider />
 
@@ -88,14 +78,8 @@ export default function FormCategory({ open, onClose, initial, onSubmit }: Props
             onBlur={handleBlur} error={touched.name && !!errors.name} helperText={touched.name && errors.name} fullWidth />
           <TextField label="Slug" name="slug" value={values.slug} onChange={handleChange} onBlur={handleBlur}
             error={touched.slug && !!errors.slug} helperText={(touched.slug && errors.slug) || "ใช้สำหรับ URL / อ้างอิงระบบ"} fullWidth />
-          <TextField label="คำอธิบาย" name="description" value={values.description} onChange={handleChange} onBlur={handleBlur}
-            error={touched.description && !!errors.description} helperText={touched.description && errors.description}
-            multiline rows={3} fullWidth />
-          <TextField label="ลำดับแสดง (displayOrder)" name="displayOrder" type="number" inputProps={{ min: 0, step: 1 }}
-            value={values.displayOrder} onChange={handleChange} onBlur={handleBlur}
-            error={touched.displayOrder && !!errors.displayOrder} helperText={touched.displayOrder && errors.displayOrder} fullWidth />
-          <FormControlLabel control={<Switch name="isActive" checked={values.isActive} onChange={handleChange} />}
-            label={values.isActive ? "แสดงผล (Active)" : "ซ่อน (Inactive)"} />
+          <FormControlLabel control={<Switch name="isUsed" checked={values.isUsed} onChange={handleChange} />}
+            label={values.isUsed ? "แสดงผล (Active)" : "ซ่อน (Inactive)"} />
         </Stack>
 
         <Divider />
@@ -108,8 +92,8 @@ export default function FormCategory({ open, onClose, initial, onSubmit }: Props
           borderColor: "divider",
           pb: "calc(env(safe-area-inset-bottom) + 8px)",
         }}>
-          <Button onClick={onClose} variant="text" fullWidth>ยกเลิก</Button>
-          <Button type="submit" variant="contained" fullWidth disabled={isSubmitting}>บันทึก</Button>
+          <Button onClick={onClose} variant="text" fullWidth disabled={isSubmitting}>ยกเลิก</Button>
+          <Button type="submit" variant="contained" fullWidth disabled={isSubmitting || isLoading}>บันทึก</Button>
         </Stack>
       </Box>
     </Drawer>

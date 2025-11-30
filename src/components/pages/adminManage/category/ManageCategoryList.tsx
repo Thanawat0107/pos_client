@@ -1,4 +1,3 @@
-import * as React from "react";
 import {
   Box,
   Container,
@@ -19,118 +18,157 @@ import {
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
-
-import type { CategoryRow } from "./ManageCategoryItem";
-import type { CategoryEntity } from "./FormCategory";
 import ManageCategoryItem from "./ManageCategoryItem";
 import FormCategory from "./FormCategory";
 import CategoryFilterBar from "../CategoryFilterBar";
 import MobileCategoryItem from "./MobileCategoryItem";
-
-/** ---- utils ---- */
-function nowTH() {
-  return new Date().toLocaleString("th-TH");
-}
+import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useCreateCategoryMutation,
+  useDeleteCategoryMutation,
+  useGetCategoriesQuery,
+  useUpdateCategoryMutation,
+} from "../../../../services/categoriesApi";
 
 /** debounce hook (local, เบา ๆ ไม่ต้องแยกไฟล์) */
 function useDebounced<T>(value: T, delay = 300) {
-  const [v, setV] = React.useState(value);
-  React.useEffect(() => {
+  const [v, setV] = useState(value);
+  useEffect(() => {
     const t = setTimeout(() => setV(value), delay);
     return () => clearTimeout(t);
   }, [value, delay]);
   return v;
 }
 
-/** ---- mock data ---- */
-const MOCK: CategoryRow[] = [
-  { id: "c1", name: "ก๋วยเตี๋ยว", slug: "noodle", description: "", displayOrder: 1, isActive: true, itemsCount: 12, updatedAt: nowTH() },
-  { id: "c2", name: "อาหารจานหลัก", slug: "main", description: "", displayOrder: 2, isActive: true, itemsCount: 8, updatedAt: nowTH() },
-  { id: "c3", name: "เครื่องดื่ม", slug: "drink", description: "", displayOrder: 3, isActive: true, itemsCount: 15, updatedAt: nowTH() },
-  { id: "c4", name: "ของหวาน", slug: "dessert", description: "", displayOrder: 4, isActive: false, itemsCount: 5, updatedAt: nowTH() },
-];
-
 export default function ManageCategoryList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
   /** state หลัก */
-  const [rows, setRows] = React.useState<CategoryRow[]>(MOCK);
+  const [rows, setRows] = useState<MenuCategory[]>([]);
 
   /** filters */
-  const [q, setQ] = React.useState("");
+  const [q, setQ] = useState("");
   const dq = useDebounced(q, 300);
-  const [status, setStatus] = React.useState<"all" | "active" | "inactive">("all");
+  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
 
-  /** drawer form */
-  const [openForm, setOpenForm] = React.useState(false);
-  const [editing, setEditing] = React.useState<CategoryRow | null>(null);
+  /** drawer / dialog form */
+  const [openForm, setOpenForm] = useState(false);
+  const [editing, setEditing] = useState<MenuCategory | null>(null);
 
-  /** pagination */
-  const [page, setPage] = React.useState(1);
+  /** pagination (ฝั่ง client) */
+  const [page, setPage] = useState(1);
   const pageSize = isSmUp ? 8 : 6;
 
+  /** API hooks (ดึงทั้งหมด แล้วมาจัดการ filter + pagination ในหน้า) */
+  const { data, isLoading, refetch } = useGetCategoriesQuery({}); // ให้ backend คืนมาทั้งหมด
+  const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
+  const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
+  const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();
+
+  /** ซิงค์ข้อมูลจาก API ลง state local */
+  useEffect(() => {
+    if (data?.result) {
+      setRows(data.result as MenuCategory[]);
+    }
+  }, [data]);
+
   /** รีเซ็ตหน้าเมื่อฟิลเตอร์เปลี่ยน */
-  React.useEffect(() => {
+  useEffect(() => {
     setPage(1);
   }, [dq, status]);
 
   /** filter logic (memo) */
-  const filtered = React.useMemo(() => {
+  const filtered = useMemo(() => {
     return rows.filter((r) => {
+      const search = dq.trim().toLowerCase();
       const byQ =
-        !dq ||
-        r.name.toLowerCase().includes(dq.toLowerCase()) ||
-        r.slug.toLowerCase().includes(dq.toLowerCase());
-      const byStatus = status === "all" || (status === "active" ? r.isActive : !r.isActive);
+        !search ||
+        r.name.toLowerCase().includes(search) ||
+        (r.slug ?? "").toLowerCase().includes(search);
+
+      const byStatus =
+        status === "all" ||
+        (status === "active" ? r.isUsed : !r.isUsed);
+
       return byQ && byStatus;
     });
   }, [rows, dq, status]);
 
+  /** client-side pagination */
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const start = (page - 1) * pageSize;
   const pageRows = filtered.slice(start, start + pageSize);
 
   /** actions */
   const refresh = () => {
-    // TODO: fetch API
-    console.log("refresh categories");
+    refetch();
   };
 
   const handleCreate = () => {
     setEditing(null);
     setOpenForm(true);
   };
-  const handleEdit = (r: CategoryRow) => {
+
+  const handleEdit = (r: MenuCategory) => {
     setEditing(r);
     setOpenForm(true);
   };
-  const handleDelete = (id: string) => {
-    if (!confirm("ยืนยันลบหมวดหมู่นี้?")) return;
-    setRows((xs) => xs.filter((x) => x.id !== id));
-  };
-  const handleToggleActive = (id: string, next: boolean) => {
-    setRows((xs) =>
-      xs.map((x) => (x.id === id ? { ...x, isActive: next, updatedAt: nowTH() } : x))
-    );
-  };
 
-  const handleSubmit = async (data: CategoryEntity) => {
-    // TODO: call API (POST/PUT)
-    if (data.id) {
-      setRows((xs) =>
-        xs.map((x) => (x.id === data.id ? { ...x, ...data, updatedAt: nowTH() } : x))
-      );
-    } else {
-      const newRow: CategoryRow = {
-        ...data,
-        id: crypto.randomUUID(),
-        itemsCount: 0,
-        updatedAt: nowTH(),
-      };
-      setRows((xs) => [newRow, ...xs]);
+  const handleDelete = async (id: number) => {
+    if (!confirm("ยืนยันลบหมวดหมู่นี้?")) return;
+    try {
+      await deleteCategory(id).unwrap();
+    } catch (err) {
+      console.error("delete category failed", err);
     }
   };
+
+  const handleToggleActive = async (id: number, next: boolean) => {
+    const target = rows.find((r) => r.id === id);
+    if (!target) return;
+
+    try {
+      await updateCategory({
+        id,
+        data: {
+          id,
+          name: target.name,
+          slug: target.slug,
+          isUsed: next,
+        },
+      }).unwrap();
+    } catch (err) {
+      console.error("toggle active failed", err);
+    }
+  };
+
+const handleSubmit = async (data: MenuCategory) => {
+  try {
+    if (data.id) {
+      await updateCategory({
+        id: data.id,
+        data: {
+          id: data.id,
+          name: data.name,
+          slug: data.slug,
+          isUsed: data.isUsed,
+        },
+      }).unwrap();
+    } else {
+      await createCategory({
+        name: data.name,
+        slug: data.slug,
+      }).unwrap();
+    }
+
+    setOpenForm(false);
+    setEditing(null);
+  } catch (err) {
+    console.error("save category failed", err);
+  }
+};
 
   return (
     <Box sx={{ py: { xs: 2, md: 4 } }}>
@@ -151,6 +189,7 @@ export default function ManageCategoryList() {
               variant="outlined"
               startIcon={<RefreshIcon />}
               onClick={refresh}
+              disabled={isLoading}
             >
               รีเฟรช
             </Button>
@@ -158,6 +197,7 @@ export default function ManageCategoryList() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleCreate}
+              disabled={isCreating || isUpdating || isDeleting}
             >
               เพิ่มหมวดหมู่
             </Button>
@@ -189,7 +229,7 @@ export default function ManageCategoryList() {
             <Chip
               size="small"
               variant="outlined"
-              label={`ค้นหา: “${dq}”`}
+              label={`ค้นหา: "${dq}"`}
               onDelete={() => setQ("")}
             />
           )}
@@ -202,19 +242,47 @@ export default function ManageCategoryList() {
             sx={{ borderRadius: 2, overflow: "hidden" }}
           >
             <TableContainer>
-              <Table size="medium">
+              <Table
+                size="medium"
+                sx={{
+                  tableLayout: "fixed", // ให้คอลัมน์กว้างคงที่ตาม width
+                }}
+              >
                 <TableHead>
                   <TableRow>
-                    <TableCell width={80} align="center">
+                    <TableCell
+                      width="20%"
+                      align="center"
+                      sx={{ fontWeight: 700 }}
+                    >
                       ลำดับแสดง
                     </TableCell>
-                    <TableCell>ชื่อ / slug</TableCell>
-                    <TableCell width={120} align="center">
+                    <TableCell
+                      width="20%"
+                      align="center"
+                      sx={{ fontWeight: 700 }}
+                    >
+                      ชื่อ / slug
+                    </TableCell>
+                    <TableCell
+                      width="20%"
+                      align="center"
+                      sx={{ fontWeight: 700 }}
+                    >
                       จำนวนเมนู
                     </TableCell>
-                    <TableCell width={160}>สถานะ</TableCell>
-                    <TableCell width={180}>อัปเดตล่าสุด</TableCell>
-                    <TableCell width={120} align="right">
+                    <TableCell
+                      width="20%"
+                      align="center"
+                      sx={{ fontWeight: 700 }}
+                    >
+                      สถานะ
+                    </TableCell>
+                    <TableCell
+                      width="20%"
+                      align="center"
+                      sx={{ fontWeight: 700 }}
+                    >
                       การทำงาน
                     </TableCell>
                   </TableRow>
@@ -225,7 +293,7 @@ export default function ManageCategoryList() {
                     <ManageCategoryItem
                       key={r.id}
                       row={r}
-                      index={start + i + 1} // 👈 ส่งลำดับแบบหน้าเดียวกับ MenuItem
+                      index={start + i + 1}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
@@ -234,7 +302,7 @@ export default function ManageCategoryList() {
 
                   {pageRows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={5}>
                         <Box sx={{ py: 6, textAlign: "center" }}>
                           <Typography color="text.secondary">
                             ไม่พบหมวดหมู่
@@ -269,10 +337,11 @@ export default function ManageCategoryList() {
                   <Typography color="text.secondary">ไม่พบหมวดหมู่</Typography>
                 </Paper>
               ) : (
-                pageRows.map((r) => (
+                pageRows.map((r, i) => (
                   <MobileCategoryItem
                     key={r.id}
                     row={r}
+                    index={start + i + 1}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onToggleActive={handleToggleActive}
@@ -301,6 +370,7 @@ export default function ManageCategoryList() {
         onClose={() => setOpenForm(false)}
         initial={editing ?? undefined}
         onSubmit={handleSubmit}
+        isLoading={isCreating || isUpdating}
       />
     </Box>
   );
