@@ -33,15 +33,7 @@ import {
   useUpdateCategoryMutation,
 } from "../../../../services/categoriesApi";
 import PaginationBar from "../../../layouts/PaginationBar";
-
-function useDebounced<T>(value: T, delay = 300) {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setV(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return v;
-}
+import { useDebounced } from "../../../../hooks/useDebounced";
 
 export default function ManageCategoryList() {
   const theme = useTheme();
@@ -59,7 +51,7 @@ export default function ManageCategoryList() {
 
   const { data, isLoading, isFetching, refetch } = useGetCategoriesQuery({
     pageNumber: 1,
-    pageSize: 1000,
+    pageSize: 50,
   });
   const [createCategory, { isLoading: isCreating }] =
     useCreateCategoryMutation();

@@ -1,38 +1,30 @@
 import {
   Drawer, Box, Stack, Typography, IconButton, TextField, Button, Divider, Switch,
-  FormControlLabel, MenuItem,
+  FormControlLabel,
+  MenuItem,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useFormik } from "formik";
 import { menuSchema } from "../validation";
-
-export type MenuItemEntity = {
-  id?: string;
-  name: string;
-  price: number;
-  categoryId: string;
-  image?: string;
-  description?: string;
-  isActive: boolean;
-};
-export type MenuCategory = { id: string; name: string };
+import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
+import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  initial?: Partial<MenuItemEntity>;
+  initial?: Partial<MenuItemDto>;
   categories: MenuCategory[];
-  onSubmit: (data: MenuItemEntity) => Promise<void> | void;
+  onSubmit: (data: MenuItemDto) => Promise<void> | void;
 };
 
 export default function FormMenu({ open, onClose, initial, categories, onSubmit }: Props) {
-  const formik = useFormik<MenuItemEntity>({
+  const formik = useFormik<MenuItemDto>({
     initialValues: {
       id: initial?.id,
       name: initial?.name ?? "",
-      price: initial?.price ?? 0,
+      basePrice: initial?.basePrice ?? 0,
       categoryId: initial?.categoryId ?? "",
-      image: initial?.image ?? "",
+      imageUrl: initial?.imageUrl ?? "",
       description: initial?.description ?? "",
       isActive: initial?.isActive ?? true,
     },
@@ -89,23 +81,23 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
             type="number"
             inputMode="decimal" // 👈 มือถือขึ้นคีย์บอร์ดตัวเลข
             inputProps={{ min: 0, step: "0.01" }}
-            value={values.price}
+            value={values.basePrice}
             onChange={handleChange}
             onBlur={handleBlur}
-            error={touched.price && Boolean(errors.price)}
-            helperText={touched.price && errors.price}
+            error={touched.basePrice && Boolean(errors.basePrice)}
+            helperText={touched.basePrice && errors.basePrice}
             fullWidth
           />
 
           <TextField
             select
             label="หมวดหมู่"
-            name="categoryId"
-            value={values.categoryId}
+            name="menuCategoryId"
+            value={values.menuCategoryId}
             onChange={handleChange}
             onBlur={handleBlur}
-            error={touched.categoryId && Boolean(errors.categoryId)}
-            helperText={touched.categoryId && errors.categoryId}
+            error={touched.menuCategoryId && Boolean(errors.menuCategoryId)}
+            helperText={touched.menuCategoryId && errors.menuCategoryId}
             fullWidth
           >
             {categories.map((c) => (
@@ -116,11 +108,11 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
           <TextField
             label="ลิงก์รูป (URL)"
             name="image"
-            value={values.image}
+            value={values.imageUrl}
             onChange={handleChange}
             onBlur={handleBlur}
-            error={touched.image && Boolean(errors.image)}
-            helperText={(touched.image && errors.image) || "ใส่ไว้ก่อนก็ได้ ปรับทีหลังได้"}
+            error={touched.imageUrl && Boolean(errors.imageUrl)}
+            helperText={(touched.imageUrl && errors.imageUrl) || "ใส่ไว้ก่อนก็ได้ ปรับทีหลังได้"}
             fullWidth
           />
 
@@ -137,8 +129,8 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
           />
 
           <FormControlLabel
-            control={<Switch name="isActive" checked={values.isActive} onChange={handleChange} />}
-            label={values.isActive ? "แสดงในเมนู (Active)" : "ซ่อนจากเมนู (Inactive)"}
+            control={<Switch name="isActive" checked={values.isUsed && !values.isDeleted} onChange={handleChange} />}
+            label={values.isUsed && !values.isDeleted ? "แสดงในเมนู (Active)" : "ซ่อนจากเมนู (Inactive)"}
           />
         </Stack>
 

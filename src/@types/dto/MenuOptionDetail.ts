@@ -4,7 +4,6 @@ export interface MenuOptionDetail {
     extraPrice: number;
     isUsed: boolean;
     isDeleted: boolean;
-    DisplayOrder: number;
 
     menuItemOptionId: number;
     menuItemOptionName: string;

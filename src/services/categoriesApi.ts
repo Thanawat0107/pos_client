@@ -15,7 +15,7 @@ export const categoriesApi = createApi({
   tagTypes: ["Category"],
   endpoints: (builder) => ({
     getCategories: builder.query<
-      { result: MenuCategory[]; meta?: PaginationMeta },
+      { result: MenuCategory[]; meta: PaginationMeta },
       { pageNumber?: number; pageSize?: number }
     >({
       query: (params) => ({
@@ -24,10 +24,10 @@ export const categoriesApi = createApi({
         params,
       }),
       transformResponse: (
-        response: ApiResponse<MenuCategory[], PaginationMeta>
+        response: ApiResponse<MenuCategory[]>
       ) => ({
         result: response.result ?? [],
-        meta: response.meta,
+        meta: response.meta as PaginationMeta,
       }),
       providesTags: ["Category"],
     }),

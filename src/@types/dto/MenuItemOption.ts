@@ -1,4 +1,4 @@
-import { MenuOptionDetail } from "./MenuOptionDetail";
+import type { MenuOptionDetail } from "./MenuOptionDetail";
 
 export interface MenuItemOption {
     id: number;
@@ -7,7 +7,6 @@ export interface MenuItemOption {
     isMultiple: boolean;
     isUsed: boolean;
     isDeleted: boolean;
-    displayOrder: number;
 
     menuItemId: number;
     MenuItemName: string;

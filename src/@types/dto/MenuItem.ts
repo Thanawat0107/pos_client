@@ -1,12 +1,11 @@
-import { MenuItemOptionGroup } from "./MenuItemOptionGroup";
+import type { MenuItemOptionGroup } from "./MenuItemOptionGroup";
 
-export interface MenuItem {
+export interface MenuItemDto {
   id: number;
   name: string;
   description: string;
   basePrice: number;
   imageUrl?: string;
-  menuRecipe: string;
   createdAt: string;
   updatedAt: string;
   isUsed: boolean;

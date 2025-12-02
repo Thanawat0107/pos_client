@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import authSlice from "./slices/authSlice";
 import authApi from "../services/authApi";import categoriesSlice from "./slices/categoriesSlice";
 import { categoriesApi } from "../services/categoriesApi";
+import menuItemApi from "../services/menuItemApi";
 ;
 
 export const store = configureStore({
@@ -10,11 +11,13 @@ export const store = configureStore({
     categories: categoriesSlice,
     [authApi.reducerPath]: authApi.reducer,
     [categoriesApi.reducerPath]: categoriesApi.reducer,
+    [menuItemApi.reducerPath]: menuItemApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       authApi.middleware,
-      categoriesApi.middleware
+      categoriesApi.middleware,
+      menuItemApi.middleware,
     ),
 });
 
