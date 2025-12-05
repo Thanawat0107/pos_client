@@ -13,44 +13,39 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useFormik } from "formik";
+import { useState } from "react";
 import { menuSchema } from "../validation";
-
-export type MenuItemEntity = {
-  id?: string;
-  name: string;
-  price: number;
-  categoryId: string;
-  image?: string;
-  description?: string;
-  isActive: boolean;
-};
-export type MenuCategory = { id: string; name: string };
+import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
+import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
+import type { CreateMenuItem } from "../../../../@types/createDto/createMenuItem";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  initial?: Partial<MenuItemEntity>;
+  initial?: MenuItemDto;
   categories: MenuCategory[];
-  onSubmit: (data: MenuItemEntity) => Promise<void> | void;
+  onSubmit: (data: CreateMenuItem, id?: number) => Promise<void> | void;
 };
 
 export default function FormMenu({ open, onClose, initial, categories, onSubmit }: Props) {
-  const formik = useFormik<MenuItemEntity>({
+  // สถานะ active/inactive
+  const isActive = initial ? (initial.isUsed && !initial.isDeleted) : true;
+  const [activeState, setActiveState] = useState(isActive);
 
+  const formik = useFormik<CreateMenuItem>({
     initialValues: {
-      id: initial?.id,
       name: initial?.name ?? "",
-      price: initial?.price ?? 0,
-      categoryId: initial?.categoryId ?? "",
-      image: initial?.image ?? "",
       description: initial?.description ?? "",
-      isActive: initial?.isActive ?? true,
+      basePrice: initial?.basePrice ?? 0,
+      imageUrl: initial?.imageUrl ?? "",
+      menuCategoryId: initial?.menuCategoryId ?? 0,
+      menuItemOptionGroups: initial?.menuItemOptionGroups ?? [],
     },
     enableReinitialize: true,
     validationSchema: menuSchema,
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        await onSubmit(values);
+        await onSubmit(values, initial?.id);
         onClose();
       } finally {
         setSubmitting(false);
@@ -67,7 +62,7 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
       onClose={onClose}
       PaperProps={{
         sx: {
-          width: { xs: 1, sm: 440 }, // มือถือเต็มจอ
+          width: { xs: 1, sm: 440 },
           maxWidth: 560,
         },
       }}
@@ -85,7 +80,7 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
           sx={{ p: 2, pt: "calc(env(safe-area-inset-top) + 8px)" }}
         >
           <Typography variant="h6" fontWeight={800}>
-            {values.id ? "แก้ไขเมนู" : "เพิ่มเมนูใหม่"}
+            {initial ? "แก้ไขเมนู" : "เพิ่มเมนูใหม่"}
           </Typography>
           <IconButton onClick={onClose}>
             <CloseIcon />
@@ -108,44 +103,46 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
 
           <TextField
             label="ราคา"
-            name="price"
+            name="basePrice"
             type="number"
-            inputMode="decimal" // 👈 มือถือขึ้นคีย์บอร์ดตัวเลข
+            inputMode="decimal"
             inputProps={{ min: 0, step: "0.01" }}
-            value={values.price}
+            value={values.basePrice}
             onChange={handleChange}
             onBlur={handleBlur}
-            error={touched.price && Boolean(errors.price)}
-            helperText={touched.price && errors.price}
+            error={touched.basePrice && Boolean(errors.basePrice)}
+            helperText={touched.basePrice && errors.basePrice}
             fullWidth
           />
 
           <TextField
             select
             label="หมวดหมู่"
-            name="categoryId"
-            value={values.categoryId}
+            name="menuCategoryId"
+            value={values.menuCategoryId}
             onChange={handleChange}
             onBlur={handleBlur}
-            error={touched.categoryId && Boolean(errors.categoryId)}
-            helperText={touched.categoryId && errors.categoryId}
+            error={touched.menuCategoryId && Boolean(errors.menuCategoryId)}
+            helperText={touched.menuCategoryId && errors.menuCategoryId}
             fullWidth
           >
-            {categories.map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                {c.name}
-              </MenuItem>
-            ))}
+            {categories
+              .filter((c) => c.isUsed && !c.isDeleted)
+              .map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name}
+                </MenuItem>
+              ))}
           </TextField>
 
           <TextField
             label="ลิงก์รูป (URL)"
-            name="image"
-            value={values.image}
+            name="imageUrl"
+            value={values.imageUrl}
             onChange={handleChange}
             onBlur={handleBlur}
-             error={touched.image && Boolean(errors.image)}
-            helperText={(touched.image && errors.image) || "ใส่ไว้ก่อนก็ได้ ปรับทีหลังได้"}
+            error={touched.imageUrl && Boolean(errors.imageUrl)}
+            helperText={(touched.imageUrl && errors.imageUrl) || "ใส่ไว้ก่อนก็ได้ ปรับทีหลังได้"}
             fullWidth
           />
 
@@ -163,12 +160,17 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
           />
 
           <FormControlLabel
-            control={<Switch name="isActive" checked={values.isActive} onChange={handleChange} />}
-            label={values.isActive ? "แสดงในเมนู (Active)" : "ซ่อนจากเมนู (Inactive)"}
+            control={
+              <Switch 
+                checked={activeState} 
+                onChange={(e) => setActiveState(e.target.checked)} 
+              />
+            }
+            label={activeState ? "แสดงในเมนู (Active)" : "ซ่อนจากเมนู (Inactive)"}
           />
         </Stack>
 
-        {/* Footer sticky buttons */}
+        {/* Footer */}
         <Divider />
         <Stack
           direction="row"
@@ -180,7 +182,7 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
             bgcolor: "background.paper",
             borderTop: "1px solid",
             borderColor: "divider",
-            pb: "calc(env(safe-area-inset-bottom) + 8px)", // เคารพ safe-area
+            pb: "calc(env(safe-area-inset-bottom) + 8px)",
           }}
         >
           <Button onClick={onClose} variant="text" fullWidth>

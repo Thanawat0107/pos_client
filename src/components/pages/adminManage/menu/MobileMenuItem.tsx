@@ -11,17 +11,17 @@ import {
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import type { Row } from "./ManageMenuItem";
+import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
 
 const moneyTHB = (n: number) =>
   n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
 
 type Props = {
-  row: Row;
-  index?: number; // ใช้แสดงในชิปเท่านั้น
-  onEdit: (row: Row) => void;
-  onDelete: (id: string) => void;
-  onToggleActive: (id: string, next: boolean) => void;
+  row: MenuItemDto;
+  index?: number;
+  onEdit: (row: MenuItemDto) => void;
+  onDelete: (id: number) => void;
+  onToggleActive: (id: number, next: boolean) => void;
   showOrderOnImage?: boolean;
 };
 
@@ -33,13 +33,15 @@ export default function MobileMenuItem({
   onToggleActive,
   showOrderOnImage = false,
 }: Props) {
+  const isActive = row.isUsed && !row.isDeleted;
+
   return (
     <Paper variant="outlined" sx={{ borderRadius: 2, p: 1.5 }}>
       <Stack direction="row" spacing={1.25} alignItems="center">
         {/* รูปอย่างเดียว (ไม่มีเลขซ้อนทับ) */}
         <Avatar
           variant="rounded"
-           src={row.image || "https://via.placeholder.com/96x96.png?text=Menu"}
+          src={row.imageUrl || "https://via.placeholder.com/96x96.png?text=Menu"}
           alt={row.name}
           sx={{
             width: 80,
@@ -58,9 +60,9 @@ export default function MobileMenuItem({
 
         <Stack spacing={0.25} sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="body1" fontWeight={800} noWrap>
-             {row.name}
+            {row.name}
           </Typography>
-              {row.description && (
+          {row.description && (
             <Typography
               variant="body2"
               color="text.secondary"
@@ -85,7 +87,7 @@ export default function MobileMenuItem({
             <Chip
               size="small"
               variant="outlined"
-              label={row.categoryName ?? row.categoryId}
+              label={row.menuCategoryName ?? "ไม่มีหมวดหมู่"}
               sx={{
                 height: 22,
                 "& .MuiChip-label": { px: 0.75, fontSize: 12 },
@@ -94,7 +96,7 @@ export default function MobileMenuItem({
             <Chip
               size="small"
               variant="outlined"
-              label={`ลำดับ ${index ?? "-"}`} // แสดงลำดับที่นี่เท่านั้น
+              label={`ลำดับ ${index ?? "-"}`}
               sx={{
                 height: 22,
                 "& .MuiChip-label": { px: 0.75, fontSize: 12 },
@@ -105,19 +107,19 @@ export default function MobileMenuItem({
 
         <Stack alignItems="flex-end" spacing={0.5} sx={{ pl: 0.5 }}>
           <Typography variant="subtitle2" fontWeight={900} whiteSpace="nowrap">
-             {moneyTHB(row.price)}
+            {moneyTHB(row.basePrice)}
           </Typography>
 
           <Stack direction="row" spacing={0.25} alignItems="center">
-            <Tooltip title={row.isActive ? "ปิดขาย" : "เปิดขาย"}>
+            <Tooltip title={isActive ? "ปิดขาย" : "เปิดขาย"}>
               <Switch
                 size="small"
-                 checked={row.isActive}
-                onChange={(_, v) => onToggleActive(row.id!, v)}
+                checked={isActive}
+                onChange={(_, v) => onToggleActive(row.id, v)}
               />
             </Tooltip>
             <Tooltip title="แก้ไข">
-                <IconButton size="small" onClick={() => onEdit(row)}>
+              <IconButton size="small" onClick={() => onEdit(row)}>
                 <EditOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -125,7 +127,7 @@ export default function MobileMenuItem({
               <IconButton
                 size="small"
                 color="error"
-                onClick={() => onDelete(row.id!)}
+                onClick={() => onDelete(row.id)}
               >
                 <DeleteOutlineIcon fontSize="small" />
               </IconButton>
@@ -137,7 +139,7 @@ export default function MobileMenuItem({
             color="text.secondary"
             sx={{ lineHeight: 1.2 }}
           >
-             {row.updatedAt}
+            {new Date(row.updatedAt).toLocaleString("th-TH")}
           </Typography>
         </Stack>
       </Stack>

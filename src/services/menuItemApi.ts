@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { MenuItem } from "../@types/dto/MenuItem";
+import type { MenuItemDto } from "../@types/dto/MenuItem";
 import { baseUrlAPI } from "../helpers/SD";
 import type { PaginationMeta } from "../@types/Responsts/PaginationMeta";
 import type { ApiResponse } from "../@types/Responsts/ApiResponse";
@@ -16,7 +15,7 @@ export const menuItemApi = createApi({
   tagTypes: ["Menu"],
   endpoints: (builder) => ({
     getMenuItems: builder.query<
-      { result: MenuItem[]; meta: PaginationMeta },
+      { result: MenuItemDto[]; meta: PaginationMeta },
       { pageNumber?: number; pageSize?: number }
     >({
       query: (params) => ({
@@ -24,31 +23,31 @@ export const menuItemApi = createApi({
         method: "GET",
         params,
       }),
-      transformResponse: (response: ApiResponse<MenuItem[]>) => ({
+      transformResponse: (response: ApiResponse<MenuItemDto[]>) => ({
         result: response.result ?? [],
         meta: response.meta as PaginationMeta,
       }),
       providesTags: ["Menu"],
     }),
 
-    getMenuItemById: builder.query<MenuItem, number>({
+    getMenuItemById: builder.query<MenuItemDto, number>({
       query: (id) => `menuItems/getby/${id}`,
-      transformResponse: unwrapResult<MenuItem>,
-      providesTags: (result, error, id) => [{ type: "Menu", id }],
+      transformResponse: unwrapResult<MenuItemDto>,
+      providesTags: (_result, _error, id) => [{ type: "Menu", id }],
     }),
 
-    createMenuItem: builder.mutation<MenuItem, CreateMenuItem>({
+    createMenuItem: builder.mutation<MenuItemDto, CreateMenuItem>({
       query: (body) => ({
         url: "menuItems/create",
         method: "POST",
         body,
       }),
-      transformResponse: unwrapResult<MenuItem>,
+      transformResponse: unwrapResult<MenuItemDto>,
       invalidatesTags: ["Menu"],
     }),
 
     updateMenuItem: builder.mutation<
-      MenuItem,
+      MenuItemDto,
       { id: number; data: UpdateMenuItem }
     >({
       query: ({ id, data }) => ({
@@ -56,7 +55,7 @@ export const menuItemApi = createApi({
         method: "PUT",
         body: data,
       }),
-      transformResponse: unwrapResult<MenuItem>,
+      transformResponse: unwrapResult<MenuItemDto>,
       invalidatesTags: ["Menu"],
     }),
 

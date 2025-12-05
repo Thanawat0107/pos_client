@@ -11,23 +11,18 @@ import {
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import type { MenuItemEntity } from "./FormMenu";
-
-export type Row = MenuItemEntity & {
-  categoryName?: string;
-  updatedAt?: string;
-};
+import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
 
 function formatCurrencyTHB(n: number) {
   return n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
 }
 
 type Props = {
-  row: Row;
+  row: MenuItemDto;
   index?: number;
-  onEdit: (row: Row) => void;
-  onDelete: (id: string) => void;
-  onToggleActive: (id: string, next: boolean) => void;
+  onEdit: (row: MenuItemDto) => void;
+  onDelete: (id: number) => void;
+  onToggleActive: (id: number, next: boolean) => void;
 };
 
 export default function ManageMenuItem({
@@ -48,7 +43,7 @@ export default function ManageMenuItem({
       <TableCell width={100}>
         <Avatar
           variant="rounded"
-          src={row.image || "https://via.placeholder.com/96x96.png?text=Menu"}
+          src={row.imageUrl || "https://via.placeholder.com/96x96.png?text=Menu"}
           alt={row.name}
           imgProps={{
             onError: (e) => {
@@ -82,14 +77,14 @@ export default function ManageMenuItem({
 
       {/* ราคา */}
       <TableCell align="right" sx={{ whiteSpace: "nowrap", width: 140 }}>
-        <Typography fontWeight={700}>{formatCurrencyTHB(row.price)}</Typography>
+        <Typography fontWeight={700}>{formatCurrencyTHB(row.basePrice)}</Typography>
       </TableCell>
 
       {/* หมวดหมู่ */}
       <TableCell sx={{ whiteSpace: "nowrap", width: 160 }}>
         <Chip
           size="small"
-          label={row.categoryName ?? row.categoryId}
+          label={row.menuCategoryName ?? "ไม่มีหมวดหมู่"}
           variant="outlined"
         />
       </TableCell>
@@ -98,11 +93,11 @@ export default function ManageMenuItem({
       <TableCell sx={{ whiteSpace: "nowrap", width: 140 }}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Switch
-            checked={row.isActive}
-            onChange={(_, v) => onToggleActive(row.id!, v)}
+            checked={row.isUsed && !row.isDeleted}
+            onChange={(_, v) => onToggleActive(row.id, v)}
           />
           <Typography variant="body2" color="text.secondary">
-            {row.isActive ? "พร้อมขาย" : "ปิดขาย"}
+            {row.isUsed && !row.isDeleted ? "พร้อมขาย" : "ปิดขาย"}
           </Typography>
         </Stack>
       </TableCell>
@@ -110,7 +105,7 @@ export default function ManageMenuItem({
       {/* อัปเดตล่าสุด */}
       <TableCell sx={{ whiteSpace: "nowrap", width: 180 }}>
         <Typography variant="body2" color="text.secondary">
-          {row.updatedAt}
+          {new Date(row.updatedAt).toLocaleString("th-TH")}
         </Typography>
       </TableCell>
 
@@ -123,7 +118,7 @@ export default function ManageMenuItem({
         </Tooltip>
         <Tooltip title="ลบ">
           <IconButton
-            onClick={() => onDelete(row.id!)}
+            onClick={() => onDelete(row.id)}
             size="small"
             color="error"
           >

@@ -1,4 +1,5 @@
-import * as React from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Box,
   Container,
@@ -19,156 +20,201 @@ import {
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
-
-import FormMenu, { type MenuItemEntity, type MenuCategory } from "./FormMenu";
-import ManageMenuItem, { type Row as RowType } from "./ManageMenuItem";
 import MenuFilterBar from "../MenuFilterBar";
 import MobileMenuItem from "./MobileMenuItem";
+import ManageMenuItem from "./ManageMenuItem";
+import FormMenu from "./FormMenu";
+import { useCallback, useMemo, useState } from "react";
+import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
+import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
+import type { CreateMenuItem } from "../../../../@types/createDto/createMenuItem";
+import {
+  useCreateMenuItemMutation,
+  useDeleteMenuItemMutation,
+  useGetMenuItemsQuery,
+  useUpdateMenuItemMutation,
+} from "../../../../services/menuItemApi";
+import type { UpdateMenuItem } from "../../../../@types/UpdateDto/updateMenuItem";
 
-/** ---- mock ---- */
-const CATEGORIES: MenuCategory[] = [
-  { id: "main", name: "อาหารจานหลัก" },
-  { id: "noodle", name: "ก๋วยเตี๋ยว" },
-  { id: "drink", name: "เครื่องดื่ม" },
-  { id: "dessert", name: "ของหวาน" },
-];
+type StatusFilter = "all" | "active" | "inactive";
 
-const MOCK: RowType[] = [
-  {
-    id: "1",
-    name: "ก๋วยเตี๋ยวหมูน้ำตก",
-    price: 55,
-    categoryId: "noodle",
-    categoryName: "ก๋วยเตี๋ยว",
-    isActive: true,
-    image:
-      "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800&auto=format&fit=crop",
-    updatedAt: "2025-10-20 14:11",
-  },
-  {
-    id: "10",
-    name: "ชาดำเย็น",
-    price: 25,
-    categoryId: "drink",
-    categoryName: "เครื่องดื่ม",
-    isActive: true,
-    image:
-      "https://images.unsplash.com/photo-1517705008128-361805f42e86?q=80&w=800&auto=format&fit=crop",
-    updatedAt: "2025-10-20 13:45",
-  },
-  {
-    id: "3",
-    name: "ข้าวกระเพราไก่ไข่ดาว",
-    price: 60,
-    categoryId: "main",
-    categoryName: "อาหารจานหลัก",
-    isActive: false,
-    image:
-      "https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?q=80&w=800&auto=format&fit=crop",
-    updatedAt: "2025-10-18 19:10",
-  },
-];
-
-function parseIdToNumber(id?: string) {
-  if (!id) return Number.MAX_SAFE_INTEGER;
-  const n = parseInt(String(id), 10);
-  return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n;
+function isActiveMenu(item: MenuItemDto): boolean {
+  return item.isUsed && !item.isDeleted;
 }
 
 export default function ManageMenuList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const [rows, setRows] = React.useState<RowType[]>(MOCK);
-  const [q, setQ] = React.useState("");
-  const [cat, setCat] = React.useState<string>("all");
-  const [status, setStatus] = React.useState<"all" | "active" | "inactive">("all");
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState<string>("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
 
-  // drawer form
-  const [openForm, setOpenForm] = React.useState(false);
-  const [editing, setEditing] = React.useState<RowType | null>(null);
+  const [openForm, setOpenForm] = useState(false);
+  const [editing, setEditing] = useState<MenuItemDto | null>(null);
 
-  // pagination
-  const [page, setPage] = React.useState(1);
+  const [page, setPage] = useState(1);
   const pageSize = isSmUp ? 8 : 6;
 
-  // reset page when filters/search change
-  React.useEffect(() => {
-    setPage(1);
-  }, [q, cat, status]);
+  const {
+    data: menuData,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetMenuItemsQuery({
+    pageNumber: 1,
+    pageSize: 100,
+  });
 
-  // filter + sort by numeric id asc
-  const filteredSorted = React.useMemo(() => {
+  const rows: MenuItemDto[] = menuData?.result ?? [];
+
+  const [createMenuItem, { isLoading: isCreating }] =
+    useCreateMenuItemMutation();
+  const [updateMenuItem, { isLoading: isUpdating }] =
+    useUpdateMenuItemMutation();
+  const [deleteMenuItem, { isLoading: isDeleting }] =
+    useDeleteMenuItemMutation();
+
+  const categories: MenuCategory[] = useMemo(() => {
+    const map = new Map<number, MenuCategory>();
+
+    rows.forEach((r) => {
+      if (r.menuCategoryId && r.menuCategoryName) {
+        map.set(r.menuCategoryId, {
+          id: r.menuCategoryId,
+          name: r.menuCategoryName,
+        } as MenuCategory);
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.id - b.id);
+  }, [rows]);
+
+  const handleChangeQ = useCallback((value: string) => {
+    setQ(value);
+    setPage(1);
+  }, []);
+
+  const handleChangeCat = useCallback((value: string) => {
+    setCat(value);
+    setPage(1);
+  }, []);
+
+  const handleChangeStatus = useCallback((value: StatusFilter) => {
+    setStatus(value);
+    setPage(1);
+  }, []);
+
+  const filteredSorted = useMemo(() => {
     const list = rows.filter((r) => {
       const byQ =
         !q ||
         r.name.toLowerCase().includes(q.toLowerCase()) ||
         r.description?.toLowerCase().includes(q.toLowerCase());
-      const byCat = cat === "all" || r.categoryId === cat;
-      const byStatus = status === "all" || (status === "active" ? r.isActive : !r.isActive);
+
+      const byCat =
+        cat === "all" ||
+        (r.menuCategoryId != null && String(r.menuCategoryId) === cat);
+
+      const active = isActiveMenu(r);
+      const byStatus =
+        status === "all" || (status === "active" ? active : !active);
 
       return byQ && byCat && byStatus;
     });
-    return list.sort((a, b) => parseIdToNumber(a.id) - parseIdToNumber(b.id));
+
+    return list.sort((a, b) => a.id - b.id);
   }, [rows, q, cat, status]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / pageSize));
   const start = (page - 1) * pageSize;
   const pageRows = filteredSorted.slice(start, start + pageSize);
 
-  // actions
-  const refresh = React.useCallback(() => {
-    // TODO: fetch API
-    console.log("refresh list");
-  }, []);
+  const handleChangePage = useCallback(
+    (_: React.ChangeEvent<unknown>, value: number) => {
+      setPage(value);
+    },
+    []
+  );
 
-  const handleCreate = React.useCallback(() => {
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const handleCreate = useCallback(() => {
     setEditing(null);
     setOpenForm(true);
   }, []);
 
-  const handleEdit = React.useCallback((r: RowType) => {
-    setEditing(r);
+  const handleEdit = useCallback((item: MenuItemDto) => {
+    setEditing(item);
     setOpenForm(true);
   }, []);
 
-  const handleDelete = React.useCallback((id: string) => {
-    if (!confirm("ยืนยันลบเมนูนี้?")) return;
-    setRows((xs) => xs.filter((x) => x.id !== id));
-  }, []);
-
-  const handleToggleActive = React.useCallback((id: string, next: boolean) => {
-    setRows((xs) => xs.map((x) => (x.id === id ? { ...x, isActive: next } : x)));
-  }, []);
-
-  const handleSubmit = React.useCallback(async (data: MenuItemEntity) => {
-    // TODO: call API (POST/PUT)
-    if (data.id) {
-      setRows((xs) =>
-        xs.map((x) =>
-          x.id === data.id
-            ? {
-                ...x,
-                ...data,
-                categoryName: CATEGORIES.find((c) => c.id === data.categoryId)?.name,
-                updatedAt: new Date().toLocaleString("th-TH"),
-              }
-            : x
-        )
-      );
-    } else {
-      const newRow: RowType = {
-        ...data,
-        id: crypto.randomUUID(),
-        categoryName: CATEGORIES.find((c) => c.id === data.categoryId)?.name,
-        updatedAt: new Date().toLocaleString("th-TH"),
-      };
-      setRows((xs) => [newRow, ...xs]);
-    }
-
+  const handleCloseForm = useCallback(() => {
     setOpenForm(false);
     setEditing(null);
   }, []);
+
+  const handleDelete = useCallback(
+    async (id: number) => {
+      if (!confirm("ยืนยันลบเมนูนี้?")) return;
+      try {
+        await deleteMenuItem(id).unwrap();
+        // invalidatesTags(["Menu"]) จะ refetch ให้เอง
+      } catch (error) {
+        console.error("Failed to delete menu item:", error);
+      }
+    },
+    [deleteMenuItem]
+  );
+
+  const handleToggleActive = useCallback(
+    async (id: number, next: boolean) => {
+      const currentItem = menuData?.result.find((item) => item.id === id);
+      if (!currentItem) return;
+
+      try {
+        await updateMenuItem({
+          id,
+          data: {
+            ...currentItem,
+            isUsed: next,
+            imageFile: undefined,
+          },
+        }).unwrap();
+      } catch (error) {
+        console.error("Failed to toggle:", error);
+      }
+    },
+    [menuData, updateMenuItem]
+  );
+
+  // onSubmit จาก FormMenu
+  const handleSubmit = useCallback(
+    async (data: CreateMenuItem, id?: number) => {
+      try {
+        if (id) {
+          // NOTE: ถ้า UpdateMenuItem ต่างจาก CreateMenuItem มาก ๆ
+          // แนะนำให้ทำ map ให้เนียนทีหลัง ตอนนี้ cast ข้าม ๆ ไปก่อน
+          await updateMenuItem({
+            id,
+            data: data as unknown as UpdateMenuItem,
+          }).unwrap();
+        } else {
+          await createMenuItem(data).unwrap();
+        }
+
+        setOpenForm(false);
+        setEditing(null);
+      } catch (error) {
+        console.error("Failed to submit menu item:", error);
+      }
+    },
+    [createMenuItem, updateMenuItem]
+  );
+
+  const isBusy = isCreating || isUpdating || isDeleting;
 
   return (
     <Box sx={{ py: { xs: 2, md: 4 } }}>
@@ -177,7 +223,7 @@ export default function ManageMenuList() {
         <Box
           sx={{
             position: { xs: "sticky", md: "static" },
-            top: { xs: 56, sm: 64 }, // ปรับให้เท่าความสูง navbar ของโปรเจกต์
+            top: { xs: 56, sm: 64 },
             zIndex: (t) => t.zIndex.appBar,
             bgcolor: "background.default",
             pb: 1,
@@ -192,13 +238,14 @@ export default function ManageMenuList() {
             sx={{ mb: 2 }}
           >
             <Typography variant={isSmUp ? "h5" : "h6"} fontWeight={800}>
-              จัดการเมนู
+              จัดการเมนูอาหาร
             </Typography>
             <Stack direction="row" spacing={1}>
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon />}
-                onClick={refresh}
+                onClick={handleRefresh}
+                disabled={isLoading}
               >
                 รีเฟรช
               </Button>
@@ -206,6 +253,7 @@ export default function ManageMenuList() {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={handleCreate}
+                disabled={isBusy}
               >
                 เพิ่มเมนู
               </Button>
@@ -217,10 +265,10 @@ export default function ManageMenuList() {
             q={q}
             cat={cat}
             status={status}
-            categories={CATEGORIES}
-            onSearch={setQ}
-            onCategoryChange={setCat}
-            onStatusChange={setStatus}
+            categories={categories}
+            onSearch={handleChangeQ}
+            onCategoryChange={handleChangeCat}
+            onStatusChange={handleChangeStatus}
           />
 
           {/* Summary chips */}
@@ -232,8 +280,10 @@ export default function ManageMenuList() {
               <Chip
                 size="small"
                 variant="outlined"
-                label={`หมวด: ${cat}`}
-                onDelete={() => setCat("all")}
+                label={`หมวด: ${
+                  categories.find((c) => String(c.id) === cat)?.name ?? cat
+                }`}
+                onDelete={() => handleChangeCat("all")}
               />
             )}
             {status !== "all" && (
@@ -241,15 +291,15 @@ export default function ManageMenuList() {
                 size="small"
                 variant="outlined"
                 label={status === "active" ? "พร้อมขาย" : "ปิดขาย"}
-                onDelete={() => setStatus("all")}
+                onDelete={() => handleChangeStatus("all")}
               />
             )}
             {q && (
               <Chip
                 size="small"
                 variant="outlined"
-                label={`ค้นหา: “${q}”`}
-                onDelete={() => setQ("")}
+                label={`ค้นหา: "${q}"`}
+                onDelete={() => handleChangeQ("")}
               />
             )}
           </Stack>
@@ -300,7 +350,9 @@ export default function ManageMenuList() {
                       <TableCell colSpan={8}>
                         <Box sx={{ py: 6, textAlign: "center" }}>
                           <Typography color="text.secondary">
-                            ไม่พบรายการตรงกับเงื่อนไข
+                            {isLoading
+                              ? "กำลังโหลด..."
+                              : "ไม่พบรายการตรงกับเงื่อนไข"}
                           </Typography>
                         </Box>
                       </TableCell>
@@ -314,7 +366,7 @@ export default function ManageMenuList() {
               <Pagination
                 count={totalPages}
                 page={page}
-                onChange={(_, p) => setPage(p)}
+                onChange={handleChangePage}
                 color="primary"
                 siblingCount={0}
                 boundaryCount={1}
@@ -330,7 +382,7 @@ export default function ManageMenuList() {
                 sx={{ p: 4, borderRadius: 2, textAlign: "center" }}
               >
                 <Typography color="text.secondary">
-                  ไม่พบรายการตรงกับเงื่อนไข
+                  {isLoading ? "กำลังโหลด..." : "ไม่พบรายการตรงกับเงื่อนไข"}
                 </Typography>
               </Paper>
             ) : (
@@ -359,7 +411,7 @@ export default function ManageMenuList() {
               <Pagination
                 count={totalPages}
                 page={page}
-                onChange={(_, p) => setPage(p)}
+                onChange={handleChangePage}
                 color="primary"
                 siblingCount={0}
                 boundaryCount={1}
@@ -373,9 +425,9 @@ export default function ManageMenuList() {
       {/* Drawer Form */}
       <FormMenu
         open={openForm}
-        onClose={() => setOpenForm(false)}
+        onClose={handleCloseForm}
         initial={editing ?? undefined}
-        categories={CATEGORIES}
+        categories={categories}
         onSubmit={handleSubmit}
       />
     </Box>

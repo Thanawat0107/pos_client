@@ -5,10 +5,10 @@ export interface UpdateMenuItem {
   name: string;
   description: string;
   basePrice: number;
-  imageUrl: string;
+  imageUrl?: string;
   isUsed: boolean;
   imageFile?: File;
 
-  menuCategoryId: number;
-  menuItemOptionGroups: UpdateMenuItemOptionGroup[];
+  menuCategoryId?: number | null;
+  menuItemOptionGroups?: UpdateMenuItemOptionGroup[];
 }
