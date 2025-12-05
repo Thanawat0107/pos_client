@@ -11,21 +11,22 @@ import {
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
+import type { Row } from "./ManageMenuItem";
+
 const moneyTHB = (n: number) =>
   n.toLocaleString("th-TH", { style: "currency", currency: "THB" });
 
 type Props = {
-  menuItem: MenuItemDto;
+  row: Row;
   index?: number; // ใช้แสดงในชิปเท่านั้น
-  onEdit: (menuItem: MenuItemDto) => void;
-  onDelete: (id: number) => void;
-  onToggleActive: (id: number, next: boolean) => void;
+  onEdit: (row: Row) => void;
+  onDelete: (id: string) => void;
+  onToggleActive: (id: string, next: boolean) => void;
   showOrderOnImage?: boolean;
 };
 
 export default function MobileMenuItem({
-  menuItem,
+  row,
   index,
   onEdit,
   onDelete,
@@ -38,8 +39,8 @@ export default function MobileMenuItem({
         {/* รูปอย่างเดียว (ไม่มีเลขซ้อนทับ) */}
         <Avatar
           variant="rounded"
-          src={menuItem.imageUrl || "https://via.placeholder.com/96x96.png?text=Menu"}
-          alt={menuItem.name}
+           src={row.image || "https://via.placeholder.com/96x96.png?text=Menu"}
+          alt={row.name}
           sx={{
             width: 80,
             height: 80,
@@ -57,9 +58,9 @@ export default function MobileMenuItem({
 
         <Stack spacing={0.25} sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="body1" fontWeight={800} noWrap>
-            {menuItem.name}
+             {row.name}
           </Typography>
-          {menuItem.description && (
+              {row.description && (
             <Typography
               variant="body2"
               color="text.secondary"
@@ -70,7 +71,7 @@ export default function MobileMenuItem({
                 overflow: "hidden",
               }}
             >
-              {menuItem.description}
+              {row.description}
             </Typography>
           )}
 
@@ -84,7 +85,7 @@ export default function MobileMenuItem({
             <Chip
               size="small"
               variant="outlined"
-              label={menuItem.menuCategoryName ?? menuItem.menuCategoryName}
+              label={row.categoryName ?? row.categoryId}
               sx={{
                 height: 22,
                 "& .MuiChip-label": { px: 0.75, fontSize: 12 },
@@ -104,19 +105,19 @@ export default function MobileMenuItem({
 
         <Stack alignItems="flex-end" spacing={0.5} sx={{ pl: 0.5 }}>
           <Typography variant="subtitle2" fontWeight={900} whiteSpace="nowrap">
-            {moneyTHB(menuItem.basePrice)}
+             {moneyTHB(row.price)}
           </Typography>
 
           <Stack direction="row" spacing={0.25} alignItems="center">
-            <Tooltip title={menuItem.isUsed && !menuItem.isDeleted ? "ปิดขาย" : "เปิดขาย"}>
+            <Tooltip title={row.isActive ? "ปิดขาย" : "เปิดขาย"}>
               <Switch
                 size="small"
-                checked={menuItem.isUsed && !menuItem.isDeleted}
-                onChange={(_, v) => onToggleActive(menuItem.id!, v)}
+                 checked={row.isActive}
+                onChange={(_, v) => onToggleActive(row.id!, v)}
               />
             </Tooltip>
             <Tooltip title="แก้ไข">
-              <IconButton size="small" onClick={() => onEdit(menuItem)}>
+                <IconButton size="small" onClick={() => onEdit(row)}>
                 <EditOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -124,7 +125,7 @@ export default function MobileMenuItem({
               <IconButton
                 size="small"
                 color="error"
-                onClick={() => onDelete(menuItem.id!)}
+                onClick={() => onDelete(row.id!)}
               >
                 <DeleteOutlineIcon fontSize="small" />
               </IconButton>
@@ -136,7 +137,7 @@ export default function MobileMenuItem({
             color="text.secondary"
             sx={{ lineHeight: 1.2 }}
           >
-            {menuItem.updatedAt}
+             {row.updatedAt}
           </Typography>
         </Stack>
       </Stack>
