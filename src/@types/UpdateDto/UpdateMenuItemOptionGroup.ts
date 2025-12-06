@@ -1,4 +1,4 @@
 export interface UpdateMenuItemOptionGroup {
-    id: number;
+    id?: number;
     menuItemOptionId: number;
 }

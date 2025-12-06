@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useFormik } from "formik";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { menuSchema } from "../validation";
 import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
 import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
@@ -24,13 +24,30 @@ type Props = {
   onClose: () => void;
   initial?: MenuItemDto;
   categories: MenuCategory[];
-  onSubmit: (data: CreateMenuItem, id?: number) => Promise<void> | void;
+  onSubmit: (
+    data: CreateMenuItem,
+    id?: number,
+    isUsed?: boolean
+  ) => Promise<void> | void;
 };
 
-export default function FormMenu({ open, onClose, initial, categories, onSubmit }: Props) {
+export default function FormMenu({
+  open,
+  onClose,
+  initial,
+  categories,
+  onSubmit,
+}: Props) {
   // สถานะ active/inactive
-  const isActive = initial ? (initial.isUsed && !initial.isDeleted) : true;
-  const [activeState, setActiveState] = useState(isActive);
+  const isUsed = initial ? initial.isUsed && !initial.isDeleted : true;
+  const [usedState, setUsedState] = useState(isUsed);
+
+  // สำหรับ preview รูปภาพ
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    initial?.imageUrl || null
+  );
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formik = useFormik<CreateMenuItem>({
     initialValues: {
@@ -38,6 +55,7 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
       description: initial?.description ?? "",
       basePrice: initial?.basePrice ?? 0,
       imageUrl: initial?.imageUrl ?? "",
+      imageFile: undefined,
       menuCategoryId: initial?.menuCategoryId ?? 0,
       menuItemOptionGroups: initial?.menuItemOptionGroups ?? [],
     },
@@ -45,15 +63,73 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
     validationSchema: menuSchema,
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        await onSubmit(values, initial?.id);
-        onClose();
+        const submitData: CreateMenuItem = {
+          ...values,
+        };
+
+        // ส่ง usedState เป็นพารามิเตอร์ที่ 3
+        await onSubmit(submitData, initial?.id, usedState);
+        handleClose();
+      } catch (error) {
+        console.error("Submit error:", error);
       } finally {
         setSubmitting(false);
       }
     },
   });
 
-  const { values, errors, touched, handleChange, handleBlur, isSubmitting } = formik;
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    isSubmitting,
+    setFieldValue,
+  } = formik;
+
+  const handleClose = () => {
+    formik.resetForm();
+    setImagePreview(null);
+    setUsedState(true);
+    onClose();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // ตรวจสอบประเภทไฟล์
+    if (!file.type.startsWith("image/")) {
+      alert("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+      return;
+    }
+
+    // ตรวจสอบขนาดไฟล์ (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("ขนาดไฟล์ต้องไม่เกิน 5 MB");
+      return;
+    }
+
+    // ตั้งค่า File object
+    setFieldValue("imageFile", file);
+
+    // สร้าง preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setFieldValue("imageFile", undefined);
+    setFieldValue("imageUrl", "");
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <Drawer
@@ -90,6 +166,69 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
 
         {/* Body */}
         <Stack spacing={2} sx={{ p: 2, pb: 3, flex: 1, overflow: "auto" }}>
+          {/* Image Upload Section - เพิ่มส่วนนี้ */}
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>
+              รูปภาพเมนู (อัปโหลด)
+            </Typography>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleImageChange}
+            />
+
+            {imagePreview ? (
+              <Box
+                sx={{
+                  position: "relative",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                }}
+              >
+                <img
+                  src={imagePreview}
+                  alt="Menu preview"
+                  style={{
+                    width: "100%",
+                    height: 200,
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+                <IconButton
+                  onClick={handleRemoveImage}
+                  sx={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    bgcolor: "background.paper",
+                    "&:hover": { bgcolor: "background.paper" },
+                  }}
+                  size="small"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            ) : (
+              <Button
+                variant="outlined"
+                onClick={() => fileInputRef.current?.click()}
+                fullWidth
+                sx={{ height: 100, borderStyle: "dashed" }}
+              >
+                <Stack alignItems="center" spacing={0.5}>
+                  <Typography variant="body2">คลิกเพื่อเลือกรูปภาพ</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    รองรับ JPG, PNG (ไม่เกิน 5 MB)
+                  </Typography>
+                </Stack>
+              </Button>
+            )}
+          </Box>
+
           <TextField
             label="ชื่อเมนู"
             name="name"
@@ -99,6 +238,7 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
             error={touched.name && Boolean(errors.name)}
             helperText={touched.name && errors.name}
             fullWidth
+            autoFocus
           />
 
           <TextField
@@ -136,17 +276,6 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
           </TextField>
 
           <TextField
-            label="ลิงก์รูป (URL)"
-            name="imageUrl"
-            value={values.imageUrl}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={touched.imageUrl && Boolean(errors.imageUrl)}
-            helperText={(touched.imageUrl && errors.imageUrl) || "ใส่ไว้ก่อนก็ได้ ปรับทีหลังได้"}
-            fullWidth
-          />
-
-          <TextField
             label="รายละเอียด"
             name="description"
             multiline
@@ -159,15 +288,43 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
             fullWidth
           />
 
+          {/* Switch สำหรับสถานะ - แสดงทั้งตอนสร้างและแก้ไข */}
           <FormControlLabel
             control={
-              <Switch 
-                checked={activeState} 
-                onChange={(e) => setActiveState(e.target.checked)} 
+              <Switch
+                checked={usedState}
+                onChange={(e) => setUsedState(e.target.checked)}
+                color="success"
               />
             }
-            label={activeState ? "แสดงในเมนู (Active)" : "ซ่อนจากเมนู (Inactive)"}
+            label={
+              <Box>
+                <Typography variant="body2" fontWeight="medium">
+                  {usedState ? "แสดงในเมนู (Active)" : "ซ่อนจากเมนู (Inactive)"}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {usedState
+                    ? "เมนูนี้จะปรากฏให้ลูกค้าเห็น"
+                    : "เมนูนี้จะถูกซ่อนจากลูกค้า"}
+                </Typography>
+              </Box>
+            }
           />
+
+          {/* แสดงวันที่สร้าง/แก้ไข (ถ้ามี) */}
+          {initial && (
+            <Box sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                <strong>สร้างเมื่อ:</strong>{" "}
+                {new Date(initial.createdAt).toLocaleString("th-TH")}
+              </Typography>
+              <br />
+              <Typography variant="caption" color="text.secondary">
+                <strong>แก้ไขล่าสุด:</strong>{" "}
+                {new Date(initial.updatedAt).toLocaleString("th-TH")}
+              </Typography>
+            </Box>
+          )}
         </Stack>
 
         {/* Footer */}
@@ -185,7 +342,12 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
             pb: "calc(env(safe-area-inset-bottom) + 8px)",
           }}
         >
-          <Button onClick={onClose} variant="text" fullWidth>
+          <Button
+            onClick={handleClose}
+            variant="text"
+            fullWidth
+            disabled={isSubmitting}
+          >
             ยกเลิก
           </Button>
           <Button
@@ -194,7 +356,7 @@ export default function FormMenu({ open, onClose, initial, categories, onSubmit 
             fullWidth
             disabled={isSubmitting}
           >
-            บันทึก
+            {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
           </Button>
         </Stack>
       </Box>

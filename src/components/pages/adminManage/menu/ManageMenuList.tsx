@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
@@ -16,6 +17,8 @@ import {
   Pagination,
   useMediaQuery,
   Chip,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
@@ -169,37 +172,52 @@ export default function ManageMenuList() {
     [deleteMenuItem]
   );
 
-  const handleToggleActive = useCallback(
-    async (id: number, next: boolean) => {
-      const currentItem = menuData?.result.find((item) => item.id === id);
-      if (!currentItem) return;
+   const handleToggleActive = useCallback(
+     async (id: number, next: boolean) => {
+       const item = rows.find((r) => r.id === id);
+       if (!item) return;
 
-      try {
-        await updateMenuItem({
-          id,
-          data: {
-            ...currentItem,
-            isUsed: next,
-            imageFile: undefined,
-          },
-        }).unwrap();
-      } catch (error) {
-        console.error("Failed to toggle:", error);
-      }
-    },
-    [menuData, updateMenuItem]
-  );
+       try {
+         const updatePayload: UpdateMenuItem = {
+           name: item.name,
+           description: item.description,
+           basePrice: item.basePrice,
+           imageUrl: item.imageUrl,
+           menuCategoryId: item.menuCategoryId,
+           isUsed: next,
+           menuItemOptionGroups: item.menuItemOptionGroups,
+         };
+
+         await updateMenuItem({
+           id,
+           data: updatePayload,
+         }).unwrap();
+       } catch (error) {
+         console.error("Failed to toggle:", error);
+         alert("เปลี่ยนสถานะไม่สำเร็จ");
+       }
+     },
+     [updateMenuItem, rows]
+   );
 
   // onSubmit จาก FormMenu
   const handleSubmit = useCallback(
-    async (data: CreateMenuItem, id?: number) => {
+    async (data: CreateMenuItem, id?: number, isUsed?: boolean) => {
       try {
         if (id) {
-          // NOTE: ถ้า UpdateMenuItem ต่างจาก CreateMenuItem มาก ๆ
-          // แนะนำให้ทำ map ให้เนียนทีหลัง ตอนนี้ cast ข้าม ๆ ไปก่อน
+          const updatePayload: UpdateMenuItem = {
+            name: data.name,
+            description: data.description,
+            basePrice: data.basePrice,
+            imageFile: data.imageFile,
+            isUsed: isUsed,
+            menuCategoryId: data.menuCategoryId,
+            menuItemOptionGroups: data.menuItemOptionGroups,
+          };
+
           await updateMenuItem({
             id,
-            data: data as unknown as UpdateMenuItem,
+            data: updatePayload,
           }).unwrap();
         } else {
           await createMenuItem(data).unwrap();
@@ -209,12 +227,37 @@ export default function ManageMenuList() {
         setEditing(null);
       } catch (error) {
         console.error("Failed to submit menu item:", error);
+        alert("บันทึกข้อมูลไม่สำเร็จ");
       }
     },
     [createMenuItem, updateMenuItem]
   );
 
   const isBusy = isCreating || isUpdating || isDeleting;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <Box p={3}>
+        <Alert severity="error" action={
+          <Button color="inherit" size="small" onClick={handleRefresh}>
+            ลองใหม่
+          </Button>
+        }>
+          ไม่สามารถโหลดข้อมูลเมนูได้
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ py: { xs: 2, md: 4 } }}>

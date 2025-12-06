@@ -70,6 +70,7 @@ export const categoriesApi = createApi({
         if (!response.isSuccess) {
           throw new Error(response.message || "Delete failed");
         }
+        return;
       },
       invalidatesTags: ["Category"],
     }),

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { MenuItemDto } from "../@types/dto/MenuItem";
 import { baseUrlAPI } from "../helpers/SD";
@@ -6,6 +7,7 @@ import type { ApiResponse } from "../@types/Responsts/ApiResponse";
 import type { CreateMenuItem } from "../@types/createDto/createMenuItem";
 import type { UpdateMenuItem } from "../@types/UpdateDto/updateMenuItem";
 import { unwrapResult } from "../helpers/res";
+import { toFormData } from "../helpers/toFormDataHelper";
 
 export const menuItemApi = createApi({
   reducerPath: "menuItemApi",
@@ -37,10 +39,10 @@ export const menuItemApi = createApi({
     }),
 
     createMenuItem: builder.mutation<MenuItemDto, CreateMenuItem>({
-      query: (body) => ({
+      query: (data) => ({
         url: "menuItems/create",
         method: "POST",
-        body,
+        body: toFormData(data),
       }),
       transformResponse: unwrapResult<MenuItemDto>,
       invalidatesTags: ["Menu"],
@@ -53,7 +55,7 @@ export const menuItemApi = createApi({
       query: ({ id, data }) => ({
         url: `menuItems/update/${id}`,
         method: "PUT",
-        body: data,
+        body: toFormData(data),
       }),
       transformResponse: unwrapResult<MenuItemDto>,
       invalidatesTags: ["Menu"],
@@ -68,6 +70,7 @@ export const menuItemApi = createApi({
         if (!response.isSuccess) {
           throw new Error(response.message || "Delete failed");
         }
+        return;
       },
       invalidatesTags: ["Menu"],
     }),
