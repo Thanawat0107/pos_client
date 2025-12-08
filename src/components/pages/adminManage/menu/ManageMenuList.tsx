@@ -38,6 +38,7 @@ import {
   useUpdateMenuItemMutation,
 } from "../../../../services/menuItemApi";
 import type { UpdateMenuItem } from "../../../../@types/UpdateDto/updateMenuItem";
+import { Link } from "react-router-dom";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -299,6 +300,15 @@ export default function ManageMenuList() {
                 disabled={isBusy}
               >
                 เพิ่มเมนู
+              </Button>
+
+              <Button
+                component={Link}
+                to="/manage-menuItemOptionList"
+                variant="contained"
+                startIcon={<AddIcon />}
+              >
+                ตัวเลือกเพิ่มเติม
               </Button>
             </Stack>
           </Stack>

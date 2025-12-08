@@ -27,3 +27,22 @@ export const menuSchema = Yup.object().shape({
     .required("กรุณาเลือกหมวดหมู่")
     .min(1, "กรุณาเลือกหมวดหมู่"),
 });
+
+export const detailSchema = Yup.object({
+  id: Yup.number().optional(),
+  name: Yup.string().trim().required("กรุณากรอกชื่อตัวเลือก"),
+  price: Yup.number()
+    .min(0, "ราคาต้องไม่ติดลบ")
+    .required("กรุณากรอกราคา"),
+  isUsed: Yup.boolean().optional(),
+});
+
+export const optionSchema = Yup.object({
+  name: Yup.string().trim().required("กรุณากรอกชื่อกลุ่มตัวเลือก"),
+  isRequired: Yup.boolean().required(),
+  isMultiple: Yup.boolean().required(),
+  isUsed: Yup.boolean().optional(),
+  menuItemOptionDetail: Yup.array()
+    .of(detailSchema)
+    .min(1, "ต้องมีตัวเลือกอย่างน้อย 1 รายการ"),
+});

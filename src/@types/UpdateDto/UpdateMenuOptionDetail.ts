@@ -1,8 +1,8 @@
 export interface UpdateMenuOptionDetail {
-    id: number;
-    name: string;
-    extraPrice: number;
-    isUsed: boolean;
+    id?: number;
+    name?: string;
+    extraPrice?: number;
+    isUsed?: boolean;
 
-    menuItemOptionId: number;
+    menuItemOptionId?: number;
 }
