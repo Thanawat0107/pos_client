@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import {
@@ -22,9 +23,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ManageMenuItemOptionItem from "./ManageMenuItemOptionItem";
 import MobileMenuItemOption from "./MobileMenuItemOption";
-import type {
-  MenuItemOption,
-} from "../../../../@types/dto/MenuItemOption";
+import type { MenuItemOption } from "../../../../@types/dto/MenuItemOption";
 import { useEffect, useMemo, useState } from "react";
 import PaginationBar from "../../../layouts/PaginationBar";
 import { useDebounced } from "../../../../hooks/useDebounced";
@@ -44,19 +43,33 @@ export default function ManageMenuItemOptionList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const [q, setQ] = useState("");
-  const dq = useDebounced(q, 300);
-  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+  // 1. รวม Filter State ไว้ก้อนเดียวกัน เพื่อความสะอาด
+  const [filters, setFilters] = useState({
+    q: "",
+    status: "all" as "all" | "active" | "inactive",
+    required: "all" as "all" | "required" | "optional",
+    multiple: "all" as "all" | "multiple" | "single",
+  });
 
-  const [openForm, setOpenForm] = useState(false);
-  const [editing, setEditing] = useState<MenuItemOption | null>(null);
+  const dq = useDebounced(filters.q, 300);
 
+  // Pagination State
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(isSmUp ? 8 : 6);
 
-  const { data, isLoading, isFetching, refetch } = useGetMenuItemOptionsQuery({
+  // Form State
+  const [formState, setFormState] = useState<{
+    open: boolean;
+    data: MenuItemOption | null;
+  }>({
+    open: false,
+    data: null,
+  });
+
+  // API Call: แนะนำให้ดึงมาทั้งหมดถ้าจะ Filter หน้าบ้าน (pageSize เยอะๆ)
+  const { data, isLoading, refetch } = useGetMenuItemOptionsQuery({
     pageNumber: 1,
-    pageSize: 50,
+    pageSize: 100,
   });
   const [createOption, { isLoading: isCreating }] = useCreateMenuItemOptionMutation();
   const [updateOption, { isLoading: isUpdating }] = useUpdateMenuItemOptionMutation();
@@ -64,96 +77,65 @@ export default function ManageMenuItemOptionList() {
 
   const rows: MenuItemOption[] = data?.result ?? [];
 
- // เพิ่ม state
-const [required, setRequired] = useState<"all" | "required" | "optional">("all");
-const [multiple, setMultiple] = useState<"all" | "multiple" | "single">("all");
-
-// อัปเดต useEffect ให้ reset page เมื่อ filter เปลี่ยน
-useEffect(() => {
-  setPage(1);
-}, [dq, status, required, multiple, pageSize]);
-
-// อัปเดต filtered logic
-const filtered = useMemo(() => {
-  const search = dq.trim(). toLowerCase();
-
-  return rows.filter((r) => {
-    const byQ =
-      ! search ||
-      r.name.toLowerCase().includes(search) ||
-      (r.MenuItemName ??  "").toLowerCase().includes(search);
-
-    const byStatus =
-      status === "all" || (status === "active" ?  r.isUsed : !r.isUsed);
-
-    const byRequired =
-      required === "all" ||
-      (required === "required" ?  r.isRequired : !r. isRequired);
-
-    const byMultiple =
-      multiple === "all" ||
-      (multiple === "multiple" ? r.isMultiple : !r.isMultiple);
-
-    return byQ && byStatus && byRequired && byMultiple;
-  });
-}, [rows, dq, status, required, multiple]);
-
-  const totalCount = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * pageSize;
-  const pageRows = filtered.slice(start, start + pageSize);
-
+  // Reset page เมื่อ Filter เปลี่ยน
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
+    setPage(1);
+  }, [dq, filters.status, filters.required, filters.multiple, pageSize]);
 
-  const refresh = () => {
-    refetch();
-  };
+  // 2. Logic การกรองที่สั้นและอ่านง่ายขึ้น
+  const filtered = useMemo(() => {
+    const search = dq.trim().toLowerCase();
 
-  const handleCreate = () => {
-    setEditing(null);
-    setOpenForm(true);
-  };
+    return rows.filter((r) => {
+      // Helper check function
+      const matchesSearch =
+        !search ||
+        r.name.toLowerCase().includes(search) ||
+        (r.MenuItemName ?? "").toLowerCase().includes(search);
+      const matchesStatus =
+        filters.status === "all" || (filters.status === "active") === r.isUsed;
+      const matchesRequired =
+        filters.required === "all" ||
+        (filters.required === "required") === r.isRequired;
+      const matchesMultiple =
+        filters.multiple === "all" ||
+        (filters.multiple === "multiple") === r.isMultiple;
 
-  const handleEdit = (r: MenuItemOption) => {
-    setEditing(r);
-    setOpenForm(true);
-  };
+      return (
+        matchesSearch && matchesStatus && matchesRequired && matchesMultiple
+      );
+    });
+  }, [rows, dq, filters]);
+
+  // Pagination Logic
+  const totalCount = filtered.length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  // Handlers
+  const handleOpenForm = (r: MenuItemOption | null = null) =>
+    setFormState({ open: true, data: r });
+  const handleCloseForm = () => setFormState({ open: false, data: null });
 
   const handleDelete = async (id: number) => {
-    if (! confirm("ยืนยันลบตัวเลือกนี้? ")) return;
-    try {
-      await deleteOption(id). unwrap();
-      // TODO: toast "ลบสำเร็จ"
-    } catch (err) {
-      console.error("delete failed", err);
+    if (confirm("ยืนยันลบตัวเลือกนี้?")) {
+      await deleteOption(id)
+        .unwrap()
+        .catch((err) => console.error("delete failed", err));
     }
   };
 
+  // 3. ปรับ Toggle ให้สั้นลง (ใช้ Spread Operator)
   const handleToggleActive = async (id: number, next: boolean) => {
     const target = rows.find((r) => r.id === id);
-    if (! target) return;
+    if (!target) return;
 
     try {
+      // ใช้ ...target เพื่อ copy ข้อมูลเดิม แล้วทับด้วยค่าใหม่
+      // หมายเหตุ: เช็คว่า Backend รับ field ที่เกินมาได้ไหม ถ้าไม่ได้ค่อย map กรองออก
       await updateOption({
         id,
-        data: {
-          id,
-          name: target.name,
-          isRequired: target.isRequired,
-          isMultiple: target.isMultiple,
-          isUsed: next,
-          menuItemOptionDetail: target.menuOptionDetails. map((d) => ({
-            id: d.id,
-            name: d.name,
-            extraPrice: d.extraPrice,
-            isUsed: d.isUsed,
-          })),
-        },
+        data: { ...target, isUsed: next },
       }).unwrap();
     } catch (err) {
       console.error("toggle failed", err);
@@ -164,21 +146,24 @@ const filtered = useMemo(() => {
     formData: CreateMenuItemOption | UpdateMenuItemOption
   ) => {
     try {
-      const isUpdate = "id" in formData && formData.id;
-
-      await (isUpdate
+      const isUpdate = "id" in formData && !!formData.id;
+      const action = isUpdate
         ? updateOption({
             id: formData.id!,
             data: formData as UpdateMenuItemOption,
           })
-        : createOption(formData as CreateMenuItemOption)
-      ).unwrap();
+        : createOption(formData as CreateMenuItemOption);
 
-      setOpenForm(false);
-      setEditing(null);
+      await action.unwrap();
+      handleCloseForm();
     } catch (err) {
       console.error("save failed", err);
     }
+  };
+
+  // 1. เพิ่มฟังก์ชันนี้ไว้ใน Component ก่อน return เพื่อลดการเขียน setFilters ซ้ำๆ
+  const handleFilterChange = (key: keyof typeof filters, value: any) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -199,15 +184,15 @@ const filtered = useMemo(() => {
             <Button
               variant="outlined"
               startIcon={<ArrowBackIcon />}
-               component={Link}
-                to="/manage-menuItem"
+              component={Link}
+              to="/manage-menuItem"
             >
               ย้อนกลับ
             </Button>
             <Button
               variant="outlined"
               startIcon={<RefreshIcon />}
-              onClick={refresh}
+              onClick={() => refetch()} // หรือใช้ฟังก์ชัน refresh เดิม
               disabled={isLoading}
             >
               รีเฟรช
@@ -215,24 +200,27 @@ const filtered = useMemo(() => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={handleCreate}
+              onClick={() => handleOpenForm()} // แก้เป็น handleOpenForm
               disabled={isCreating || isUpdating || isDeleting}
             >
               เพิ่มตัวเลือก
             </Button>
           </Stack>
         </Stack>
-        {/* อัปเดต FilterBar component */}
+
+        {/* FilterBar: ดึงค่าจาก filters object และใช้ handler กลาง */}
         <MenuItemOptionFilterBar
-          q={q}
-          status={status}
-          required={required}
-          multiple={multiple}
-          onSearch={setQ}
-          onStatusChange={setStatus}
-          onRequiredChange={setRequired}
-          onMultipleChange={setMultiple}
+          q={filters.q}
+          status={filters.status}
+          required={filters.required}
+          multiple={filters.multiple}
+          onSearch={(v) => handleFilterChange("q", v)}
+          onStatusChange={(v) => handleFilterChange("status", v)}
+          onRequiredChange={(v) => handleFilterChange("required", v)}
+          onMultipleChange={(v) => handleFilterChange("multiple", v)}
         />
+
+        {/* Active Filters Chips */}
         <Stack
           direction="row"
           spacing={1}
@@ -243,44 +231,51 @@ const filtered = useMemo(() => {
           <Typography variant="body2" color="text.secondary">
             พบ {filtered.length} รายการ
           </Typography>
-          {status !== "all" && (
+
+          {filters.status !== "all" && (
             <Chip
               size="small"
               variant="outlined"
-              label={status === "active" ? "พร้อมใช้" : "ปิดใช้งาน"}
-              onDelete={() => setStatus("all")}
+              label={filters.status === "active" ? "พร้อมใช้" : "ปิดใช้งาน"}
+              onDelete={() => handleFilterChange("status", "all")}
             />
           )}
-          {required !== "all" && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={required === "required" ? "บังคับเลือก" : "ไม่บังคับ"}
-              onDelete={() => setRequired("all")}
-            />
-          )}
-          {multiple !== "all" && (
+
+          {filters.required !== "all" && (
             <Chip
               size="small"
               variant="outlined"
               label={
-                multiple === "multiple"
-                  ? "เลือกได้หลายรายการ"
-                  : "เลือกได้ 1 รายการ"
+                filters.required === "required" ? "บังคับเลือก" : "ไม่บังคับ"
               }
-              onDelete={() => setMultiple("all")}
+              onDelete={() => handleFilterChange("required", "all")}
             />
           )}
-          {dq && (
+
+          {filters.multiple !== "all" && (
             <Chip
               size="small"
               variant="outlined"
-              label={`ค้นหา: "${dq}"`}
-              onDelete={() => setQ("")}
+              label={
+                filters.multiple === "multiple"
+                  ? "เลือกได้หลายรายการ"
+                  : "เลือกได้ 1 รายการ"
+              }
+              onDelete={() => handleFilterChange("multiple", "all")}
+            />
+          )}
+
+          {filters.q && (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={`ค้นหา: "${filters.q}"`}
+              onDelete={() => handleFilterChange("q", "")}
             />
           )}
         </Stack>
-        {/* Desktop / Mobile */}
+
+        {/* Table Section (Desktop) */}
         {isSmUp ? (
           <Paper
             variant="outlined"
@@ -340,8 +335,8 @@ const filtered = useMemo(() => {
                     <ManageMenuItemOptionItem
                       key={r.id}
                       row={r}
-                      index={start + i + 1}
-                      onEdit={handleEdit}
+                      index={(page - 1) * pageSize + i + 1} // คำนวณ index แบบใหม่
+                      onEdit={() => handleOpenForm(r)} // ส่ง row เข้าไปใน handleOpenForm
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
                     />
@@ -370,7 +365,7 @@ const filtered = useMemo(() => {
                 onPageChange={setPage}
                 onPageSizeChange={(size) => {
                   setPageSize(size);
-                  setPage(1);
+                  setPage(1); // Reset ไปหน้า 1 เสมอเมื่อเปลี่ยน size
                 }}
                 showSummary
                 showPageSizeSelect
@@ -378,6 +373,7 @@ const filtered = useMemo(() => {
             </Box>
           </Paper>
         ) : (
+          /* Mobile View */
           <>
             <Stack spacing={1.25}>
               {pageRows.length === 0 ? (
@@ -394,8 +390,8 @@ const filtered = useMemo(() => {
                   <MobileMenuItemOption
                     key={r.id}
                     row={r}
-                    index={start + i + 1}
-                    onEdit={handleEdit}
+                    index={(page - 1) * pageSize + i + 1}
+                    onEdit={() => handleOpenForm(r)} // แก้เป็น handleOpenForm
                     onDelete={handleDelete}
                     onToggleActive={handleToggleActive}
                   />
@@ -419,11 +415,11 @@ const filtered = useMemo(() => {
         )}
       </Container>
 
-      {/* Drawer Form */}
+      {/* Drawer Form: ใช้ formState แทน openForm/editing */}
       <FormMenuItemOption
-        open={openForm}
-        onClose={() => setOpenForm(false)}
-        initial={editing ?? undefined}
+        open={formState.open}
+        onClose={handleCloseForm} // ใช้ handler ปิดฟอร์ม
+        initial={formState.data ?? undefined} // ส่ง data ไป (ถ้ามี)
         onSubmit={handleSubmit}
         isLoading={isCreating || isUpdating}
       />

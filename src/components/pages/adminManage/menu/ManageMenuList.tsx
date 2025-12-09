@@ -14,7 +14,6 @@ import {
   TableBody,
   TableContainer,
   Paper,
-  Pagination,
   useMediaQuery,
   Chip,
   CircularProgress,
@@ -23,43 +22,58 @@ import {
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+
+// Components
 import MenuFilterBar from "../MenuFilterBar";
 import MobileMenuItem from "./MobileMenuItem";
 import ManageMenuItem from "./ManageMenuItem";
 import FormMenu from "./FormMenu";
-import { useCallback, useMemo, useState } from "react";
+import PaginationBar from "../../../layouts/PaginationBar"; // 🟢 Import PaginationBar (ตรวจสอบ path นี้)
+
+// Types
 import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
-import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
 import type { CreateMenuItem } from "../../../../@types/createDto/createMenuItem";
+import type { UpdateMenuItem } from "../../../../@types/UpdateDto/updateMenuItem";
+import type { MenuItemOption } from "../../../../@types/dto/MenuItemOption";
+
+// API
 import {
   useCreateMenuItemMutation,
   useDeleteMenuItemMutation,
   useGetMenuItemsQuery,
   useUpdateMenuItemMutation,
 } from "../../../../services/menuItemApi";
-import type { UpdateMenuItem } from "../../../../@types/UpdateDto/updateMenuItem";
-import { Link } from "react-router-dom";
+import { useGetMenuItemOptionsQuery } from "../../../../services/menuItemOptionApi";
 
 type StatusFilter = "all" | "active" | "inactive";
-
-function isActiveMenu(item: MenuItemDto): boolean {
-  return item.isUsed && !item.isDeleted;
-}
 
 export default function ManageMenuList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const [q, setQ] = useState("");
-  const [cat, setCat] = useState<string>("all");
-  const [status, setStatus] = useState<StatusFilter>("all");
+  // 1. รวม State เป็นกลุ่ม
+  const [filters, setFilters] = useState({
+    q: "",
+    cat: "all",
+    status: "all" as StatusFilter,
+  });
 
-  const [openForm, setOpenForm] = useState(false);
-  const [editing, setEditing] = useState<MenuItemDto | null>(null);
+  const [formState, setFormState] = useState<{
+    open: boolean;
+    data: MenuItemDto | null;
+  }>({
+    open: false,
+    data: null,
+  });
 
+  // 🟢 Pagination State (เปลี่ยน pageSize เป็น state)
   const [page, setPage] = useState(1);
-  const pageSize = isSmUp ? 8 : 6;
+  const [pageSize, setPageSize] = useState(10); // ค่าเริ่มต้น 10
 
+  // --- API Hooks ---
+  // 1. Get Menus
   const {
     data: menuData,
     isLoading,
@@ -67,203 +81,156 @@ export default function ManageMenuList() {
     refetch,
   } = useGetMenuItemsQuery({
     pageNumber: 1,
-    pageSize: 100,
+    pageSize: 1000, // ดึงมาเยอะหน่อยถ้าจะ Filter หน้าบ้าน
   });
+
+  // 2. Get Options (สำหรับ Dropdown ใน Form)
+  const { data: optionData } = useGetMenuItemOptionsQuery({
+    pageNumber: 1,
+    pageSize: 1000,
+  });
+  const optionList: MenuItemOption[] = optionData?.result ?? [];
+
+  const [createMenuItem, { isLoading: isCreating }] = useCreateMenuItemMutation();
+  const [updateMenuItem, { isLoading: isUpdating }] = useUpdateMenuItemMutation();
+  const [deleteMenuItem, { isLoading: isDeleting }] = useDeleteMenuItemMutation();
 
   const rows: MenuItemDto[] = menuData?.result ?? [];
 
-  const [createMenuItem, { isLoading: isCreating }] =
-    useCreateMenuItemMutation();
-  const [updateMenuItem, { isLoading: isUpdating }] =
-    useUpdateMenuItemMutation();
-  const [deleteMenuItem, { isLoading: isDeleting }] =
-    useDeleteMenuItemMutation();
-
-  const categories: MenuCategory[] = useMemo(() => {
-    const map = new Map<number, MenuCategory>();
-
+  // Logic: Categories Extraction
+  const categories = useMemo(() => {
+    const map = new Map();
     rows.forEach((r) => {
-      if (r.menuCategoryId && r.menuCategoryName) {
+      if (r.menuCategoryId)
         map.set(r.menuCategoryId, {
           id: r.menuCategoryId,
           name: r.menuCategoryName,
-        } as MenuCategory);
-      }
+        });
     });
-
-    return Array.from(map.values()).sort((a, b) => a.id - b.id);
+    return Array.from(map.values()).sort((a: any, b: any) => a.id - b.id);
   }, [rows]);
 
-  const handleChangeQ = useCallback((value: string) => {
-    setQ(value);
+  // Logic: Reset page เมื่อ Filter เปลี่ยน
+  useEffect(() => {
     setPage(1);
-  }, []);
+  }, [filters]);
 
-  const handleChangeCat = useCallback((value: string) => {
-    setCat(value);
-    setPage(1);
-  }, []);
-
-  const handleChangeStatus = useCallback((value: StatusFilter) => {
-    setStatus(value);
-    setPage(1);
-  }, []);
-
+  // Logic: Filter & Sort
   const filteredSorted = useMemo(() => {
-    const list = rows.filter((r) => {
-      const byQ =
-        !q ||
-        r.name.toLowerCase().includes(q.toLowerCase()) ||
-        r.description?.toLowerCase().includes(q.toLowerCase());
+    const { q, cat, status } = filters;
+    const searchLower = q.trim().toLowerCase();
 
-      const byCat =
-        cat === "all" ||
-        (r.menuCategoryId != null && String(r.menuCategoryId) === cat);
+    return rows
+      .filter((r) => {
+        const matchesQ =
+          !q ||
+          r.name.toLowerCase().includes(searchLower) ||
+          r.description?.toLowerCase().includes(searchLower);
+        const matchesCat = cat === "all" || String(r.menuCategoryId) === cat;
 
-      const active = isActiveMenu(r);
-      const byStatus =
-        status === "all" || (status === "active" ? active : !active);
+        const isActive = r.isUsed && !r.isDeleted;
+        const matchesStatus =
+          status === "all" || (status === "active" ? isActive : !isActive);
 
-      return byQ && byCat && byStatus;
-    });
+        return matchesQ && matchesCat && matchesStatus;
+      })
+      .sort((a, b) => a.id - b.id);
+  }, [rows, filters]);
 
-    return list.sort((a, b) => a.id - b.id);
-  }, [rows, q, cat, status]);
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredSorted.length / pageSize) || 1;
+  const pageRows = filteredSorted.slice((page - 1) * pageSize, page * pageSize);
 
-  const totalPages = Math.max(1, Math.ceil(filteredSorted.length / pageSize));
-  const start = (page - 1) * pageSize;
-  const pageRows = filteredSorted.slice(start, start + pageSize);
+  // --- Handlers ---
 
-  const handleChangePage = useCallback(
-    (_: React.ChangeEvent<unknown>, value: number) => {
-      setPage(value);
-    },
-    []
-  );
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setPage(1);
+  };
 
-  const handleRefresh = useCallback(() => {
-    refetch();
-  }, [refetch]);
+  const handleFilterChange = (key: keyof typeof filters, value: any) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
-  const handleCreate = useCallback(() => {
-    setEditing(null);
-    setOpenForm(true);
-  }, []);
+  const handleOpenForm = (item: MenuItemDto | null = null) => {
+    setFormState({ open: true, data: item });
+  };
 
-  const handleEdit = useCallback((item: MenuItemDto) => {
-    setEditing(item);
-    setOpenForm(true);
-  }, []);
+  const handleCloseForm = () => {
+    setFormState({ open: false, data: null });
+  };
 
-  const handleCloseForm = useCallback(() => {
-    setOpenForm(false);
-    setEditing(null);
-  }, []);
+  const handleDelete = async (id: number) => {
+    if (confirm("ยืนยันลบเมนูนี้?")) {
+      await deleteMenuItem(id)
+        .unwrap()
+        .catch((err) => console.error(err));
+    }
+  };
 
-  const handleDelete = useCallback(
-    async (id: number) => {
-      if (!confirm("ยืนยันลบเมนูนี้?")) return;
-      try {
-        await deleteMenuItem(id).unwrap();
-        // invalidatesTags(["Menu"]) จะ refetch ให้เอง
-      } catch (error) {
-        console.error("Failed to delete menu item:", error);
+  const handleToggleActive = async (id: number, next: boolean) => {
+    const item = rows.find((r) => r.id === id);
+    if (!item) return;
+
+    try {
+      await updateMenuItem({
+        id,
+        data: { ...item, isUsed: next } as UpdateMenuItem,
+      }).unwrap();
+    } catch (error) {
+      console.error("Toggle failed:", error);
+      alert("เปลี่ยนสถานะไม่สำเร็จ");
+    }
+  };
+
+  const handleSubmit = async (
+    data: CreateMenuItem | UpdateMenuItem,
+    id?: number
+  ) => {
+    try {
+      if (id) {
+        await updateMenuItem({
+          id,
+          data: data as UpdateMenuItem,
+        }).unwrap();
+      } else {
+        await createMenuItem(data as CreateMenuItem).unwrap();
       }
-    },
-    [deleteMenuItem]
-  );
-
-   const handleToggleActive = useCallback(
-     async (id: number, next: boolean) => {
-       const item = rows.find((r) => r.id === id);
-       if (!item) return;
-
-       try {
-         const updatePayload: UpdateMenuItem = {
-           name: item.name,
-           description: item.description,
-           basePrice: item.basePrice,
-           imageUrl: item.imageUrl,
-           menuCategoryId: item.menuCategoryId,
-           isUsed: next,
-           menuItemOptionGroups: item.menuItemOptionGroups,
-         };
-
-         await updateMenuItem({
-           id,
-           data: updatePayload,
-         }).unwrap();
-       } catch (error) {
-         console.error("Failed to toggle:", error);
-         alert("เปลี่ยนสถานะไม่สำเร็จ");
-       }
-     },
-     [updateMenuItem, rows]
-   );
-
-  // onSubmit จาก FormMenu
-  const handleSubmit = useCallback(
-    async (data: CreateMenuItem, id?: number, isUsed?: boolean) => {
-      try {
-        if (id) {
-          const updatePayload: UpdateMenuItem = {
-            name: data.name,
-            description: data.description,
-            basePrice: data.basePrice,
-            imageFile: data.imageFile,
-            isUsed: isUsed,
-            menuCategoryId: data.menuCategoryId,
-            menuItemOptionGroups: data.menuItemOptionGroups,
-          };
-
-          await updateMenuItem({
-            id,
-            data: updatePayload,
-          }).unwrap();
-        } else {
-          await createMenuItem(data).unwrap();
-        }
-
-        setOpenForm(false);
-        setEditing(null);
-      } catch (error) {
-        console.error("Failed to submit menu item:", error);
-        alert("บันทึกข้อมูลไม่สำเร็จ");
-      }
-    },
-    [createMenuItem, updateMenuItem]
-  );
+      handleCloseForm();
+    } catch (error) {
+      console.error("Submit failed:", error);
+      alert("บันทึกข้อมูลไม่สำเร็จ");
+    }
+  };
 
   const isBusy = isCreating || isUpdating || isDeleting;
 
-  // Loading state
-  if (isLoading) {
+  if (isLoading)
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
       </Box>
     );
-  }
-
-  // Error state
-  if (isError) {
+  if (isError)
     return (
       <Box p={3}>
-        <Alert severity="error" action={
-          <Button color="inherit" size="small" onClick={handleRefresh}>
-            ลองใหม่
-          </Button>
-        }>
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={() => refetch()}>
+              ลองใหม่
+            </Button>
+          }
+        >
           ไม่สามารถโหลดข้อมูลเมนูได้
         </Alert>
       </Box>
     );
-  }
 
   return (
     <Box sx={{ py: { xs: 2, md: 4 } }}>
       <Container maxWidth="xl">
-        {/* Sticky tools (Header + Filter + Summary) */}
+        {/* Sticky Header & Filter */}
         <Box
           sx={{
             position: { xs: "sticky", md: "static" },
@@ -273,7 +240,6 @@ export default function ManageMenuList() {
             pb: 1,
           }}
         >
-          {/* Header */}
           <Stack
             direction={{ xs: "column", sm: "row" }}
             alignItems={{ xs: "flex-start", sm: "center" }}
@@ -288,7 +254,7 @@ export default function ManageMenuList() {
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon />}
-                onClick={handleRefresh}
+                onClick={() => refetch()}
                 disabled={isLoading}
               >
                 รีเฟรช
@@ -296,12 +262,11 @@ export default function ManageMenuList() {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={handleCreate}
+                onClick={() => handleOpenForm()}
                 disabled={isBusy}
               >
                 เพิ่มเมนู
               </Button>
-
               <Button
                 component={Link}
                 to="/manage-menuItemOptionList"
@@ -313,54 +278,52 @@ export default function ManageMenuList() {
             </Stack>
           </Stack>
 
-          {/* Filter bar */}
           <MenuFilterBar
-            q={q}
-            cat={cat}
-            status={status}
+            q={filters.q}
+            cat={filters.cat}
+            status={filters.status}
             categories={categories}
-            onSearch={handleChangeQ}
-            onCategoryChange={handleChangeCat}
-            onStatusChange={handleChangeStatus}
+            onSearch={(v) => handleFilterChange("q", v)}
+            onCategoryChange={(v) => handleFilterChange("cat", v)}
+            onStatusChange={(v) => handleFilterChange("status", v)}
           />
 
-          {/* Summary chips */}
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
             <Typography variant="body2" color="text.secondary">
               พบ {filteredSorted.length} รายการ
             </Typography>
-            {cat !== "all" && (
+            {filters.cat !== "all" && (
               <Chip
                 size="small"
                 variant="outlined"
                 label={`หมวด: ${
-                  categories.find((c) => String(c.id) === cat)?.name ?? cat
+                  categories.find((c) => String(c.id) === filters.cat)?.name ??
+                  filters.cat
                 }`}
-                onDelete={() => handleChangeCat("all")}
+                onDelete={() => handleFilterChange("cat", "all")}
               />
             )}
-            {status !== "all" && (
+            {filters.status !== "all" && (
               <Chip
                 size="small"
                 variant="outlined"
-                label={status === "active" ? "พร้อมขาย" : "ปิดขาย"}
-                onDelete={() => handleChangeStatus("all")}
+                label={filters.status === "active" ? "พร้อมขาย" : "ปิดขาย"}
+                onDelete={() => handleFilterChange("status", "all")}
               />
             )}
-            {q && (
+            {filters.q && (
               <Chip
                 size="small"
                 variant="outlined"
-                label={`ค้นหา: "${q}"`}
-                onDelete={() => handleChangeQ("")}
+                label={`ค้นหา: "${filters.q}"`}
+                onDelete={() => handleFilterChange("q", "")}
               />
             )}
           </Stack>
         </Box>
 
-        {/* Content */}
+        {/* Content Table / List */}
         {isSmUp ? (
-          // ---- Desktop: Table ----
           <Paper
             variant="outlined"
             sx={{ borderRadius: 2, overflow: "hidden" }}
@@ -385,19 +348,17 @@ export default function ManageMenuList() {
                     </TableCell>
                   </TableRow>
                 </TableHead>
-
                 <TableBody>
                   {pageRows.map((r, i) => (
                     <ManageMenuItem
                       key={r.id}
                       row={r}
-                      index={start + i + 1}
-                      onEdit={handleEdit}
+                      index={(page - 1) * pageSize + i + 1}
+                      onEdit={() => handleOpenForm(r)}
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
                     />
                   ))}
-
                   {pageRows.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8}>
@@ -414,20 +375,20 @@ export default function ManageMenuList() {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <Stack alignItems="center" sx={{ p: 1.5 }}>
-              <Pagination
-                count={totalPages}
+            
+            {/* 🟢 Desktop PaginationBar */}
+            <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+              <PaginationBar
                 page={page}
-                onChange={handleChangePage}
-                color="primary"
-                siblingCount={0}
-                boundaryCount={1}
+                pageSize={pageSize}
+                totalCount={filteredSorted.length}
+                onPageChange={setPage}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[5, 10, 20, 50]}
               />
-            </Stack>
+            </Box>
           </Paper>
         ) : (
-          // ---- Mobile: Card list ----
           <Stack spacing={1.25}>
             {pageRows.length === 0 ? (
               <Paper
@@ -443,32 +404,36 @@ export default function ManageMenuList() {
                 <MobileMenuItem
                   key={r.id}
                   row={r}
-                  index={start + i + 1}
-                  onEdit={handleEdit}
+                  index={(page - 1) * pageSize + i + 1}
+                  onEdit={() => handleOpenForm(r)}
                   onDelete={handleDelete}
                   onToggleActive={handleToggleActive}
                 />
               ))
             )}
-
-            {/* Sticky pagination (mobile) */}
+            
+            {/* 🟢 Mobile PaginationBar */}
             <Stack
               alignItems="center"
               sx={{
                 pt: 1,
                 position: "sticky",
-                bottom: 8,
+                bottom: 0,
                 bgcolor: "background.default",
+                pb: "calc(env(safe-area-inset-bottom) + 8px)",
+                borderTop: "1px solid",
+                borderColor: "divider",
               }}
             >
-              <Pagination
-                count={totalPages}
+              <PaginationBar
                 page={page}
-                onChange={handleChangePage}
-                color="primary"
-                siblingCount={0}
-                boundaryCount={1}
-                size="small"
+                pageSize={pageSize}
+                totalCount={filteredSorted.length}
+                onPageChange={setPage}
+                onPageSizeChange={handlePageSizeChange}
+                showPageSizeSelect={false} // ซ่อนเลือกขนาดหน้าบนมือถือ
+                showSummary={false} // ซ่อนสรุปยอดบนมือถือ
+                sx={{ mt: 0 }}
               />
             </Stack>
           </Stack>
@@ -477,10 +442,11 @@ export default function ManageMenuList() {
 
       {/* Drawer Form */}
       <FormMenu
-        open={openForm}
+        open={formState.open}
         onClose={handleCloseForm}
-        initial={editing ?? undefined}
+        initial={formState.data ?? undefined}
         categories={categories}
+        optionList={optionList}
         onSubmit={handleSubmit}
       />
     </Box>

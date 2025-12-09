@@ -6,5 +6,5 @@ export interface CreateMenuItemOption {
   isMultiple: boolean;
 
   // menuItemId: number;
-  menuItemOptionDetail: CreateMenuOptionDetail[];
+  menuOptionDetails: CreateMenuOptionDetail[];
 }

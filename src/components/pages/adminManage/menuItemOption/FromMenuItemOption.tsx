@@ -26,7 +26,7 @@ import { optionSchema } from "../../../../helpers/validationSchema";
 type Props = {
   open: boolean;
   onClose: () => void;
-  initial?: Partial<MenuItemOption>;
+  initial?: MenuItemOption;
   onSubmit: (
     data: CreateMenuItemOption | UpdateMenuItemOption
   ) => Promise<void> | void;
@@ -41,57 +41,84 @@ export default function FormMenuItemOption({
   isLoading = false,
 }: Props) {
   const formik = useFormik({
+    enableReinitialize: true,
+    validationSchema: optionSchema,
     initialValues: {
       id: initial?.id ?? 0,
       name: initial?.name ?? "",
       isRequired: initial?.isRequired ?? false,
       isMultiple: initial?.isMultiple ?? false,
       isUsed: initial?.isUsed ?? true,
-      menuItemOptionDetail: initial?.menuOptionDetails?.map((d) => ({
+      menuOptionDetails: initial?.menuOptionDetails?.map((d) => ({
         id: d.id,
         name: d.name,
-        price: d.extraPrice,
-        isUsed: d.isUsed ?? true,
-      })) ?? [{ id: 0, name: "", price: 0, isUsed: true }],
+        extraPrice: d.extraPrice,
+        isUsed: d.isUsed,
+        menuItemOptionId: d.menuItemOptionId,
+      })) ?? [
+        { id: 0, name: "", extraPrice: 0, isUsed: true, menuItemOptionId: 0 },
+      ],
     },
-    enableReinitialize: true,
-    validationSchema: optionSchema,
+
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        const {
-          id,
-          name,
-          isRequired,
-          isMultiple,
-          isUsed,
-          menuItemOptionDetail,
-        } = values;
-        const details = menuItemOptionDetail
-          .filter((d) => d.isUsed)
-          .map((d) => ({
-            ...(id &&
-              d.id && { id: d.id, menuItemOptionId: id, isUsed: d.isUsed }),
-            name: d.name,
-            extraPrice: d.price,
-          }));
+        const cleanedDetails = values.menuOptionDetails.map((d) => ({
+          // ถ้า Create: ไม่ต้องส่ง id, isUsed ก็ได้ (ตาม Interface) แต่ส่งไปก็ได้ถ้า Backend ไม่ strict
+          // ถ้า Update: ต้องส่ง id, isUsed
+          id: d.id,
+          name: d.name,
+          extraPrice: d.extraPrice,
+          isUsed: d.isUsed ?? true, // Default true ไว้ก่อน
+          menuItemOptionId: values.id, // ผูกกับ ID แม่
+        }));
 
-        await onSubmit({
-          ...(id && { id, isUsed }),
-          name,
-          isRequired,
-          isMultiple,
-          menuItemOptionDetail: details,
-        } as CreateMenuItemOption | UpdateMenuItemOption);
+        // 2. สร้าง Payload โดยแยกกรณี Create / Update ตาม Interface
+        let payload: CreateMenuItemOption | UpdateMenuItemOption;
 
+        if (values.id && values.id !== 0) {
+          // --- กรณี Update ---
+          payload = {
+            id: values.id,
+            name: values.name,
+            isRequired: values.isRequired,
+            isMultiple: values.isMultiple,
+            isUsed: values.isUsed,
+            menuOptionDetails: cleanedDetails, // ส่งแบบ UpdateMenuOptionDetail[]
+          } as UpdateMenuItemOption;
+        } else {
+          // --- กรณี Create ---
+          payload = {
+            name: values.name,
+            isRequired: values.isRequired,
+            isMultiple: values.isMultiple,
+            // CreateMenuOptionDetail ต้องการแค่ name, extraPrice
+            // (เราส่ง id, isUsed เกินไปนิดหน่อย แต่ปกติ Backend จะ ignore ให้ ถ้าไม่ ignore ต้อง map ตัดออก)
+            menuOptionDetails: cleanedDetails.map((d) => ({
+              name: d.name,
+              extraPrice: d.extraPrice,
+            })),
+          } as CreateMenuItemOption;
+        }
+
+        await onSubmit(payload);
         onClose();
+      } catch (error) {
+        console.error(error);
       } finally {
         setSubmitting(false);
       }
     },
   });
 
-  const { values, errors, touched, handleChange, handleBlur, isSubmitting } =
-    formik;
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    isSubmitting,
+    setFieldValue,
+  } = formik;
 
   return (
     <Drawer
@@ -191,7 +218,7 @@ export default function FormMenuItemOption({
                 }
               />
 
-              {values.id && (
+              {!!values.id && (
                 <FormControlLabel
                   control={
                     <Switch
@@ -221,9 +248,9 @@ export default function FormMenuItemOption({
                   size="small"
                   startIcon={<AddIcon />}
                   onClick={() =>
-                    formik.setFieldValue("menuItemOptionDetail", [
-                      ...values.menuItemOptionDetail,
-                      { name: "", price: 0, isUsed: true },
+                    setFieldValue("menuOptionDetails", [
+                      ...values.menuOptionDetails,
+                      { name: "", extraPrice: 0, isUsed: true },
                     ])
                   }
                 >
@@ -231,10 +258,10 @@ export default function FormMenuItemOption({
                 </Button>
               </Stack>
 
-              <FieldArray name="menuItemOptionDetail">
+              <FieldArray name="menuOptionDetails">
                 {({ remove }) => (
                   <Stack spacing={1.5}>
-                    {values.menuItemOptionDetail.map((detail, index) => (
+                    {values.menuOptionDetails.map((detail, index) => (
                       <Paper
                         key={index}
                         variant="outlined"
@@ -248,10 +275,10 @@ export default function FormMenuItemOption({
                           >
                             <Chip
                               size="small"
-                              label={`#${index + 1}`}
+                              label={`${index + 1}`}
                               sx={{ fontWeight: 700 }}
                             />
-                            {values.menuItemOptionDetail.length > 1 && (
+                            {values.menuOptionDetails.length > 1 && (
                               <IconButton
                                 size="small"
                                 color="error"
@@ -264,18 +291,18 @@ export default function FormMenuItemOption({
 
                           <TextField
                             label="ชื่อตัวเลือก"
-                            name={`menuItemOptionDetail.${index}.name`}
+                            name={`menuOptionDetails.${index}.name`}
                             value={detail.name}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             error={
-                              touched.menuItemOptionDetail?.[index]?.name &&
-                              !!(errors.menuItemOptionDetail as any)?.[index]
+                              touched.menuOptionDetails?.[index]?.name &&
+                              !!(errors.menuOptionDetails as any)?.[index]
                                 ?.name
                             }
                             helperText={
-                              touched.menuItemOptionDetail?.[index]?.name &&
-                              (errors.menuItemOptionDetail as any)?.[index]
+                              touched.menuOptionDetails?.[index]?.name &&
+                              (errors.menuOptionDetails as any)?.[index]
                                 ?.name
                             }
                             size="small"
@@ -284,20 +311,22 @@ export default function FormMenuItemOption({
 
                           <TextField
                             label="ราคาเพิ่ม"
-                            name={`menuItemOptionDetail.${index}.price`}
+                            name={`menuOptionDetails.${index}.extraPrice`}
                             type="number"
-                            value={detail.price}
+                            value={detail.extraPrice}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             error={
-                              touched.menuItemOptionDetail?.[index]?.price &&
-                              !!(errors.menuItemOptionDetail as any)?.[index]
-                                ?.price
+                              touched.menuOptionDetails?.[index]
+                                ?.extraPrice &&
+                              !!(errors.menuOptionDetails as any)?.[index]
+                                ?.extraPrice
                             }
                             helperText={
-                              touched.menuItemOptionDetail?.[index]?.price &&
-                              (errors.menuItemOptionDetail as any)?.[index]
-                                ?.price
+                              touched.menuOptionDetails?.[index]
+                                ?.extraPrice &&
+                              (errors.menuOptionDetails as any)?.[index]
+                                ?.extraPrice
                             }
                             InputProps={{
                               endAdornment: (
@@ -310,11 +339,11 @@ export default function FormMenuItemOption({
                             fullWidth
                           />
 
-                          {detail.id && (
+                          {!!detail.id && (
                             <FormControlLabel
                               control={
                                 <Switch
-                                  name={`menuItemOptionDetail.${index}.isUsed`}
+                                  name={`menuOptionDetails.${index}.isUsed`}
                                   checked={detail.isUsed}
                                   onChange={handleChange}
                                   size="small"
@@ -334,9 +363,9 @@ export default function FormMenuItemOption({
                 )}
               </FieldArray>
 
-              {typeof errors.menuItemOptionDetail === "string" && (
+              {typeof errors.menuOptionDetails === "string" && (
                 <Typography variant="caption" color="error">
-                  {errors.menuItemOptionDetail}
+                  {errors.menuOptionDetails}
                 </Typography>
               )}
             </Stack>

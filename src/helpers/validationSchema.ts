@@ -12,20 +12,13 @@ export const registerValidate = Yup.object({
   // phoneNumber: Yup.string().matches(/^[0-9]{10}$/, "Invalid phone number").required("Required"),
 });
 
-// Validation Schema
+// Validation
 export const menuSchema = Yup.object().shape({
-  name: Yup.string()
-    .required("กรุณากรอกชื่อเมนู")
-    .min(2, "ชื่อเมนูต้องมีอย่างน้อย 2 ตัวอักษร")
-    .max(100, "ชื่อเมนูต้องไม่เกิน 100 ตัวอักษร"),
-  description: Yup.string()
-    .max(500, "รายละเอียดต้องไม่เกิน 500 ตัวอักษร"),
-  basePrice: Yup.number()
-    .required("กรุณากรอกราคา")
-    .min(0, "ราคาต้องมากกว่าหรือเท่ากับ 0"),
+  name: Yup.string().required("กรุณากรอกชื่อเมนู"),
+  basePrice: Yup.number().min(0, "ราคาต้องไม่ติดลบ").required("กรุณาระบุราคา"),
   menuCategoryId: Yup.number()
-    .required("กรุณาเลือกหมวดหมู่")
-    .min(1, "กรุณาเลือกหมวดหมู่"),
+    .min(1, "กรุณาเลือกหมวดหมู่")
+    .required("กรุณาเลือกหมวดหมู่"),
 });
 
 export const detailSchema = Yup.object({
@@ -37,12 +30,12 @@ export const detailSchema = Yup.object({
   isUsed: Yup.boolean().optional(),
 });
 
-export const optionSchema = Yup.object({
-  name: Yup.string().trim().required("กรุณากรอกชื่อกลุ่มตัวเลือก"),
-  isRequired: Yup.boolean().required(),
-  isMultiple: Yup.boolean().required(),
-  isUsed: Yup.boolean().optional(),
-  menuItemOptionDetail: Yup.array()
-    .of(detailSchema)
-    .min(1, "ต้องมีตัวเลือกอย่างน้อย 1 รายการ"),
+export const optionSchema = Yup.object().shape({
+  name: Yup.string().required("กรุณากรอกชื่อกลุ่ม"),
+  menuItemOptionDetail: Yup.array().of(
+    Yup.object().shape({
+      name: Yup.string().required("กรุณากรอกชื่อตัวเลือก"),
+      extraPrice: Yup.number().min(0, "ราคาต้องไม่ติดลบ").required("ระบุราคา"),
+    })
+  ),
 });

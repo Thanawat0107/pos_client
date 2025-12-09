@@ -1,4 +1,4 @@
-import type { UpdateMenuOptionDetail } from "./UpdateMenuOptionDetail";
+import type { UpdateMenuOptionDetails } from "./UpdateMenuOptionDetails";
 
 export interface UpdateMenuItemOption {
   id?: number;
@@ -7,5 +7,5 @@ export interface UpdateMenuItemOption {
   isMultiple?: boolean;
   isUsed?: boolean;
 
-  menuItemOptionDetail?: UpdateMenuOptionDetail[];
+  menuOptionDetails?: UpdateMenuOptionDetails[];
 }

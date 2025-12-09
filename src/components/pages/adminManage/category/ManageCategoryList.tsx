@@ -318,7 +318,7 @@ export default function ManageCategoryList() {
               </Table>
             </TableContainer>
 
-            <Box sx={{ px: 2, py: 1.5 }}>
+            <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
               <PaginationBar
                 page={page}
                 pageSize={pageSize}
