@@ -46,6 +46,7 @@ import {
   useUpdateMenuItemMutation,
 } from "../../../../services/menuItemApi";
 import { useGetMenuItemOptionsQuery } from "../../../../services/menuItemOptionApi";
+import { useGetCategoriesQuery } from "../../../../services/categoriesApi";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -91,24 +92,18 @@ export default function ManageMenuList() {
   });
   const optionList: MenuItemOption[] = optionData?.result ?? [];
 
+  const { data: categoryData } = useGetCategoriesQuery({
+    pageNumber: 1,
+    pageSize: 1000, // ดึงมาทั้งหมด
+  });
+  
+  const categories = categoryData?.result ?? [];
+
   const [createMenuItem, { isLoading: isCreating }] = useCreateMenuItemMutation();
   const [updateMenuItem, { isLoading: isUpdating }] = useUpdateMenuItemMutation();
   const [deleteMenuItem, { isLoading: isDeleting }] = useDeleteMenuItemMutation();
 
   const rows: MenuItemDto[] = menuData?.result ?? [];
-
-  // Logic: Categories Extraction
-  const categories = useMemo(() => {
-    const map = new Map();
-    rows.forEach((r) => {
-      if (r.menuCategoryId)
-        map.set(r.menuCategoryId, {
-          id: r.menuCategoryId,
-          name: r.menuCategoryName,
-        });
-    });
-    return Array.from(map.values()).sort((a: any, b: any) => a.id - b.id);
-  }, [rows]);
 
   // Logic: Reset page เมื่อ Filter เปลี่ยน
   useEffect(() => {
@@ -137,8 +132,6 @@ export default function ManageMenuList() {
       .sort((a, b) => a.id - b.id);
   }, [rows, filters]);
 
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredSorted.length / pageSize) || 1;
   const pageRows = filteredSorted.slice((page - 1) * pageSize, page * pageSize);
 
   // --- Handlers ---

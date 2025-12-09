@@ -58,11 +58,11 @@ export default function FormMenu({
       imageUrl: initial?.imageUrl ?? "",
       imageFile: undefined as File | undefined,
       menuCategoryId: initial?.menuCategoryId ?? (categories[0]?.id || 0),
+      // Default เป็น true เสมอถ้า create, ถ้า edit ให้ใช้ค่าเดิม
       isUsed: initial ? initial.isUsed && !initial.isDeleted : true,
-      // 🟢 Map ข้อมูล Option Groups (ถ้ามี)
       menuItemOptionGroups:
         initial?.menuItemOptionGroups?.map((g) => ({
-          id: g.id, // เก็บ ID ความสัมพันธ์เดิมไว้สำหรับ Update
+          id: g.id,
           menuItemOptionId: g.menuItemOptionId,
         })) ?? [],
     },
@@ -70,9 +70,8 @@ export default function FormMenu({
       try {
         const { isUsed, menuItemOptionGroups, ...rest } = values;
 
-        // 🟢 เตรียม Payload สำหรับ Option Groups
         const formattedGroups = menuItemOptionGroups.map((g) => ({
-          ...(g.id && { id: g.id }), // ถ้ามี id เดิม ให้ส่งไปด้วย (Update)
+          ...(g.id && { id: g.id }),
           menuItemOptionId: g.menuItemOptionId,
         }));
 
@@ -82,7 +81,6 @@ export default function FormMenu({
           menuItemOptionGroups: formattedGroups,
         };
 
-        // Casting ไปตาม Interface (Create หรือ Update)
         await onSubmit(payload as any, initial?.id);
         onClose();
       } catch (error) {
@@ -104,7 +102,6 @@ export default function FormMenu({
     resetForm,
   } = formik;
 
-  // Effects & Handlers
   useEffect(() => {
     if (open) setImagePreview(initial?.imageUrl || null);
     else {
@@ -160,7 +157,7 @@ export default function FormMenu({
 
           {/* Body */}
           <Stack spacing={2.5} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-            {/* 1. Image Upload (Shortened) */}
+            {/* 1. Image Upload */}
             <Box textAlign="center">
               <input
                 ref={fileInputRef}
@@ -253,7 +250,7 @@ export default function FormMenu({
               fullWidth
             />
 
-            {/* 3. 🟢 Option Groups (FieldArray) */}
+            {/* 3. Option Groups */}
             <Box>
               <Stack
                 direction="row"
@@ -325,25 +322,27 @@ export default function FormMenu({
               </FieldArray>
             </Box>
 
-            {/* 4. Status Switch */}
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Typography variant="body2">
-                {values.isUsed ? "สถานะ: เปิดขาย" : "สถานะ: ปิดขาย"}
-              </Typography>
-              <Switch
-                checked={values.isUsed}
-                onChange={(e) => setFieldValue("isUsed", e.target.checked)}
-                color="success"
-              />
-            </Paper>
+            {/* 4. Status Switch (แสดงเฉพาะตอนแก้ไขเท่านั้น) */}
+            {initial && (
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography variant="body2">
+                  {values.isUsed ? "สถานะ: เปิดขาย" : "สถานะ: ปิดขาย"}
+                </Typography>
+                <Switch
+                  checked={values.isUsed}
+                  onChange={(e) => setFieldValue("isUsed", e.target.checked)}
+                  color="success"
+                />
+              </Paper>
+            )}
           </Stack>
 
           {/* Footer */}
