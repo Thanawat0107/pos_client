@@ -12,7 +12,6 @@ export const registerValidate = Yup.object({
   // phoneNumber: Yup.string().matches(/^[0-9]{10}$/, "Invalid phone number").required("Required"),
 });
 
-// Validation
 export const menuSchema = Yup.object().shape({
   name: Yup.string().required("กรุณากรอกชื่อเมนู"),
   basePrice: Yup.number().min(0, "ราคาต้องไม่ติดลบ").required("กรุณาระบุราคา"),

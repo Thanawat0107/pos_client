@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Box,
   Container,
@@ -24,21 +23,15 @@ import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-
-// Components
 import MenuFilterBar from "../MenuFilterBar";
 import MobileMenuItem from "./MobileMenuItem";
 import ManageMenuItem from "./ManageMenuItem";
 import FormMenu from "./FormMenu";
-import PaginationBar from "../../../layouts/PaginationBar"; // 🟢 Import PaginationBar (ตรวจสอบ path นี้)
-
-// Types
+import PaginationBar from "../../../layouts/PaginationBar";
 import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
 import type { CreateMenuItem } from "../../../../@types/createDto/createMenuItem";
 import type { UpdateMenuItem } from "../../../../@types/UpdateDto/updateMenuItem";
 import type { MenuItemOption } from "../../../../@types/dto/MenuItemOption";
-
-// API
 import {
   useCreateMenuItemMutation,
   useDeleteMenuItemMutation,
@@ -54,7 +47,6 @@ export default function ManageMenuList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  // 1. รวม State เป็นกลุ่ม
   const [filters, setFilters] = useState({
     q: "",
     cat: "all",
@@ -69,12 +61,9 @@ export default function ManageMenuList() {
     data: null,
   });
 
-  // 🟢 Pagination State (เปลี่ยน pageSize เป็น state)
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); // ค่าเริ่มต้น 10
+  const [pageSize, setPageSize] = useState(10);
 
-  // --- API Hooks ---
-  // 1. Get Menus
   const {
     data: menuData,
     isLoading,
@@ -82,10 +71,9 @@ export default function ManageMenuList() {
     refetch,
   } = useGetMenuItemsQuery({
     pageNumber: 1,
-    pageSize: 1000, // ดึงมาเยอะหน่อยถ้าจะ Filter หน้าบ้าน
+    pageSize: 1000,
   });
 
-  // 2. Get Options (สำหรับ Dropdown ใน Form)
   const { data: optionData } = useGetMenuItemOptionsQuery({
     pageNumber: 1,
     pageSize: 1000,
@@ -94,7 +82,7 @@ export default function ManageMenuList() {
 
   const { data: categoryData } = useGetCategoriesQuery({
     pageNumber: 1,
-    pageSize: 1000, // ดึงมาทั้งหมด
+    pageSize: 1000,
   });
   
   const categories = categoryData?.result ?? [];
@@ -105,12 +93,10 @@ export default function ManageMenuList() {
 
   const rows: MenuItemDto[] = menuData?.result ?? [];
 
-  // Logic: Reset page เมื่อ Filter เปลี่ยน
   useEffect(() => {
     setPage(1);
   }, [filters]);
 
-  // Logic: Filter & Sort
   const filteredSorted = useMemo(() => {
     const { q, cat, status } = filters;
     const searchLower = q.trim().toLowerCase();
@@ -133,8 +119,6 @@ export default function ManageMenuList() {
   }, [rows, filters]);
 
   const pageRows = filteredSorted.slice((page - 1) * pageSize, page * pageSize);
-
-  // --- Handlers ---
 
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);

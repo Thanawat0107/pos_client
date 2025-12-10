@@ -12,18 +12,19 @@ import {
   MenuItem,
   Paper,
   CircularProgress,
+  Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { FieldArray, FormikProvider, useFormik } from "formik";
 import { useEffect, useRef, useState } from "react";
-import { menuSchema } from "../validation";
 import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
 import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
 import type { CreateMenuItem } from "../../../../@types/createDto/createMenuItem";
 import type { MenuItemOption } from "../../../../@types/dto/MenuItemOption";
 import type { UpdateMenuItem } from "../../../../@types/UpdateDto/updateMenuItem";
+import { menuSchema } from "../../../../helpers/validationSchema";
 
 type Props = {
   open: boolean;
@@ -57,8 +58,8 @@ export default function FormMenu({
       basePrice: initial?.basePrice ?? 0,
       imageUrl: initial?.imageUrl ?? "",
       imageFile: undefined as File | undefined,
-      menuCategoryId: initial?.menuCategoryId ?? (categories[0]?.id || 0),
-      // Default เป็น true เสมอถ้า create, ถ้า edit ให้ใช้ค่าเดิม
+      // 🟢 แก้ไข: ถ้าไม่มี Category ให้เป็น "" เพื่อให้ Validation แจ้งเตือนว่า "กรุณาเลือก" ดีกว่าใส่ 0 แล้วเงียบ
+      menuCategoryId: initial?.menuCategoryId ?? (categories.length > 0 ? categories[0].id : ""),
       isUsed: initial ? initial.isUsed && !initial.isDeleted : true,
       menuItemOptionGroups:
         initial?.menuItemOptionGroups?.map((g) => ({
@@ -70,16 +71,25 @@ export default function FormMenu({
       try {
         const { isUsed, menuItemOptionGroups, ...rest } = values;
 
-        const formattedGroups = menuItemOptionGroups.map((g) => ({
-          ...(g.id && { id: g.id }),
-          menuItemOptionId: g.menuItemOptionId,
-        }));
+        // 🟢 แก้ไข: กรอง Option ที่เป็นค่าว่างทิ้งไป ก่อนส่ง Backend
+        const formattedGroups = menuItemOptionGroups
+          .filter(g => g.menuItemOptionId) // เอาเฉพาะที่เลือกค่าแล้ว
+          .map((g) => ({
+            ...(g.id && { id: g.id }),
+            menuItemOptionId: Number(g.menuItemOptionId), // แปลงเป็น int ให้ชัวร์
+          }));
 
         const payload = {
           ...rest,
           isUsed,
           menuItemOptionGroups: formattedGroups,
         };
+
+        // 🟢 เช็ค Error ดักไว้ก่อน
+        if (!payload.menuCategoryId) {
+            alert("กรุณาเลือกหมวดหมู่สินค้า");
+            return;
+        }
 
         await onSubmit(payload as any, initial?.id);
         onClose();
@@ -103,8 +113,9 @@ export default function FormMenu({
   } = formik;
 
   useEffect(() => {
-    if (open) setImagePreview(initial?.imageUrl || null);
-    else {
+    if (open) {
+      setImagePreview(initial?.imageUrl || null);
+    } else {
       resetForm();
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -149,7 +160,7 @@ export default function FormMenu({
             <Typography variant="h6" fontWeight={800}>
               {initial ? "แก้ไขเมนู" : "เพิ่มเมนูใหม่"}
             </Typography>
-            <IconButton onClick={onClose}>
+            <IconButton onClick={onClose} disabled={isSubmitting}>
               <CloseIcon />
             </IconButton>
           </Stack>
@@ -157,6 +168,14 @@ export default function FormMenu({
 
           {/* Body */}
           <Stack spacing={2.5} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+            
+            {/* --- Alert ถ้าไม่มีหมวดหมู่ --- */}
+            {categories.length === 0 && (
+                <Alert severity="warning">
+                    ยังไม่มีหมวดหมู่สินค้า กรุณาไปสร้างหมวดหมู่ก่อนสร้างเมนู
+                </Alert>
+            )}
+
             {/* 1. Image Upload */}
             <Box textAlign="center">
               <input
@@ -176,6 +195,7 @@ export default function FormMenu({
                       height: 200,
                       objectFit: "cover",
                       borderRadius: 2,
+                      border: "1px solid #eee"
                     }}
                   />
                   <IconButton
@@ -186,19 +206,20 @@ export default function FormMenu({
                       top: 8,
                       right: 8,
                       bgcolor: "white",
+                      "&:hover": { bgcolor: "#f5f5f5" },
                     }}
                   >
-                    <CloseIcon />
+                    <CloseIcon fontSize="small" />
                   </IconButton>
                 </Box>
               ) : (
                 <Button
                   variant="outlined"
                   fullWidth
-                  sx={{ height: 100, borderStyle: "dashed" }}
+                  sx={{ height: 100, borderStyle: "dashed", color: "text.secondary" }}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  อัปโหลดรูปภาพ
+                  คลิกเพื่ออัปโหลดรูปภาพ
                 </Button>
               )}
             </Box>
@@ -222,7 +243,10 @@ export default function FormMenu({
                 type="number"
                 value={values.basePrice}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.basePrice && !!errors.basePrice}
                 fullWidth
+                InputProps={{ inputProps: { min: 0 } }}
               />
               <TextField
                 select
@@ -230,6 +254,9 @@ export default function FormMenu({
                 name="menuCategoryId"
                 value={values.menuCategoryId}
                 onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.menuCategoryId && !!errors.menuCategoryId}
+                helperText={touched.menuCategoryId && errors.menuCategoryId}
                 fullWidth
               >
                 {categories.map((c) => (
@@ -247,10 +274,11 @@ export default function FormMenu({
               rows={2}
               value={values.description}
               onChange={handleChange}
+              onBlur={handleBlur}
               fullWidth
             />
 
-            {/* 3. Option Groups */}
+            {/* 3. Option Groups (FieldArray) */}
             <Box>
               <Stack
                 direction="row"
@@ -267,7 +295,7 @@ export default function FormMenu({
                   onClick={() =>
                     setFieldValue("menuItemOptionGroups", [
                       ...values.menuItemOptionGroups,
-                      { menuItemOptionId: "" },
+                      { menuItemOptionId: "" }, // เพิ่มแถวเปล่า
                     ])
                   }
                 >
@@ -293,13 +321,14 @@ export default function FormMenu({
                           name={`menuItemOptionGroups.${index}.menuItemOptionId`}
                           value={group.menuItemOptionId}
                           onChange={handleChange}
+                          error={touched.menuItemOptionGroups?.[index]?.menuItemOptionId && !!(errors.menuItemOptionGroups as any)?.[index]?.menuItemOptionId}
                         >
                           {optionList.map((opt) => (
                             <MenuItem key={opt.id} value={opt.id}>
                               {opt.name}{" "}
-                              {opt.isMultiple
-                                ? "(เลือกได้หลาย)"
-                                : "(เลือกได้ 1)"}
+                              <Typography variant="caption" color="text.secondary" ml={1}>
+                                {opt.isMultiple ? "(เลือกได้หลาย)" : "(เลือกได้ 1)"}
+                              </Typography>
                             </MenuItem>
                           ))}
                         </TextField>
@@ -308,21 +337,20 @@ export default function FormMenu({
                         </IconButton>
                       </Stack>
                     ))}
+                    
                     {values.menuItemOptionGroups.length === 0 && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        align="center"
-                      >
-                        ยังไม่มีตัวเลือก (เช่น หวาน, ไซส์)
-                      </Typography>
+                      <Paper variant="outlined" sx={{ p: 2, textAlign: "center", borderStyle: "dashed" }}>
+                        <Typography variant="caption" color="text.secondary">
+                          ยังไม่มีตัวเลือก (เช่น ระดับความหวาน, ขนาดแก้ว)
+                        </Typography>
+                      </Paper>
                     )}
                   </Stack>
                 )}
               </FieldArray>
             </Box>
 
-            {/* 4. Status Switch (แสดงเฉพาะตอนแก้ไขเท่านั้น) */}
+            {/* 4. Status Switch (แสดงเฉพาะตอนแก้ไข) */}
             {initial && (
               <Paper
                 variant="outlined"
@@ -331,11 +359,18 @@ export default function FormMenu({
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  borderColor: values.isUsed ? "success.main" : "divider",
+                  bgcolor: values.isUsed ? "success.lighter" : "transparent"
                 }}
               >
-                <Typography variant="body2">
-                  {values.isUsed ? "สถานะ: เปิดขาย" : "สถานะ: ปิดขาย"}
-                </Typography>
+                <Box>
+                    <Typography variant="body2" fontWeight="bold">
+                    {values.isUsed ? "สถานะ: เปิดขาย (Active)" : "สถานะ: ปิดขาย (Inactive)"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                        {values.isUsed ? "ลูกค้าสามารถสั่งเมนูนี้ได้" : "เมนูนี้จะไม่แสดงให้ลูกค้าเห็น"}
+                    </Typography>
+                </Box>
                 <Switch
                   checked={values.isUsed}
                   onChange={(e) => setFieldValue("isUsed", e.target.checked)}
@@ -352,16 +387,17 @@ export default function FormMenu({
             spacing={2}
             sx={{ p: 2, bgcolor: "background.paper" }}
           >
-            <Button onClick={onClose} fullWidth disabled={isSubmitting}>
+            <Button onClick={onClose} fullWidth variant="outlined" disabled={isSubmitting}>
               ยกเลิก
             </Button>
             <Button
               type="submit"
               variant="contained"
               fullWidth
-              disabled={isSubmitting}
+              // 🟢 Disable ถ้าไม่มีหมวดหมู่ ป้องกัน User กดมั่ว
+              disabled={isSubmitting || categories.length === 0}
             >
-              {isSubmitting ? <CircularProgress size={24} /> : "บันทึก"}
+              {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "บันทึกข้อมูล"}
             </Button>
           </Stack>
         </Box>
