@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 import {
   Box,
@@ -13,9 +13,9 @@ import {
   TableBody,
   TableContainer,
   Paper,
-  Pagination,
   useMediaQuery,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
@@ -34,25 +34,38 @@ import {
 } from "../../../../services/categoriesApi";
 import PaginationBar from "../../../layouts/PaginationBar";
 import { useDebounced } from "../../../../hooks/useDebounced";
+import type { CreateMenuCategory } from "../../../../@types/createDto/CreateMenuCategory";
+import type { UpdateMenuCategory } from "../../../../@types/UpdateDto/updateMenuCategory";
 
 export default function ManageCategoryList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const [q, setQ] = useState("");
-  const dq = useDebounced(q, 300);
-  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+  // 1. รวม State เป็นกลุ่ม
+  const [filters, setFilters] = useState({
+    q: "",
+    status: "all" as "all" | "active" | "inactive",
+  });
+  const dq = useDebounced(filters.q, 300);
 
-  const [openForm, setOpenForm] = useState(false);
-  const [editing, setEditing] = useState<MenuCategory | null>(null);
+  const [formState, setFormState] = useState<{
+    open: boolean;
+    data: MenuCategory | null;
+  }>({
+    open: false,
+    data: null,
+  });
 
+  // Pagination State
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(isSmUp ? 8 : 6);
 
-  const { data, isLoading, isFetching, refetch } = useGetCategoriesQuery({
+  // 2. API Hooks (ดึงมาเยอะๆ เพื่อ Filter หน้าบ้าน)
+  const { data, isLoading, refetch } = useGetCategoriesQuery({
     pageNumber: 1,
-    pageSize: 50,
+    pageSize: 1000,
   });
+
   const [createCategory, { isLoading: isCreating }] =
     useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] =
@@ -62,116 +75,87 @@ export default function ManageCategoryList() {
 
   const rows: MenuCategory[] = data?.result ?? [];
 
+  // 3. Reset page อัตโนมัติเมื่อ Filter เปลี่ยน
   useEffect(() => {
     setPage(1);
-  }, [dq, status, pageSize]);
+  }, [dq, filters.status, pageSize]);
 
-  useEffect(() => {
-    setPageSize(isSmUp ? 8 : 6);
-    setPage(1);
-  }, [isSmUp]);
-
+  // 4. Logic Filter ที่สั้นลง
   const filtered = useMemo(() => {
     const search = dq.trim().toLowerCase();
-
     return rows.filter((r) => {
-      const byQ =
+      const matchQ =
         !search ||
         r.name.toLowerCase().includes(search) ||
         (r.slug ?? "").toLowerCase().includes(search);
-
-      const byStatus =
-        status === "all" || (status === "active" ? r.isUsed : !r.isUsed);
-
-      return byQ && byStatus;
+      const matchStatus =
+        filters.status === "all" || (filters.status === "active") === r.isUsed;
+      return matchQ && matchStatus;
     });
-  }, [rows, dq, status]);
+  }, [rows, dq, filters.status]);
 
+  // Pagination Logic
   const totalCount = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * pageSize;
-  const pageRows = filtered.slice(start, start + pageSize);
+  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
-  const refresh = () => {
-    refetch();
+  // 5. Handlers
+  const handleFilterChange = (key: keyof typeof filters, value: any) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleCreate = () => {
-    setEditing(null);
-    setOpenForm(true);
-  };
-
-  const handleEdit = (r: MenuCategory) => {
-    setEditing(r);
-    setOpenForm(true);
-  };
+  const handleOpenForm = (data: MenuCategory | null = null) =>
+    setFormState({ open: true, data });
+  const handleCloseForm = () => setFormState({ open: false, data: null });
 
   const handleDelete = async (id: number) => {
-    if (!confirm("ยืนยันลบหมวดหมู่นี้?")) return;
-    try {
-      await deleteCategory(id).unwrap();
-      // TODO: แทรก Swal/Toast แสดงว่า “ลบสำเร็จ”
-    } catch (err) {
-      console.error("delete category failed", err);
-      // TODO: Swal.fire("ลบไม่สำเร็จ", "ลองใหม่อีกครั้ง", "error");
+    if (confirm("ยืนยันลบหมวดหมู่นี้?")) {
+      await deleteCategory(id)
+        .unwrap()
+        .catch((err) => console.error("delete failed", err));
     }
   };
 
   const handleToggleActive = async (id: number, next: boolean) => {
     const target = rows.find((r) => r.id === id);
     if (!target) return;
-
     try {
-      await updateCategory({
-        id,
-        data: {
-          id,
-          name: target.name,
-          slug: target.slug,
-          isUsed: next,
-        },
-      }).unwrap();
-      // TODO: จะใส่ toast เบา ๆ ก็ได้
+      await updateCategory({ id, data: { ...target, isUsed: next } }).unwrap();
     } catch (err) {
-      console.error("toggle active failed", err);
-      // TODO: แจ้ง error + อาจจะ revert toggle ถ้าอยากทำให้เนียน
+      console.error("toggle failed", err);
     }
   };
 
-  const handleSubmit = async (formData: MenuCategory) => {
+  const handleSubmit = async (
+    data: CreateMenuCategory | UpdateMenuCategory, id?: number
+  ) => {
     try {
-      if (formData.id) {
+      if (id) {
         await updateCategory({
-          id: formData.id,
-          data: {
-            id: formData.id,
-            name: formData.name,
-            slug: formData.slug,
-            isUsed: formData.isUsed,
-          },
+          id,
+          data: data as UpdateMenuCategory,
         }).unwrap();
       } else {
-        await createCategory({
-          name: formData.name,
-          slug: formData.slug,
-        }).unwrap();
+        await createCategory(data as CreateMenuCategory).unwrap();
       }
-
-      setOpenForm(false);
-      setEditing(null);
-      // TODO: แสดง Swal/Toast ว่า "บันทึกสำเร็จ"
+      handleCloseForm();
     } catch (err) {
-      console.error("save category failed", err);
-      // TODO: Swal.fire("บันทึกไม่สำเร็จ", "ลองใหม่อีกครั้ง", "error");
+      console.error("save failed", err);
     }
   };
+
+  const isBusy = isCreating || isUpdating || isDeleting;
+
+  if (isLoading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   return (
     <Box sx={{ py: { xs: 2, md: 4 } }}>
@@ -191,7 +175,7 @@ export default function ManageCategoryList() {
             <Button
               variant="outlined"
               startIcon={<RefreshIcon />}
-              onClick={refresh}
+              onClick={() => refetch()}
               disabled={isLoading}
             >
               รีเฟรช
@@ -199,20 +183,20 @@ export default function ManageCategoryList() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={handleCreate}
-              disabled={isCreating || isUpdating || isDeleting}
+              onClick={() => handleOpenForm()} // เปิด Form แบบ Create
+              disabled={isBusy}
             >
               เพิ่มหมวดหมู่
             </Button>
           </Stack>
         </Stack>
 
-        {/* Filter bar */}
+        {/* Filter bar: เชื่อมกับ filters state */}
         <CategoryFilterBar
-          q={q}
-          status={status}
-          onSearch={setQ}
-          onStatusChange={setStatus}
+          q={filters.q}
+          status={filters.status}
+          onSearch={(v) => handleFilterChange("q", v)}
+          onStatusChange={(v) => handleFilterChange("status", v)}
         />
 
         {/* Summary line: count + chips */}
@@ -220,62 +204,52 @@ export default function ManageCategoryList() {
           <Typography variant="body2" color="text.secondary">
             พบ {filtered.length} รายการ
           </Typography>
-          {status !== "all" && (
+
+          {filters.status !== "all" && (
             <Chip
               size="small"
               variant="outlined"
-              label={status === "active" ? "พร้อมใช้" : "ปิดใช้งาน"}
-              onDelete={() => setStatus("all")}
+              label={filters.status === "active" ? "พร้อมใช้" : "ปิดใช้งาน"}
+              onDelete={() => handleFilterChange("status", "all")}
             />
           )}
-          {dq && (
+
+          {filters.q && (
             <Chip
               size="small"
               variant="outlined"
-              label={`ค้นหา: "${dq}"`}
-              onDelete={() => setQ("")}
+              label={`ค้นหา: "${filters.q}"`}
+              onDelete={() => handleFilterChange("q", "")}
             />
           )}
         </Stack>
 
-        {/* Desktop / Mobile */}
+        {/* Desktop / Mobile Content */}
         {isSmUp ? (
+          // ---- Desktop View ----
           <Paper
             variant="outlined"
             sx={{ borderRadius: 2, overflow: "hidden" }}
           >
             <TableContainer>
-              <Table
-                size="medium"
-                sx={{
-                  tableLayout: "fixed", // ให้คอลัมน์กว้างคงที่ตาม width
-                }}
-              >
+              <Table size="medium" sx={{ tableLayout: "fixed" }}>
                 <TableHead>
                   <TableRow>
                     <TableCell
-                      width="20%"
+                      width="10%"
                       align="center"
                       sx={{ fontWeight: 700 }}
                     >
-                      ลำดับแสดง
+                      ลำดับ
+                    </TableCell>
+                    <TableCell width="30%" sx={{ fontWeight: 700 }}>
+                      ชื่อหมวดหมู่
+                    </TableCell>
+                    <TableCell width="25%" sx={{ fontWeight: 700 }}>
+                      Slug
                     </TableCell>
                     <TableCell
-                      width="20%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      ชื่อ / slug
-                    </TableCell>
-                    <TableCell
-                      width="20%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      จำนวนเมนู
-                    </TableCell>
-                    <TableCell
-                      width="20%"
+                      width="15%"
                       align="center"
                       sx={{ fontWeight: 700 }}
                     >
@@ -296,8 +270,8 @@ export default function ManageCategoryList() {
                     <ManageCategoryItem
                       key={r.id}
                       row={r}
-                      index={start + i + 1}
-                      onEdit={handleEdit}
+                      index={(page - 1) * pageSize + i + 1}
+                      onEdit={() => handleOpenForm(r)} // ส่งข้อมูลเพื่อ Edit
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
                     />
@@ -318,6 +292,7 @@ export default function ManageCategoryList() {
               </Table>
             </TableContainer>
 
+            {/* Pagination Desktop */}
             <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
               <PaginationBar
                 page={page}
@@ -330,10 +305,12 @@ export default function ManageCategoryList() {
                 }}
                 showSummary
                 showPageSizeSelect
+                pageSizeOptions={[5, 10, 20, 50]}
               />
             </Box>
           </Paper>
         ) : (
+          // ---- Mobile View ----
           <>
             <Stack spacing={1.25}>
               {pageRows.length === 0 ? (
@@ -348,8 +325,8 @@ export default function ManageCategoryList() {
                   <MobileCategoryItem
                     key={r.id}
                     row={r}
-                    index={start + i + 1}
-                    onEdit={handleEdit}
+                    index={(page - 1) * pageSize + i + 1}
+                    onEdit={() => handleOpenForm(r)}
                     onDelete={handleDelete}
                     onToggleActive={handleToggleActive}
                   />
@@ -357,27 +334,39 @@ export default function ManageCategoryList() {
               )}
             </Stack>
 
-            <PaginationBar
-              page={page}
-              pageSize={pageSize}
-              totalCount={totalCount}
-              onPageChange={setPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setPage(1);
+            {/* Pagination Mobile (Sticky Bottom) */}
+            <Stack
+              alignItems="center"
+              sx={{
+                pt: 1,
+                position: "sticky",
+                bottom: 0,
+                bgcolor: "background.default",
+                pb: "calc(env(safe-area-inset-bottom) + 8px)",
+                borderTop: "1px solid",
+                borderColor: "divider",
               }}
-              showSummary
-              showPageSizeSelect
-            />
+            >
+              <PaginationBar
+                page={page}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                showPageSizeSelect={false}
+                showSummary={false}
+                sx={{ mt: 0 }}
+              />
+            </Stack>
           </>
         )}
       </Container>
 
-      {/* Drawer Form */}
+      {/* Drawer Form: ใช้ formState */}
       <FormCategory
-        open={openForm}
-        onClose={() => setOpenForm(false)}
-        initial={editing ?? undefined}
+        open={formState.open}
+        onClose={handleCloseForm}
+        initial={formState.data ?? undefined}
         onSubmit={handleSubmit}
         isLoading={isCreating || isUpdating}
       />

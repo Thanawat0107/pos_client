@@ -58,7 +58,7 @@ export default function FormMenu({
       basePrice: initial?.basePrice ?? 0,
       imageUrl: initial?.imageUrl ?? "",
       imageFile: undefined as File | undefined,
-      // 🟢 แก้ไข: ถ้าไม่มี Category ให้เป็น "" เพื่อให้ Validation แจ้งเตือนว่า "กรุณาเลือก" ดีกว่าใส่ 0 แล้วเงียบ
+      // ป้องกันค่า 0 ตอน Create เพื่อให้ Validation ทำงานถูกต้อง
       menuCategoryId: initial?.menuCategoryId ?? (categories.length > 0 ? categories[0].id : ""),
       isUsed: initial ? initial.isUsed && !initial.isDeleted : true,
       menuItemOptionGroups:
@@ -71,12 +71,12 @@ export default function FormMenu({
       try {
         const { isUsed, menuItemOptionGroups, ...rest } = values;
 
-        // 🟢 แก้ไข: กรอง Option ที่เป็นค่าว่างทิ้งไป ก่อนส่ง Backend
+        // กรอง Option ที่เป็นค่าว่างทิ้งไป
         const formattedGroups = menuItemOptionGroups
-          .filter(g => g.menuItemOptionId) // เอาเฉพาะที่เลือกค่าแล้ว
+          .filter((g) => g.menuItemOptionId)
           .map((g) => ({
             ...(g.id && { id: g.id }),
-            menuItemOptionId: Number(g.menuItemOptionId), // แปลงเป็น int ให้ชัวร์
+            menuItemOptionId: Number(g.menuItemOptionId),
           }));
 
         const payload = {
@@ -85,7 +85,6 @@ export default function FormMenu({
           menuItemOptionGroups: formattedGroups,
         };
 
-        // 🟢 เช็ค Error ดักไว้ก่อน
         if (!payload.menuCategoryId) {
             alert("กรุณาเลือกหมวดหมู่สินค้า");
             return;
@@ -110,8 +109,10 @@ export default function FormMenu({
     setFieldValue,
     isSubmitting,
     resetForm,
+    submitCount
   } = formik;
 
+  // Reset Form เมื่อเปิด/ปิด
   useEffect(() => {
     if (open) {
       setImagePreview(initial?.imageUrl || null);
@@ -169,10 +170,10 @@ export default function FormMenu({
           {/* Body */}
           <Stack spacing={2.5} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
             
-            {/* --- Alert ถ้าไม่มีหมวดหมู่ --- */}
-            {categories.length === 0 && (
-                <Alert severity="warning">
-                    ยังไม่มีหมวดหมู่สินค้า กรุณาไปสร้างหมวดหมู่ก่อนสร้างเมนู
+            {/* Alert แจ้งเตือนเมื่อกดบันทึกแล้วมี Error */}
+            {Object.keys(errors).length > 0 && submitCount > 0 && (
+                <Alert severity="error">
+                    กรุณากรอกข้อมูลให้ครบถ้วน (ตรวจสอบช่องสีแดง)
                 </Alert>
             )}
 
@@ -295,7 +296,7 @@ export default function FormMenu({
                   onClick={() =>
                     setFieldValue("menuItemOptionGroups", [
                       ...values.menuItemOptionGroups,
-                      { menuItemOptionId: "" }, // เพิ่มแถวเปล่า
+                      { menuItemOptionId: "" },
                     ])
                   }
                 >
@@ -394,7 +395,6 @@ export default function FormMenu({
               type="submit"
               variant="contained"
               fullWidth
-              // 🟢 Disable ถ้าไม่มีหมวดหมู่ ป้องกัน User กดมั่ว
               disabled={isSubmitting || categories.length === 0}
             >
               {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "บันทึกข้อมูล"}

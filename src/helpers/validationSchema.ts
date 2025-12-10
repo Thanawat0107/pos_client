@@ -38,3 +38,9 @@ export const optionSchema = Yup.object().shape({
     })
   ),
 });
+
+export const categorySchema = Yup.object({
+  name: Yup.string().trim().required("กรุณากรอกชื่อหมวดหมู่"),
+  slug: Yup.string().trim().required("กรุณากรอก slug"),
+  isUsed: Yup.boolean().required(),
+});
