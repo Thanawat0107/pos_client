@@ -32,7 +32,7 @@ export default function ManageCategoryItem({
       <TableCell
         align="center"
         sx={{
-          width: "20%",
+          width: "10%",
           fontWeight: 800,
           fontVariantNumeric: "tabular-nums",
           color: "text.primary",
@@ -41,12 +41,11 @@ export default function ManageCategoryItem({
         {index ?? "-"}
       </TableCell>
 
-      {/* ชื่อ / slug */}
       <TableCell
+        align="center"
         sx={{
-          width: "20%",
+          width: "30%",
           maxWidth: 260,
-          textAlign: "center",
         }}
       >
         <Stack spacing={0.25} alignItems="center">
@@ -64,13 +63,23 @@ export default function ManageCategoryItem({
         </Stack>
       </TableCell>
 
-      {/* จำนวนเมนู */}
-      <TableCell align="center" sx={{ width: "20%", whiteSpace: "nowrap" }}>
+      <TableCell
+        align="center"
+        sx={{
+          width: "25%",
+          whiteSpace: "nowrap",
+        }}
+      >
         <Chip size="small" variant="outlined" label={0} />
       </TableCell>
 
-      {/* สถานะ */}
-      <TableCell sx={{ width: "20%", whiteSpace: "nowrap" }}>
+      <TableCell
+        align="center"
+        sx={{
+          width: "15%",
+          whiteSpace: "nowrap",
+        }}
+      >
         <Stack
           direction="row"
           alignItems="center"
@@ -80,15 +89,21 @@ export default function ManageCategoryItem({
           <Switch
             checked={row.isUsed}
             onChange={(_, v) => onToggleActive(row.id, v)}
+            size="small"
           />
           <Typography variant="body2" color="text.secondary">
-            {row.isUsed ? "พร้อมใช้" : "ปิดใช้งาน"}
+            {row.isUsed ? "พร้อมใช้" : "ปิด"}
           </Typography>
         </Stack>
       </TableCell>
 
-      {/* การทำงาน */}
-      <TableCell align="center" sx={{ width: "20%", whiteSpace: "nowrap" }}>
+      <TableCell
+        align="center"
+        sx={{
+          width: "20%",
+          whiteSpace: "nowrap",
+        }}
+      >
         <Stack
           direction="row"
           alignItems="center"
@@ -96,7 +111,11 @@ export default function ManageCategoryItem({
           spacing={0.5}
         >
           <Tooltip title="แก้ไข">
-            <IconButton size="small" onClick={() => onEdit(row)}>
+            <IconButton
+              size="small"
+              onClick={() => onEdit(row)}
+              color="primary"
+            >
               <EditOutlinedIcon />
             </IconButton>
           </Tooltip>

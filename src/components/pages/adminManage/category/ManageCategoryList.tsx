@@ -245,9 +245,16 @@ export default function ManageCategoryList() {
                     <TableCell width="30%" sx={{ fontWeight: 700 }}>
                       ชื่อหมวดหมู่
                     </TableCell>
-                    <TableCell width="25%" sx={{ fontWeight: 700 }}>
+
+                    {/* --- แก้ไขจุดนี้: เพิ่ม align="center" ให้ Slug --- */}
+                    <TableCell
+                      width="25%"
+                      align="center"
+                      sx={{ fontWeight: 700 }}
+                    >
                       Slug
                     </TableCell>
+
                     <TableCell
                       width="15%"
                       align="center"
