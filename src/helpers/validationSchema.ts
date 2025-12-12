@@ -44,3 +44,13 @@ export const categorySchema = Yup.object({
   slug: Yup.string().trim().required("กรุณากรอก slug"),
   isUsed: Yup.boolean().required(),
 });
+
+// Validation Schema เบื้องต้น
+export const recipeSchema = Yup.object().shape({
+  menuItemId: Yup.number()
+    .required("กรุณาระบุรหัสเมนู")
+    .min(1, "รหัสเมนูไม่ถูกต้อง"),
+  instructions: Yup.string().required("กรุณาระบุขั้นตอนการทำ"),
+  // ingredients เช็คว่าเป็น JSON string หรือ object ก็ได้ (ในที่นี้จำลองเป็น String ก่อนแปลง)
+  ingredientsStr: Yup.string().required("กรุณาระบุส่วนประกอบ (JSON Format)"),
+});

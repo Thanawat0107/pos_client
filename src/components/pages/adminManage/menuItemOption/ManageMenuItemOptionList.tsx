@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import {
   Box,
@@ -109,7 +108,6 @@ export default function ManageMenuItemOptionList() {
 
   // Pagination Logic
   const totalCount = filtered.length;
-  const totalPages = Math.ceil(totalCount / pageSize) || 1;
   const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   // Handlers

@@ -246,11 +246,17 @@ export default function ManageMenuList() {
               </Button>
               <Button
                 component={Link}
-                to="/manage-menuItemOptionList"
+                to="/manage-menuItemOption"
                 variant="contained"
-                startIcon={<AddIcon />}
-              >
+                disabled={isBusy}>
                 ตัวเลือกเพิ่มเติม
+              </Button>
+              <Button
+                component={Link}
+                to="/manage-recipe"
+                variant="contained"
+                disabled={isBusy}>
+                สูตรอาหาร
               </Button>
             </Stack>
           </Stack>
