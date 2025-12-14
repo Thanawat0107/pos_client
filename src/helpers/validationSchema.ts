@@ -45,12 +45,15 @@ export const categorySchema = Yup.object({
   isUsed: Yup.boolean().required(),
 });
 
-// Validation Schema เบื้องต้น
-export const recipeSchema = Yup.object().shape({
-  menuItemId: Yup.number()
-    .required("กรุณาระบุรหัสเมนู")
-    .min(1, "รหัสเมนูไม่ถูกต้อง"),
+// Validation Schema สำหรับหน้านี้โดยเฉพาะ (เพราะเปลี่ยน logic ของ ingredients)
+export const localRecipeSchema = Yup.object().shape({
+  menuItemId: Yup.number().min(1, "กรุณาเลือกเมนูอาหาร").required("กรุณาเลือกเมนูอาหาร"),
   instructions: Yup.string().required("กรุณาระบุขั้นตอนการทำ"),
-  // ingredients เช็คว่าเป็น JSON string หรือ object ก็ได้ (ในที่นี้จำลองเป็น String ก่อนแปลง)
-  ingredientsStr: Yup.string().required("กรุณาระบุส่วนประกอบ (JSON Format)"),
-});
+  // ingredientsList ต้องเป็น Array และข้างในต้องมีข้อมูล
+  ingredientsList: Yup.array().of(
+    Yup.object().shape({
+      name: Yup.string().required("ระบุชื่อ"),
+      quantity: Yup.string().required("ระบุปริมาณ"),
+    })
+  ),
+});;

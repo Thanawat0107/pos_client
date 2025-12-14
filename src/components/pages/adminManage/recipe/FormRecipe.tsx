@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Drawer,
@@ -12,14 +11,40 @@ import {
   Switch,
   CircularProgress,
   Paper,
+  Autocomplete,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { useFormik } from "formik";
 import { useEffect } from "react";
 import type { Recipe } from "../../../../@types/dto/Recipe";
 import type { CreateRecipe } from "../../../../@types/createDto/CreateRecipe";
 import type { UpdateRecipe } from "../../../../@types/UpdateDto/UpdateRecipe";
-import { recipeSchema } from "../../../../helpers/validationSchema";
+// ตรวจสอบว่าไฟล์ validationSchema มี localRecipeSchema อยู่จริง หรือนำมาแปะไว้ในไฟล์นี้ชั่วคราวก็ได้ครับ
+import { localRecipeSchema } from "../../../../helpers/validationSchema";
+
+// Helper 1: แปลง JSON Object -> Array
+const transformToFormArray = (jsonObj: any) => {
+  if (!jsonObj || Object.keys(jsonObj).length === 0) {
+    return [{ name: "", quantity: "" }];
+  }
+  return Object.entries(jsonObj).map(([key, value]) => ({
+    name: key,
+    quantity: value as string,
+  }));
+};
+
+// Helper 2: แปลง Array -> JSON Object
+const transformToJsonObject = (arr: { name: string; quantity: string }[]) => {
+  const result: Record<string, string> = {};
+  arr.forEach((item) => {
+    if (item.name.trim()) {
+      result[item.name.trim()] = item.quantity.trim();
+    }
+  });
+  return result;
+};
 
 type Props = {
   open: boolean;
@@ -27,6 +52,7 @@ type Props = {
   initial?: Partial<Recipe>;
   onSubmit: (data: CreateRecipe | UpdateRecipe) => Promise<void> | void;
   isLoading?: boolean;
+  menuOptions?: any[];
 };
 
 export default function FormRecipe({
@@ -35,30 +61,21 @@ export default function FormRecipe({
   initial,
   onSubmit,
   isLoading = false,
+  menuOptions = [],
 }: Props) {
   const formik = useFormik({
     enableReinitialize: true,
-    validationSchema: recipeSchema,
+    validationSchema: localRecipeSchema,
     initialValues: {
       id: initial?.id ?? 0,
-      menuItemId: initial?.menuItemId ?? "",
-      // แปลง Object ingredients กลับเป็น String เพื่อให้แก้ใน TextField ได้ง่าย
-      ingredientsStr: initial?.ingredients
-        ? JSON.stringify(initial.ingredients, null, 2)
-        : "{}",
+      menuItemId: initial?.menuItemId ?? 0,
+      ingredientsList: transformToFormArray(initial?.ingredients),
       instructions: initial?.instructions ?? "",
       isUsed: initial?.isUsed ?? true,
     },
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        // แปลง String กลับเป็น JSON Object
-        let ingredientsObj = {};
-        try {
-          ingredientsObj = JSON.parse(values.ingredientsStr);
-        } catch (e: any) {
-          alert("รูปแบบ JSON ของวัตถุดิบไม่ถูกต้อง");
-          return;
-        }
+        const ingredientsObj = transformToJsonObject(values.ingredientsList);
 
         if (initial?.id) {
           const payload: UpdateRecipe = {
@@ -100,13 +117,45 @@ export default function FormRecipe({
     if (!open) resetForm();
   }, [open, resetForm]);
 
+  // หา Object เมนูที่เลือก
+  const selectedMenu = menuOptions.find((m) => m.id === values.menuItemId) || null;
+
+  const handleAddIngredient = () => {
+    setFieldValue("ingredientsList", [
+      ...values.ingredientsList,
+      { name: "", quantity: "" },
+    ]);
+  };
+
+  const handleRemoveIngredient = (index: number) => {
+    const newList = [...values.ingredientsList];
+    if (newList.length > 1) {
+      newList.splice(index, 1);
+      setFieldValue("ingredientsList", newList);
+    } else {
+      setFieldValue("ingredientsList", [{ name: "", quantity: "" }]);
+    }
+  };
+
+  // ✅ แก้ไขส่วนนี้: เปลี่ยนวิธีอัปเดตค่าให้เป็น Immutable (สร้าง Object ใหม่เสมอ)
+  const handleIngredientChange = (
+    index: number,
+    field: "name" | "quantity",
+    value: string
+  ) => {
+    const newList = values.ingredientsList.map((item, i) =>
+      i === index ? { ...item, [field]: value } : item
+    );
+    setFieldValue("ingredientsList", newList);
+  };
+
   return (
     <Drawer
       anchor="right"
       open={open}
       onClose={onClose}
       PaperProps={{
-        sx: { width: { xs: 1, sm: 450 } }, // กว้างขึ้นเล็กน้อยสำหรับ Textarea
+        sx: { width: { xs: 1, sm: 500 } },
       }}
     >
       <Box
@@ -114,7 +163,6 @@ export default function FormRecipe({
         onSubmit={formik.handleSubmit}
         sx={{ height: "100%", display: "flex", flexDirection: "column" }}
       >
-        {/* Header */}
         <Stack
           direction="row"
           alignItems="center"
@@ -122,7 +170,7 @@ export default function FormRecipe({
           sx={{ p: 2, pt: "calc(env(safe-area-inset-top) + 8px)" }}
         >
           <Typography variant="h6" fontWeight={800}>
-            {initial?.id ? `แก้ไขสูตร (ID: ${initial.id})` : "เพิ่มสูตรอาหารใหม่"}
+            {initial?.id ? "แก้ไขสูตรอาหาร" : "เพิ่มสูตรอาหารใหม่"}
           </Typography>
           <IconButton onClick={onClose} disabled={isSubmitting}>
             <CloseIcon />
@@ -130,40 +178,96 @@ export default function FormRecipe({
         </Stack>
         <Divider />
 
-        {/* Body */}
-        <Stack spacing={2.5} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+        <Stack spacing={3} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
           
-          <TextField
-            label="รหัสเมนู (Menu Item ID)"
-            name="menuItemId"
-            type="number"
-            value={values.menuItemId}
-            onChange={handleChange}
+          {/* ✅ เพิ่ม isOptionEqualToValue เพื่อช่วยให้ค่าไม่หลุด */}
+          <Autocomplete
+            options={menuOptions}
+            getOptionLabel={(option) => option.name || ""}
+            value={selectedMenu}
+            onChange={(_, newValue) => {
+              setFieldValue("menuItemId", newValue ? newValue.id : 0);
+            }}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
             onBlur={handleBlur}
-            error={touched.menuItemId && !!errors.menuItemId}
-            helperText={touched.menuItemId && errors.menuItemId}
-            fullWidth
-            autoFocus
-            // หากเป็นการแก้ไข อาจจะห้ามแก้ ID เมนู หรือแล้วแต่ Logic ธุรกิจ
-            // disabled={!!initial?.id} 
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="เลือกเมนูอาหาร"
+                name="menuItemId"
+                // ตรวจสอบ error ให้ละเอียดขึ้นป้องกัน crash
+                error={touched.menuItemId && Boolean(errors.menuItemId)}
+                helperText={touched.menuItemId && (errors.menuItemId as string)}
+                fullWidth
+              />
+            )}
           />
 
-          <TextField
-            label="ส่วนประกอบ (JSON Format)"
-            name="ingredientsStr"
-            value={values.ingredientsStr}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={touched.ingredientsStr && !!errors.ingredientsStr}
-            helperText={
-              (touched.ingredientsStr && errors.ingredientsStr) ||
-              "ตัวอย่าง: { \"หมู\": \"100g\", \"น้ำปลา\": \"1 ช้อนโต๊ะ\" }"
-            }
-            fullWidth
-            multiline
-            rows={4}
-            sx={{ fontFamily: "monospace" }}
-          />
+          <Box>
+            <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+              ส่วนประกอบ (Ingredients)
+            </Typography>
+            <Stack spacing={2}>
+              {values.ingredientsList.map((item, index) => {
+                // ดึง Error แบบปลอดภัย
+                const itemErrors = (errors.ingredientsList as any)?.[index];
+                const itemTouched = (touched.ingredientsList as any)?.[index];
+
+                return (
+                  <Stack
+                    key={index}
+                    direction="row"
+                    spacing={1}
+                    alignItems="flex-start"
+                  >
+                    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 0.7fr", gap: 1, flex: 1 }}>
+                      <TextField
+                        label={`วัตถุดิบ ${index + 1}`}
+                        placeholder="เช่น หมูสับ"
+                        value={item.name}
+                        onChange={(e) =>
+                          handleIngredientChange(index, "name", e.target.value)
+                        }
+                        error={itemTouched?.name && !!itemErrors?.name}
+                        size="small"
+                        fullWidth
+                      />
+                      <TextField
+                        label="ปริมาณ"
+                        placeholder="เช่น 100g"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleIngredientChange(index, "quantity", e.target.value)
+                        }
+                        error={itemTouched?.quantity && !!itemErrors?.quantity}
+                        size="small"
+                        fullWidth
+                      />
+                    </Box>
+
+                    <IconButton
+                      color="error"
+                      onClick={() => handleRemoveIngredient(index)}
+                      disabled={values.ingredientsList.length === 1 && !item.name && !item.quantity}
+                      sx={{ mt: 0.5 }}
+                    >
+                      <DeleteOutlineIcon />
+                    </IconButton>
+                  </Stack>
+                );
+              })}
+
+              <Button
+                startIcon={<AddCircleOutlineIcon />}
+                variant="outlined"
+                onClick={handleAddIngredient}
+                sx={{ alignSelf: "flex-start", mt: 1 }}
+                size="small"
+              >
+                เพิ่มวัตถุดิบ
+              </Button>
+            </Stack>
+          </Box>
 
           <TextField
             label="ขั้นตอนการทำ (Instructions)"
@@ -176,9 +280,9 @@ export default function FormRecipe({
             fullWidth
             multiline
             minRows={4}
+            placeholder="1. ตั้งกระทะ...&#10;2. ใส่หมู..."
           />
 
-          {/* Status Switch (แสดงเฉพาะตอนแก้ไข) */}
           {initial?.id && (
             <Paper
               variant="outlined"
@@ -198,7 +302,7 @@ export default function FormRecipe({
                     : "สถานะ: ปิดใช้งาน"}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {values.isUsed ? "สูตรนี้ถูกใช้งานอยู่" : "ระงับการใช้สูตรนี้ชั่วคราว"}
+                   {values.isUsed ? "สูตรนี้กำลังถูกใช้งาน" : "ปิดการใช้งานชั่วคราว"}
                 </Typography>
               </Box>
               <Switch
@@ -210,7 +314,6 @@ export default function FormRecipe({
           )}
         </Stack>
 
-        {/* Footer */}
         <Divider />
         <Stack
           direction="row"

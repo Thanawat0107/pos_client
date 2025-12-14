@@ -20,26 +20,32 @@ import {
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useDebounced } from "../../../../hooks/useDebounced";
+
+// Components
 import ManageRecipeItem from "./ManageRecipeItem";
 import FormRecipe from "./FormRecipe";
 import MobileRecipeItem from "./MobileRecipeItem";
+import RecipeFilterBar from "../RecipeFilterBar";
+import PaginationBar from "../../../layouts/PaginationBar";
+
+// Types
 import type { Recipe } from "../../../../@types/dto/Recipe";
-import { useEffect, useMemo, useState } from "react";
-// สมมติชื่อ API Hooks ตาม Pattern เดิม
+import type { CreateRecipe } from "../../../../@types/createDto/CreateRecipe";
+import type { UpdateRecipe } from "../../../../@types/UpdateDto/UpdateRecipe";
+
+// API Hooks
 import {
   useCreateRecipeMutation,
   useDeleteRecipeMutation,
   useGetRecipesQuery,
   useUpdateRecipeMutation,
 } from "../../../../services/recipesApi";
-import PaginationBar from "../../../layouts/PaginationBar";
-import { useDebounced } from "../../../../hooks/useDebounced";
-import type { CreateRecipe } from "../../../../@types/createDto/CreateRecipe";
-import type { UpdateRecipe } from "../../../../@types/UpdateDto/UpdateRecipe";
-import { Link } from "react-router-dom";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import RecipeFilterBar from "../RecipeFilterBar";
-
+import { useGetMenuItemsQuery } from "../../../../services/menuItemApi";
+// 1. เพิ่ม Hook สำหรับดึง Menu Items (Path สมมติ)
 export default function ManageRecipeList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
@@ -59,15 +65,21 @@ export default function ManageRecipeList() {
     data: null,
   });
 
-  // Pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(isSmUp ? 8 : 6);
 
   // 2. API Hooks
   const { data, isLoading, refetch } = useGetRecipesQuery({
     pageNumber: 1,
-    pageSize: 1000, // Fetch all client-side filter simulation
+    pageSize: 1000, 
   });
+
+  // 2.1 ดึงข้อมูล Menu เพื่อเอาไปใช้ใน Select/Autocomplete
+  const { data: menuData } = useGetMenuItemsQuery({
+    pageNumber: 1,
+    pageSize: 1000, // ดึงมาทั้งหมดเพื่อให้เลือกได้ครบ
+  });
+  const menuList = menuData?.result ?? [];
 
   const [createRecipe, { isLoading: isCreating }] = useCreateRecipeMutation();
   const [updateRecipe, { isLoading: isUpdating }] = useUpdateRecipeMutation();
@@ -80,7 +92,7 @@ export default function ManageRecipeList() {
     setPage(1);
   }, [dq, filters.status, pageSize]);
 
-  // 4. Filter Logic (Search by MenuItemName or Instructions)
+  // 4. Filter Logic
   const filtered = useMemo(() => {
     const search = dq.trim().toLowerCase();
     return rows.filter((r) => {
@@ -129,8 +141,6 @@ export default function ManageRecipeList() {
     data: CreateRecipe | UpdateRecipe
   ) => {
     try {
-      // Logic แยก Create/Update จัดการใน Form แล้ว ส่งมาแค่ Payload ที่ถูกต้อง
-      // แต่ที่นี่ต้องเช็ค ID เพื่อเลือกเรียก Hook
       if (formState.data?.id) {
          await updateRecipe({
             id: formState.data.id,
@@ -234,7 +244,6 @@ export default function ManageRecipeList() {
 
         {/* Content */}
         {isSmUp ? (
-          // Desktop View
           <Paper
             variant="outlined"
             sx={{ borderRadius: 2, overflow: "hidden" }}
@@ -243,12 +252,8 @@ export default function ManageRecipeList() {
               <Table size="medium" sx={{ tableLayout: "fixed" }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell
-                      width="5%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      ลำดับ
+                    <TableCell width="5%" align="center" sx={{ fontWeight: 700 }}>
+                      #
                     </TableCell>
                     <TableCell width="25%" sx={{ fontWeight: 700 }}>
                       เมนู
@@ -256,18 +261,10 @@ export default function ManageRecipeList() {
                     <TableCell width="35%" sx={{ fontWeight: 700 }}>
                       วิธีทำ (ย่อ)
                     </TableCell>
-                    <TableCell
-                      width="15%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
+                    <TableCell width="15%" align="center" sx={{ fontWeight: 700 }}>
                       สถานะ
                     </TableCell>
-                    <TableCell
-                      width="20%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
+                    <TableCell width="20%" align="center" sx={{ fontWeight: 700 }}>
                       จัดการ
                     </TableCell>
                   </TableRow>
@@ -299,7 +296,6 @@ export default function ManageRecipeList() {
               </Table>
             </TableContainer>
 
-            {/* Pagination */}
             <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
               <PaginationBar
                 page={page}
@@ -340,7 +336,6 @@ export default function ManageRecipeList() {
               )}
             </Stack>
 
-            {/* Pagination Mobile */}
             <Stack
               alignItems="center"
               sx={{
@@ -376,6 +371,8 @@ export default function ManageRecipeList() {
         initial={formState.data ?? undefined}
         onSubmit={handleSubmit}
         isLoading={isCreating || isUpdating}
+        // 3. ส่งรายการเมนูไปให้ Form
+        menuOptions={menuList} 
       />
     </Box>
   );

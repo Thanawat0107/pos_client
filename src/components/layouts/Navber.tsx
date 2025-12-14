@@ -320,7 +320,7 @@ export default function Navbar() {
             <ListItemIcon>
               <Inventory2OutlinedIcon fontSize="small" />
             </ListItemIcon>
-            สินค้า/สต็อก
+            จัดการคู่มือการทำงาน
           </MenuItem>
         </Menu>
       {/* Profile Menu (ใช้ร่วมกันได้ทั้งมือถือ/เดสก์ท็อป) */}
@@ -526,7 +526,7 @@ export default function Navbar() {
                 <ListItemIcon>
                   <Inventory2OutlinedIcon />
                 </ListItemIcon>
-                <ListItemText primary="สินค้า/สต็อก" />
+                <ListItemText primary="จัดการคู่มือการทำงาน" />
               </ListItemButton>
             </List>
           </Collapse>
