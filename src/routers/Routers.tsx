@@ -10,6 +10,7 @@ import Login from "../components/pages/profile/Login";
 import Register from "../components/pages/profile/Register";
 import ManageMenuItemOptionList from "../components/pages/adminManage/menuItemOption/ManageMenuItemOptionList";
 import ManageRecipeList from "../components/pages/adminManage/recipe/ManageRecipeList";
+import ManageManualList from "../components/pages/adminManage/manual/ManageManualList";
 
 export default function Routers() {
   return (
@@ -22,6 +23,7 @@ export default function Routers() {
       <Route path="/register" element={<Register />} />
       {/* <Route path="/checkout" element={<Checkout />} /> */}
       <Route path="/manage-menuItem" element={<ManageMenuItem />} />
+      <Route path="/manage-manual" element={<ManageManualList />} />
       <Route path="/manage-menuItemOption" element={<ManageMenuItemOptionList />} />
       <Route path="/manage-recipe" element={<ManageRecipeList />} />
       <Route path="/manage-category" element={<ManageCategory />} />

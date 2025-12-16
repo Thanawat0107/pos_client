@@ -10,29 +10,27 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
-import type { MenuCategory } from "../../../@types/dto/MenuCategory";
+import { ROLES } from "../../../helpers/SD";
 
 type Props = {
   q: string;
-  cat: string;
+  role: string;
   status: "all" | "active" | "inactive";
-  categories: MenuCategory[];
   onSearch: (val: string) => void;
-  onCategoryChange: (val: string) => void;
+  onRoleChange: (val: string) => void;
   onStatusChange: (val: "all" | "active" | "inactive") => void;
 };
 
-export default function MenuFilterBar({
+export default function ManualFilterBar({
   q,
-  cat,
+  role,
   status,
-  categories,
   onSearch,
-  onCategoryChange,
+  onRoleChange,
   onStatusChange,
 }: Props) {
   const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up("md")); // มือถือ < md
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
   return (
     <Stack
@@ -43,10 +41,10 @@ export default function MenuFilterBar({
         width: "100%",
       }}
     >
-      {/* ค้นหา */}
+      {/* 1. ช่องค้นหา */}
       <TextField
         size={isMdUp ? "medium" : "small"}
-        placeholder="ค้นหาชื่อเมนู / คำอธิบาย"
+        placeholder="ค้นหา (เนื้อหา / หมวดหมู่)"
         value={q}
         onChange={(e) => onSearch(e.target.value)}
         fullWidth
@@ -62,27 +60,27 @@ export default function MenuFilterBar({
         }}
       />
 
-      {/* หมวดหมู่ */}
+      {/* 2. ตัวกรอง Role (แทน Category) */}
       <FormControl fullWidth sx={{ minWidth: isMdUp ? 180 : "100%" }}>
         <Select
           size={isMdUp ? "medium" : "small"}
-          value={cat}
-          onChange={(e) => onCategoryChange(String(e.target.value))}
+          value={role}
+          onChange={(e) => onRoleChange(e.target.value)}
           displayEmpty
           sx={{
             fontSize: isMdUp ? 14 : 13,
           }}
         >
-          <MenuItem value="all">หมวดหมู่ทั้งหมด</MenuItem>
-          {categories.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.name}
+          <MenuItem value="all">บทบาททั้งหมด</MenuItem>
+          {ROLES.map((r) => (
+            <MenuItem key={r.value} value={r.value}>
+              {r.label}
             </MenuItem>
           ))}
         </Select>
       </FormControl>
 
-      {/* สถานะ */}
+      {/* 3. ตัวกรอง Status */}
       <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
         <Select
           size={isMdUp ? "medium" : "small"}
@@ -94,8 +92,8 @@ export default function MenuFilterBar({
           }}
         >
           <MenuItem value="all">สถานะทั้งหมด</MenuItem>
-          <MenuItem value="active">พร้อมขาย</MenuItem>
-          <MenuItem value="inactive">ปิดขาย</MenuItem>
+          <MenuItem value="active">ใช้งาน (Active)</MenuItem>
+          <MenuItem value="inactive">ปิดการใช้งาน</MenuItem>
         </Select>
       </FormControl>
     </Stack>

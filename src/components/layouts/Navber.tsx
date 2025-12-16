@@ -316,7 +316,7 @@ export default function Navbar() {
             </ListItemIcon>
             จัดการออเดอร์
           </MenuItem>
-          <MenuItem component={RouterLink} to="#" onClick={handleCloseManage}>
+          <MenuItem component={RouterLink} to="/manage-manual" onClick={handleCloseManage}>
             <ListItemIcon>
               <Inventory2OutlinedIcon fontSize="small" />
             </ListItemIcon>
@@ -519,9 +519,9 @@ export default function Navbar() {
               <ListItemButton
                 sx={{ pl: 6 }}
                 component={RouterLink}
-                to="#"
+                to="/manage-manual"
                 onClick={toggleDrawer(false)}
-                selected={location.pathname.startsWith("#")}
+                selected={location.pathname.startsWith("/manage-manual")}
               >
                 <ListItemIcon>
                   <Inventory2OutlinedIcon />

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Avatar,
   Chip,
@@ -31,7 +30,6 @@ export default function MobileMenuItem({
   onEdit,
   onDelete,
   onToggleActive,
-  showOrderOnImage = false,
 }: Props) {
   const isActive = row.isUsed && !row.isDeleted;
 

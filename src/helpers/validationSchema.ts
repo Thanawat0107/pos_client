@@ -57,3 +57,9 @@ export const localRecipeSchema = Yup.object().shape({
     })
   ),
 });;
+
+export const manualSchema = Yup.object().shape({
+  content: Yup.string().required("กรุณาระบุรายละเอียด"),
+  category: Yup.string().required("กรุณาระบุหมวดหมู่"),
+  targetRole: Yup.string().required("กรุณาระบุผู้มีสิทธิ์ใช้งาน"),
+});
