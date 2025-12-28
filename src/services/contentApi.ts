@@ -80,6 +80,16 @@ export const contentApi = createApi({
       },
       invalidatesTags: ["Content"],
     }),
+
+    verifyPromoCode: builder.mutation<Content, string>({
+      // ใช้ mutation เพราะเราต้องการ Trigger การกดปุ่มแล้วค่อยเช็ค (ไม่ใช่ Auto Fetch)
+      // แม้ Backend เป็น GET แต่ใน RTK Query ใช้ Mutation เพื่อ Manual Trigger ได้สะดวก
+      query: (code) => ({
+        url: `contents/verify-promo/${code}`,
+        method: "GET",
+      }),
+      transformResponse: unwrapResult<Content>,
+    }),
   }),
 });
 
@@ -89,6 +99,7 @@ export const {
   useCreateContentMutation,
   useUpdateContentMutation,
   useDeleteContentMutation,
+  useVerifyPromoCodeMutation,
 } = contentApi;
 
 export default contentApi;

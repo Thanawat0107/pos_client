@@ -309,11 +309,10 @@ export default function ManageContentList() {
           </Paper>
         ) : (
           <Stack spacing={2}>
-            {pageRows.map((r, i) => (
+            {pageRows.map((r) => (
               <MobileContentItem
                 key={r.id}
                 row={r}
-                index={i}
                 onEdit={() => handleOpenForm(r)}
                 onDelete={handleDelete}
                 onToggleActive={handleToggleActive}

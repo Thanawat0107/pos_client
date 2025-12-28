@@ -63,3 +63,13 @@ export const manualSchema = Yup.object().shape({
   category: Yup.string().required("กรุณาระบุหมวดหมู่"),
   targetRole: Yup.string().required("กรุณาระบุผู้มีสิทธิ์ใช้งาน"),
 });
+
+// Validation Schema
+export const contentSchema = Yup.object().shape({
+  title: Yup.string().required("กรุณาระบุหัวข้อ"),
+  contentType: Yup.string().required("กรุณาเลือกประเภท"),
+  startDate: Yup.date().required("ระบุวันเริ่มต้น"),
+  endDate: Yup.date()
+    .required("ระบุวันสิ้นสุด")
+    .min(Yup.ref("startDate"), "วันสิ้นสุดต้องหลังจากวันเริ่มต้น"),
+});

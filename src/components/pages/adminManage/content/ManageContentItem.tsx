@@ -24,6 +24,11 @@ const formatDate = (date: Date | string) => {
   });
 };
 
+// ✅ [เพิ่ม] Helper เช็คหมดอายุ
+const isExpired = (endDate: Date | string) => {
+  return new Date(endDate) < new Date();
+};
+
 type Props = {
   row: Content;
   index?: number;
@@ -39,8 +44,17 @@ export default function ManageContentItem({
   onDelete,
   onToggleActive,
 }: Props) {
+  // ✅ คำนวณสถานะหมดอายุ
+  const expired = isExpired(row.endDate);
+
   return (
-    <TableRow hover>
+    // ✅ [ปรับปรุง] เปลี่ยนสีพื้นหลังถ้าหมดอายุ
+    <TableRow 
+      hover 
+      sx={{ 
+        bgcolor: expired ? "#fff4f4" : "inherit" // สีแดงจางๆ
+      }}
+    >
       {/* ลำดับ */}
       <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 60 }}>
         <Typography fontWeight={800}>{index ?? "-"}</Typography>
@@ -60,6 +74,7 @@ export default function ManageContentItem({
             height: 60,
             borderRadius: 2,
             bgcolor: "grey.100",
+            filter: expired ? "grayscale(100%)" : "none", // (Optional) ทำให้รูปเป็นขาวดำถ้าหมดอายุ
           }}
         />
       </TableCell>
@@ -67,7 +82,7 @@ export default function ManageContentItem({
       {/* ข้อมูลหลัก */}
       <TableCell>
         <Stack spacing={0.5}>
-          <Typography fontWeight={700} variant="body2">
+          <Typography fontWeight={700} variant="body2" color={expired ? "text.secondary" : "text.primary"}>
             {row.title}
           </Typography>
           <Typography
@@ -82,7 +97,7 @@ export default function ManageContentItem({
             <Chip
               label={`Code: ${row.promoCode}`}
               size="small"
-              color="primary"
+              color={expired ? "default" : "primary"} // ถ้าหมดอายุให้สีเทา
               variant="outlined"
               sx={{ width: "fit-content", height: 20, fontSize: 10 }}
             />
@@ -95,27 +110,44 @@ export default function ManageContentItem({
         <Chip
           label={row.contentType}
           size="small"
+          // ถ้าหมดอายุ ปรับสีให้ดูจางลง หรือใช้สี default
           color={
-            row.contentType === "Promotion"
-              ? "warning"
-              : row.contentType === "News"
-              ? "info"
-              : "default"
+            expired 
+              ? "default"
+              : row.contentType === "Promotion" ? "warning" : "info"
           }
+          variant={expired ? "outlined" : "filled"}
         />
       </TableCell>
 
       {/* ระยะเวลา */}
       <TableCell width={180}>
         <Stack direction="row" alignItems="center" spacing={1}>
-          <EventIcon fontSize="small" color="action" />
+          <EventIcon fontSize="small" color={expired ? "error" : "action"} />
           <Box>
             <Typography variant="caption" display="block">
               เริ่ม: {formatDate(row.startDate)}
             </Typography>
-            <Typography variant="caption" display="block">
+            
+            {/* ✅ [ปรับปรุง] ไฮไลท์วันสิ้นสุด */}
+            <Typography 
+                variant="caption" 
+                display="block" 
+                fontWeight={expired ? "bold" : "normal"}
+                color={expired ? "error.main" : "text.primary"}
+            >
               สิ้นสุด: {formatDate(row.endDate)}
             </Typography>
+
+            {/* ✅ [เพิ่ม] Badge บอกว่า Expired */}
+            {expired && (
+                <Chip 
+                    label="หมดอายุ" 
+                    color="error" 
+                    size="small" 
+                    sx={{ mt: 0.5, height: 18, fontSize: 10 }} 
+                />
+            )}
           </Box>
         </Stack>
       </TableCell>
@@ -127,10 +159,13 @@ export default function ManageContentItem({
             checked={row.isUsed}
             onChange={(_, v) => onToggleActive(row.id, v)}
             size="small"
+            color={expired ? "warning" : "success"} // เปลี่ยนสี Switch เตือนใจ
           />
-          <Typography variant="caption" color="text.secondary">
-            {row.isUsed ? "Active" : "Inactive"}
-          </Typography>
+          <Box>
+            <Typography variant="caption" color="text.secondary" display="block">
+                {row.isUsed ? "เปิดใช้งาน" : "ปิด"}
+            </Typography>
+          </Box>
         </Stack>
       </TableCell>
 

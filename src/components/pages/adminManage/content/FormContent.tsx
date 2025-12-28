@@ -18,44 +18,26 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { FormikProvider, useFormik } from "formik";
 import { useEffect, useMemo, useRef, useState } from "react";
-import * as Yup from "yup";
 
-// Type Imports
+// Types
 import type { Content } from "../../../../@types/dto/Content";
 import type { CreateContent } from "../../../../@types/createDto/CreateContent";
 import type { UpdateContent } from "../../../../@types/UpdateDto/UpdateContent";
 
-// Helper สำหรับแปลง Date เป็น string เพื่อใส่ใน input type="datetime-local"
+// Validation
+import { contentSchema } from "../../../../helpers/validationSchema";
+
+// --- Helper Functions ---
 const formatDateForInput = (date: Date | string | undefined) => {
   if (!date) return "";
   const d = new Date(date);
-  if (isNaN(d.getTime())) return ""; // เช็ค date invalid
-  // ปรับ Timezone offset ให้ตรงกับ Local
+  if (isNaN(d.getTime())) return "";
   const offset = d.getTimezoneOffset() * 60000;
   const localISOTime = new Date(d.getTime() - offset).toISOString().slice(0, 16);
   return localISOTime;
 };
 
-// Validation Schema
-const contentSchema = Yup.object().shape({
-  title: Yup.string().required("กรุณาระบุหัวข้อ"),
-  contentType: Yup.string().required("กรุณาเลือกประเภท"),
-  startDate: Yup.date().required("ระบุวันเริ่มต้น"),
-  endDate: Yup.date()
-    .required("ระบุวันสิ้นสุด")
-    .min(Yup.ref("startDate"), "วันสิ้นสุดต้องหลังจากวันเริ่มต้น"),
-});
-
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  initial?: Content;
-  onSubmit: (
-    data: CreateContent | UpdateContent,
-    id?: number
-  ) => Promise<void> | void;
-};
-
+// --- Constants ---
 const CONTENT_TYPES = [
   { value: "News", label: "ข่าวสาร (News)" },
   { value: "Promotion", label: "โปรโมชั่น (Promotion)" },
@@ -67,6 +49,18 @@ const DISCOUNT_TYPES = [
   { value: "Amount", label: "บาท (Amount)" },
 ];
 
+const MAX_FILE_SIZE_MB = 5;
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  initial?: Content; // ถ้ามีค่า = โหมดแก้ไข, ถ้าไม่มี = โหมดสร้าง
+  onSubmit: (
+    data: CreateContent | UpdateContent,
+    id?: number
+  ) => Promise<void> | void;
+};
+
 export default function FormContent({
   open,
   onClose,
@@ -76,8 +70,7 @@ export default function FormContent({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // ✅ 1. ใช้ useMemo เพื่อสร้าง initialValues เพียงครั้งเดียวเมื่อ initial เปลี่ยน
-  // ป้องกันการสร้าง new Date() ใหม่ทุกครั้งที่ render ซึ่งเป็นสาเหตุของ Infinite Loop
+  // 1. Initial Values
   const formInitialValues = useMemo(() => {
     return {
       contentType: initial?.contentType ?? "News",
@@ -90,27 +83,37 @@ export default function FormContent({
       discountType: initial?.discountType ?? "Percent",
       discountValue: initial?.discountValue ?? 0,
       minOrderAmount: initial?.minOrderAmount ?? 0,
-      promoCode: initial?.promoCode ?? "",
+      promoCode: initial?.promoCode ?? "", // ถ้าแก้ไข จะมีค่ามา
 
-      // Date Fields (สร้าง Date ใหม่เฉพาะตอน initial เปลี่ยนเท่านั้น)
+      // Date Fields
       startDate: initial?.startDate ? new Date(initial.startDate) : new Date(),
       endDate: initial?.endDate ? new Date(initial.endDate) : new Date(),
 
       isUsed: initial ? initial.isUsed : true,
     };
-  }, [initial]); // Dependency array: ทำงานใหม่เฉพาะตอน initial เปลี่ยน
+  }, [initial]);
 
   const formik = useFormik({
     enableReinitialize: true,
     validationSchema: contentSchema,
-    initialValues: formInitialValues, // ✅ ส่งค่าที่ memo แล้วเข้าไป
+    initialValues: formInitialValues,
     onSubmit: async (values, { setSubmitting }) => {
       try {
+        // จัดเตรียม Payload
         const payload = {
-          ...values,
-          startDate: new Date(values.startDate),
-          endDate: new Date(values.endDate),
+            ...values,
+            // แปลง Date -> ISO String (Backend ชอบแบบนี้)
+            startDate: new Date(values.startDate).toISOString(),
+            endDate: new Date(values.endDate).toISOString(),
         };
+
+        // ถ้าไม่ใช่ Promotion ให้ล้างค่าทิ้งเพื่อความสะอาด (Double check)
+        if (values.contentType !== 'Promotion') {
+            payload.discountValue = 0;
+            payload.minOrderAmount = 0;
+            payload.promoCode = "";
+        }
+
         await onSubmit(payload as any, initial?.id);
         onClose();
       } catch (error) {
@@ -130,8 +133,10 @@ export default function FormContent({
     setFieldValue,
     isSubmitting,
     resetForm,
+    submitCount,
   } = formik;
 
+  // 2. Lifecycle & Effects
   useEffect(() => {
     if (open) {
       setImagePreview(initial?.imageUrl || null);
@@ -142,9 +147,26 @@ export default function FormContent({
     }
   }, [open, initial, resetForm]);
 
+  // ✅ Auto Reset Promotion Fields: เมื่อเปลี่ยน Type เป็นอย่างอื่น ให้เคลียร์ค่า
+  useEffect(() => {
+    if (values.contentType !== "Promotion") {
+       setFieldValue("discountValue", 0);
+       setFieldValue("minOrderAmount", 0);
+       setFieldValue("promoCode", "");
+       setFieldValue("discountType", "Percent");
+    }
+  }, [values.contentType, setFieldValue]);
+
+  // 3. Handlers
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // ✅ Check File Size
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        alert(`ขนาดไฟล์ต้องไม่เกิน ${MAX_FILE_SIZE_MB}MB`);
+        e.target.value = ""; // Reset input
+        return;
+      }
       setFieldValue("fileImage", file);
       setImagePreview(URL.createObjectURL(file));
     }
@@ -164,7 +186,7 @@ export default function FormContent({
       anchor="right"
       open={open}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: 1, sm: 600 } } }} // กว้างกว่า Menu นิดหน่อย
+      PaperProps={{ sx: { width: { xs: 1, sm: 600 } } }}
     >
       <FormikProvider value={formik}>
         <Box
@@ -172,7 +194,7 @@ export default function FormContent({
           onSubmit={formik.handleSubmit}
           sx={{ height: "100%", display: "flex", flexDirection: "column" }}
         >
-          {/* Header */}
+          {/* --- Header --- */}
           <Stack
             direction="row"
             alignItems="center"
@@ -188,9 +210,10 @@ export default function FormContent({
           </Stack>
           <Divider />
 
-          {/* Body */}
+          {/* --- Body --- */}
           <Stack spacing={2.5} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-            {Object.keys(errors).length > 0 && submitCount > 0 && (         
+            {/* Error Alert */}
+            {Object.keys(errors).length > 0 && submitCount > 0 && (
               <Alert severity="error">
                 กรุณากรอกข้อมูลให้ครบถ้วน (ตรวจสอบช่องสีแดง)
               </Alert>
@@ -250,33 +273,34 @@ export default function FormContent({
 
             {/* 2. Basic Info */}
             <Stack direction="row" spacing={2}>
-                 <TextField
-                    select
-                    label="ประเภท (Type)"
-                    name="contentType"
-                    value={values.contentType}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.contentType && !!errors.contentType}
-                    helperText={touched.contentType && errors.contentType}
-                    sx={{ width: "40%" }}
-                  >
-                    {CONTENT_TYPES.map((c) => (
-                      <MenuItem key={c.value} value={c.value}>
-                        {c.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField
-                    label="หัวข้อ (Title)"
-                    name="title"
-                    value={values.title}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.title && !!errors.title}
-                    helperText={touched.title && errors.title}
-                    fullWidth
-                  />
+              <TextField
+                select
+                label="ประเภท (Type)"
+                name="contentType"
+                value={values.contentType}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.contentType && !!errors.contentType}
+                helperText={touched.contentType && errors.contentType}
+                sx={{ width: "40%" }}
+                disabled={!!initial} // ✅ เพิ่มบรรทัดนี้: ถ้าเป็นการแก้ไข (มี initial) ห้ามเปลี่ยน Type
+              >
+                {CONTENT_TYPES.map((c) => (
+                  <MenuItem key={c.value} value={c.value}>
+                    {c.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="หัวข้อ (Title)"
+                name="title"
+                value={values.title}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.title && !!errors.title}
+                helperText={touched.title && errors.title}
+                fullWidth
+              />
             </Stack>
 
             <TextField
@@ -291,85 +315,111 @@ export default function FormContent({
             />
 
             {/* 3. Duration */}
-             <Stack direction="row" spacing={2}>
-                <TextField
-                  label="วันเริ่มต้น"
-                  type="datetime-local"
-                  name="startDate"
-                  value={formatDateForInput(values.startDate as any)}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                  error={touched.startDate && !!errors.startDate}
-                  helperText={touched.startDate && (errors.startDate as string)}
-                />
-                 <TextField
-                  label="วันสิ้นสุด"
-                  type="datetime-local"
-                  name="endDate"
-                  value={formatDateForInput(values.endDate as any)}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                  error={touched.endDate && !!errors.endDate}
-                  helperText={touched.endDate && (errors.endDate as string)}
-                />
-             </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="วันเริ่มต้น"
+                type="datetime-local"
+                name="startDate"
+                value={formatDateForInput(values.startDate as any)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFieldValue("startDate", val ? new Date(val) : new Date());
+                }}
+                onBlur={handleBlur}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                error={touched.startDate && !!errors.startDate}
+                helperText={touched.startDate && (errors.startDate as string)}
+              />
+              <TextField
+                label="วันสิ้นสุด"
+                type="datetime-local"
+                name="endDate"
+                value={formatDateForInput(values.endDate as any)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFieldValue("endDate", val ? new Date(val) : new Date());
+                }}
+                onBlur={handleBlur}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                error={touched.endDate && !!errors.endDate}
+                helperText={touched.endDate && (errors.endDate as string)}
+              />
+            </Stack>
 
-            {/* 4. Promotion Fields (Show only if type is Promotion) */}
+            {/* 4. Promotion Fields (Conditional) */}
             {isPromotion && (
-                <Paper variant="outlined" sx={{ p: 2, bgcolor: "grey.50" }}>
-                    <Typography variant="subtitle2" fontWeight="bold" mb={2} color="primary">
-                        ข้อมูลโปรโมชั่น (Promotion Details)
-                    </Typography>
-                    <Stack spacing={2}>
-                         <TextField
-                            label="รหัสโปรโมชั่น (Promo Code)"
-                            name="promoCode"
-                            value={values.promoCode}
-                            onChange={handleChange}
-                            fullWidth
-                            placeholder="เช่น SALE2025"
-                         />
-                         <Stack direction="row" spacing={2}>
-                             <TextField
-                                select
-                                label="รูปแบบส่วนลด"
-                                name="discountType"
-                                value={values.discountType}
-                                onChange={handleChange}
-                                fullWidth
-                              >
-                                {DISCOUNT_TYPES.map((t) => (
-                                  <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
-                                ))}
-                              </TextField>
-                              <TextField
-                                label="มูลค่าส่วนลด"
-                                name="discountValue"
-                                type="number"
-                                value={values.discountValue}
-                                onChange={handleChange}
-                                fullWidth
-                                InputProps={{ inputProps: { min: 0 } }}
-                              />
-                         </Stack>
-                         <TextField
-                            label="ยอดสั่งซื้อขั้นต่ำ"
-                            name="minOrderAmount"
-                            type="number"
-                            value={values.minOrderAmount}
-                            onChange={handleChange}
-                            fullWidth
-                            InputProps={{
-                                startAdornment: <InputAdornment position="start">฿</InputAdornment>,
-                                inputProps: { min: 0 } 
-                            }}
-                         />
-                    </Stack>
-                </Paper>
+              <Paper variant="outlined" sx={{ p: 2, bgcolor: "grey.50" }}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight="bold"
+                  mb={2}
+                  color="primary"
+                >
+                  ข้อมูลโปรโมชั่น (Promotion Details)
+                </Typography>
+                <Stack spacing={2}>
+                  {/* ✅ Logic: PromoCode */}
+                  {initial ? (
+                    // กรณีแก้ไข: แสดงรหัสเดิม (Read-only)
+                    <TextField
+                      label="รหัสโปรโมชั่น (Promo Code)"
+                      value={values.promoCode || "-"}
+                      disabled
+                      fullWidth
+                      helperText="รหัสถูกสร้างโดยระบบ (ไม่สามารถแก้ไขได้)"
+                      variant="filled"
+                    />
+                  ) : (
+                    // กรณีสร้างใหม่: แจ้งเตือน
+                    <Alert severity="info">
+                      ระบบจะสร้างรหัสโปรโมชั่น (Promo Code)
+                      ให้อัตโนมัติหลังจากบันทึก
+                    </Alert>
+                  )}
+
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      select
+                      label="รูปแบบส่วนลด"
+                      name="discountType"
+                      value={values.discountType}
+                      onChange={handleChange}
+                      fullWidth
+                    >
+                      {DISCOUNT_TYPES.map((t) => (
+                        <MenuItem key={t.value} value={t.value}>
+                          {t.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <TextField
+                      label="มูลค่าส่วนลด"
+                      name="discountValue"
+                      type="number"
+                      value={values.discountValue}
+                      onChange={handleChange}
+                      fullWidth
+                      inputProps={{ min: 0 }}
+                    />
+                  </Stack>
+                  <TextField
+                    label="ยอดสั่งซื้อขั้นต่ำ"
+                    name="minOrderAmount"
+                    type="number"
+                    value={values.minOrderAmount}
+                    onChange={handleChange}
+                    fullWidth
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">฿</InputAdornment>
+                      ),
+                    }}
+                    inputProps={{ min: 0 }}
+                  />
+                </Stack>
+              </Paper>
             )}
 
             {/* 5. Status Switch */}
@@ -387,7 +437,9 @@ export default function FormContent({
               >
                 <Box>
                   <Typography variant="body2" fontWeight="bold">
-                    {values.isUsed ? "สถานะ: เผยแพร่ (Active)" : "สถานะ: ซ่อน (Inactive)"}
+                    {values.isUsed
+                      ? "สถานะ: เผยแพร่ (Active)"
+                      : "สถานะ: ซ่อน (Inactive)"}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {values.isUsed
@@ -404,7 +456,7 @@ export default function FormContent({
             )}
           </Stack>
 
-          {/* Footer */}
+          {/* --- Footer --- */}
           <Divider />
           <Stack
             direction="row"
