@@ -38,6 +38,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import AnnouncementOutlinedIcon from "@mui/icons-material/AnnouncementOutlined";
 import { useColorMode } from "../../contexts/color-mode";
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../hooks/useAppHookState";
@@ -322,6 +323,12 @@ export default function Navbar() {
             </ListItemIcon>
             จัดการคู่มือการทำงาน
           </MenuItem>
+          <MenuItem component={RouterLink} to="/manage-content" onClick={handleCloseManage}>
+            <ListItemIcon>
+              <AnnouncementOutlinedIcon fontSize="small" />
+            </ListItemIcon>
+            จัดการข่าวสาร/ประชาสัมพันธ์
+          </MenuItem>
         </Menu>
       {/* Profile Menu (ใช้ร่วมกันได้ทั้งมือถือ/เดสก์ท็อป) */}
       
@@ -527,6 +534,19 @@ export default function Navbar() {
                   <Inventory2OutlinedIcon />
                 </ListItemIcon>
                 <ListItemText primary="จัดการคู่มือการทำงาน" />
+              </ListItemButton>
+
+              <ListItemButton
+                sx={{ pl: 6 }}
+                component={RouterLink}
+                to="/manage-content"
+                onClick={toggleDrawer(false)}
+                selected={location.pathname.startsWith("/manage-content")}
+              >
+                <ListItemIcon>
+                  <AnnouncementOutlinedIcon />
+                </ListItemIcon>
+                <ListItemText primary=" จัดการข่าวสาร/ประชาสัมพันธ์" />
               </ListItemButton>
             </List>
           </Collapse>
