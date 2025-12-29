@@ -3,68 +3,23 @@ import Carousel from "../components/layouts/Carousel";
 import CategoryScroller, {
   demoCategories,
 } from "../components/pages/category/CategoryScroller";
-import { Typography, Box } from "@mui/material";
+import { Typography, Box, CircularProgress } from "@mui/material";
 import MenuScroller from "../components/pages/menu/MenuScroller";
-import type { Menu } from "../components/pages/menu/MenuCard";
 
-const items: Menu[] = [
-  {
-    id: "airpods",
-    name: "Apple AirPods",
-    price: 95,
-    image:
-      "https://images.unsplash.com/photo-1518446060624-3c3101a6c29b?q=80&w=1200&auto=format&fit=crop",
-    description:
-      "With plenty of talk and listen time, voice-activated Siri, and wireless charging.",
-  },
-  {
-    id: "watch",
-    name: "Smart Watch",
-    price: 129,
-    image:
-      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop",
-    description: "Health tracking, notifications, and long battery life.",
-  },
-  {
-    id: "watch",
-    name: "Smart Watch",
-    price: 129,
-    image:
-      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop",
-    description: "Health tracking, notifications, and long battery life.",
-  },{
-    id: "watch",
-    name: "Smart Watch",
-    price: 129,
-    image:
-      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop",
-    description: "Health tracking, notifications, and long battery life.",
-  },{
-    id: "watch",
-    name: "Smart Watch",
-    price: 129,
-    image:
-      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop",
-    description: "Health tracking, notifications, and long battery life.",
-  },{
-    id: "watch",
-    name: "Smart Watch",
-    price: 129,
-    image:
-      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop",
-    description: "Health tracking, notifications, and long battery life.",
-  },{
-    id: "watch",
-    name: "Smart Watch",
-    price: 129,
-    image:
-      "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop",
-    description: "Health tracking, notifications, and long battery life.",
-  },
-];
+// ✅ Import DTO
+import type { MenuItemDto } from "../@types/dto/MenuItem"; 
+import { useGetMenuItemsQuery } from "../services/menuItemApi"; // หรือ path ที่ถูกต้องของคุณ
 
 export default function Home() {
   const [cat, setCat] = useState<string>("pizza");
+
+  // เรียก API
+  const { data, isLoading, isError } = useGetMenuItemsQuery({});
+
+  // ✅ ไม่ต้องใช้ useMemo แปลงข้อมูลแล้ว เพราะ MenuCard ฉบับใหม่รับ MenuItemDto ได้เลย
+  // แค่กัน error กรณี data ยังไม่มา ให้เป็น array ว่าง []
+  const menuItems: MenuItemDto[] = data?.result ?? [];
+
   return (
     <>
       <div style={{ margin: "10px" }}>
@@ -75,19 +30,32 @@ export default function Home() {
         items={demoCategories}
         value={cat}
         onChange={setCat}
-        maxWidth="xl" // ปรับความกว้างได้: "sm" | "md" | "lg" | "xl" | false
+        maxWidth="xl"
       />
 
       <Box sx={{ mt: 4, textAlign: "center" }}>
-        <Typography variant="h6">Selected: {cat}</Typography>
+        <Typography variant="h6">Selected Category: {cat}</Typography>
       </Box>
 
-      <MenuScroller
-        items={items}
-        currency="THB"
-        onAddToCart={(p) => console.log("add", p)}
-        maxWidth="xl"
-      />
+      {isLoading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+          <CircularProgress />
+        </Box>
+      ) : isError ? (
+        <Box sx={{ textAlign: "center", mt: 10, color: "error.main" }}>
+          <Typography variant="h6">เกิดข้อผิดพลาดในการโหลดข้อมูล</Typography>
+        </Box>
+      ) : (
+        <MenuScroller
+          items={menuItems} // ✅ ส่ง MenuItemDto[] เข้าไปตรงๆ
+          currency="THB"
+          onAddToCart={(product) => {
+            console.log("Add to cart (DTO):", product);
+            // product ในที่นี้คือ MenuItemDto เต็มๆ
+          }}
+          maxWidth="xl"
+        />
+      )}
     </>
   );
 }

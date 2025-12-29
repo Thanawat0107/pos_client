@@ -1,7 +1,6 @@
 import * as React from "react";
 import {
   Box,
-  Grid,
   Stack,
   TextField,
   InputAdornment,
@@ -15,22 +14,26 @@ import {
   Button,
   Divider,
   useTheme,
+  Grid,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import TuneIcon from "@mui/icons-material/Tune";
 import SortIcon from "@mui/icons-material/Sort";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import MenuCard, { type Menu } from "./MenuCard";
+import MenuCard from "./MenuCard";
 import type { SxProps, Theme } from "@mui/material";
+import type { MenuItemDto } from "../../../@types/dto/MenuItem";
+
+// ✅ Import DTO
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "name-asc" | "name-desc";
 
 type Props = {
-  items: Menu[];
-  onAddToCart?: (m: Menu) => void;
-  currency?: string;   // default: "USD"
-  pageSize?: number;   // default: ตาม breakpoint
-  isLoading?: boolean; // เผื่อโชว์ skeleton
+  items: MenuItemDto[];
+  onAddToCart?: (m: MenuItemDto) => void;
+  currency?: string;
+  pageSize?: number;
+  isLoading?: boolean;
 };
 
 export default function MenuList({
@@ -45,36 +48,34 @@ export default function MenuList({
   const upMd = useMediaQuery(theme.breakpoints.up("md"));
   const upSm = useMediaQuery(theme.breakpoints.up("sm"));
 
-  // pageSize อัตโนมัติ (mobile-first)
   const computedPageSize = React.useMemo(() => {
     if (pageSize) return pageSize;
-    // มือถือ 2 คอลัมน์ x 4 แถว = 8, tablet 3x3 = 9, desktop 4x3 = 12
     if (upLg) return 12;
     if (upMd) return 9;
     if (upSm) return 8;
-    return 8; // xs (2 คอลัมน์)
+    return 8;
   }, [pageSize, upLg, upMd, upSm]);
 
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState<SortKey>("relevance");
   const [page, setPage] = React.useState(1);
 
-  // React 19: ทำให้ search ลื่นขึ้น
   const deferredQuery = React.useDeferredValue(query);
 
-  // filter + sort
   const filtered = React.useMemo(() => {
     const q = deferredQuery.trim().toLowerCase();
     let data = !q
       ? items
-      : items.filter((x) => [x.name, x.description ?? ""].some((t) => t.toLowerCase().includes(q)));
+      : items.filter((x) =>
+          [x.name, x.description ?? ""].some((t) => t.toLowerCase().includes(q))
+        );
 
     switch (sort) {
       case "price-asc":
-        data = [...data].sort((a, b) => a.price - b.price);
+        data = [...data].sort((a, b) => a.basePrice - b.basePrice);
         break;
       case "price-desc":
-        data = [...data].sort((a, b) => b.price - a.price);
+        data = [...data].sort((a, b) => b.basePrice - a.basePrice);
         break;
       case "name-asc":
         data = [...data].sort((a, b) => a.name.localeCompare(b.name));
@@ -89,7 +90,6 @@ export default function MenuList({
     return data;
   }, [items, deferredQuery, sort]);
 
-  // pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / computedPageSize));
   const currentPage = Math.min(page, totalPages);
   const paged = React.useMemo(() => {
@@ -97,7 +97,6 @@ export default function MenuList({
     return filtered.slice(start, start + computedPageSize);
   }, [filtered, currentPage, computedPageSize]);
 
-  // เมื่อ filter/sort เปลี่ยนให้รีเซ็ตหน้า
   React.useEffect(() => {
     setPage(1);
   }, [deferredQuery, sort, computedPageSize]);
@@ -110,7 +109,7 @@ export default function MenuList({
 
   return (
     <Box sx={{ px: { xs: 1.5, md: 3 }, pt: { xs: 1.5, md: 2 }, pb: { xs: 8, md: 4 }, maxWidth: "xl", mx: "auto" }}>
-      {/* Toolbar: Search + Sort (sticky บนมือถือ) */}
+      {/* Toolbar ... (เหมือนเดิม) */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={1}
@@ -118,7 +117,7 @@ export default function MenuList({
         justifyContent="space-between"
         sx={{
           position: { xs: "sticky", sm: "static" },
-          top: { xs: 56, sm: "auto" }, // กันโดน AppBar
+          top: { xs: 56, sm: "auto" },
           zIndex: (t) => t.zIndex.appBar - 1,
           backgroundColor: "background.default",
           pb: { xs: 1, sm: 0 },
@@ -126,13 +125,14 @@ export default function MenuList({
           pt: { xs: 0.5, sm: 0 },
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 220 }}>
+         {/* ... ส่วน Toolbar Code เดิม ... */}
+         <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 220 }}>
           <TextField
             fullWidth
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ค้นหาเมนู…"
-            size="small" // ✅ มือถือกระชับ
+            size="small"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -141,13 +141,14 @@ export default function MenuList({
               ),
             }}
           />
-          <IconButton aria-label="filters (future)" size="small" sx={{ display: { xs: "inline-flex", sm: "inline-flex" } }}>
+          <IconButton size="small" sx={{ display: { xs: "inline-flex", sm: "inline-flex" } }}>
             <TuneIcon fontSize="small" />
           </IconButton>
         </Stack>
 
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: { xs: 0.5, sm: 0 } }}>
-          <Stack direction="row" spacing={0.75} alignItems="center">
+            {/* ... Sort Select Code เดิม ... */}
+            <Stack direction="row" spacing={0.75} alignItems="center">
             <SortIcon fontSize="small" />
             <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", sm: "inline" } }}>
               Sort by
@@ -165,8 +166,7 @@ export default function MenuList({
               <MenuItem value="name-desc">Name: Z → A</MenuItem>
             </Select>
           </Stack>
-
-          <IconButton aria-label="reset" onClick={handleReset} size="small">
+          <IconButton onClick={handleReset} size="small">
             <RefreshIcon fontSize="small" />
           </IconButton>
         </Stack>
@@ -178,6 +178,7 @@ export default function MenuList({
       {isLoading ? (
         <Grid container spacing={{ xs: 1.25, sm: 2 }}>
           {Array.from({ length: computedPageSize }).map((_, i) => (
+            // ✅ แก้ไข: ตัด prop 'item' ออก และใช้ 'size' แทน xs, sm, md
             <Grid key={i} size={{ xs: 6, sm: 6, md: 4, lg: 3 }}>
               <Skeleton variant="rectangular" height={160} sx={{ borderRadius: 2, mb: 1 }} />
               <Skeleton width="70%" />
@@ -189,6 +190,7 @@ export default function MenuList({
         <>
           <Grid container spacing={{ xs: 1.25, sm: 2 }}>
             {paged.map((m) => (
+              // ✅ แก้ไข: ตัด prop 'item' ออก และใช้ 'size' แทน xs, sm, md
               <Grid key={m.id} size={{ xs: 6, sm: 6, md: 4, lg: 3 }}>
                 <MenuCard
                   menu={m}
@@ -196,7 +198,6 @@ export default function MenuList({
                   onAddToCart={onAddToCart}
                   sx={
                     {
-                      // ✅ hover เฉพาะจอใหญ่
                       transition: "transform .15s ease, box-shadow .15s ease",
                       "&:hover": {
                         transform: { md: "translateY(-2px)" },
@@ -218,8 +219,8 @@ export default function MenuList({
               onChange={(_, p) => setPage(p)}
               showFirstButton={upSm}
               showLastButton={upSm}
-              size={upSm ? "medium" : "small"}      // ✅ มือถือกะทัดรัด
-              siblingCount={upSm ? 1 : 0}           // ✅ มือถือแสดงเลขน้อยลง
+              size={upSm ? "medium" : "small"}
+              siblingCount={upSm ? 1 : 0}
               boundaryCount={upSm ? 1 : 0}
             />
           </Stack>
@@ -231,8 +232,8 @@ export default function MenuList({
   );
 }
 
-/** Empty state น่ารัก ๆ เวลาไม่เจอผลลัพธ์ */
 function EmptyState({ onReset }: { onReset: () => void }) {
+  // ... (Code เดิม)
   return (
     <Stack alignItems="center" spacing={1.25} sx={{ py: { xs: 4, sm: 6 } }}>
       <Typography variant="subtitle1" fontWeight={700}>

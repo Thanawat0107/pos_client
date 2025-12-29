@@ -1,15 +1,21 @@
 import * as React from "react";
 import { useMemo, useRef, useEffect } from "react";
-import { Box, useMediaQuery, useTheme, alpha } from "@mui/material";
-import MenuCard, { type Menu } from "./MenuCard";
+import { Box, useMediaQuery, useTheme, alpha, IconButton } from "@mui/material";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import MenuCard from "./MenuCard"; // ไม่ต้อง import type { Menu } แล้ว
+import type { MenuItemDto } from "../../../@types/dto/MenuItem";
+
+// ✅ Import DTO มาใช้กำหนด Type
 
 type Props = {
-  items: Menu[];
-  onAddToCart?: (p: Menu) => void;
+  items: MenuItemDto[]; // ✅ เปลี่ยนจาก Menu[] เป็น MenuItemDto[]
+  onAddToCart?: (p: MenuItemDto) => void;
   maxWidth?: "sm" | "md" | "lg" | "xl" | false;
   currency?: string;
 };
 
+// Helper function
 function chunk<T>(arr: T[], size: number) {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -26,15 +32,13 @@ export default function MenuScroller({
   const theme = useTheme();
   const upMd = useMediaQuery(theme.breakpoints.up("md"));
 
-  // ✅ มือถือ: 2 คอลัมน์ ต่อสไลด์ (1 แถว)
-  // ✅ เดสก์ท็อป: 3 คอลัมน์ ต่อสไลด์ (1 แถว)
   const cols = upMd ? 3 : 2;
-  const rows = 1;                // <<— ตามโจทย์: 1 แถวแนวนอน
-  const perSlide = cols * rows;  // xs: 2, md+: 3 (ไล่ไปทีละสไลด์)
+  const rows = 1;
+  const perSlide = cols * rows;
 
   const slides = useMemo(() => chunk(items, perSlide), [items, perSlide]);
 
-  // drag-to-scroll (mouse/touch)
+  // --- Logic: drag-to-scroll ---
   const drag = useRef({ active: false, x: 0, left: 0 });
   const onDown = (e: React.PointerEvent) => {
     const el = ref.current!;
@@ -52,7 +56,7 @@ export default function MenuScroller({
     ref.current.releasePointerCapture(e.pointerId);
   };
 
-  // wheel: vertical -> horizontal (desktop)
+  // --- Logic: wheel horizontal ---
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -66,6 +70,18 @@ export default function MenuScroller({
     return () => el.removeEventListener("wheel", handler);
   }, []);
 
+  // --- Logic: Button Scroll ---
+  const handleScroll = (direction: "left" | "right") => {
+    if (!ref.current) return;
+    const containerWidth = ref.current.clientWidth;
+    const scrollAmount = direction === "left" ? -containerWidth : containerWidth;
+    
+    ref.current.scrollBy({
+      left: scrollAmount,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <Box
       sx={(t) => ({
@@ -74,7 +90,6 @@ export default function MenuScroller({
         mx: "auto",
         maxWidth: maxWidth ? t.breakpoints.values[maxWidth] : "100%",
 
-        // ฮินท์เลื่อน: gradient ซ้าย/ขวา
         "&::before, &::after": {
           content: '""',
           position: "absolute",
@@ -96,7 +111,48 @@ export default function MenuScroller({
         },
       })}
     >
-      {/* แนวนอน: 1 "คอลัมน์ grid" = 1 สไลด์ */}
+      {/* ปุ่มซ้าย */}
+      <IconButton
+        aria-label="scroll left"
+        onClick={() => handleScroll("left")}
+        sx={{
+          position: "absolute",
+          left: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          zIndex: 2,
+          bgcolor: "background.paper",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: 2,
+          "&:hover": { bgcolor: "action.hover" },
+          display: { xs: "none", md: "flex" },
+        }}
+      >
+        <ChevronLeftIcon />
+      </IconButton>
+
+      {/* ปุ่มขวา */}
+      <IconButton
+        aria-label="scroll right"
+        onClick={() => handleScroll("right")}
+        sx={{
+          position: "absolute",
+          right: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          zIndex: 2,
+          bgcolor: "background.paper",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: 2,
+          "&:hover": { bgcolor: "action.hover" },
+          display: { xs: "none", md: "flex" },
+        }}
+      >
+        <ChevronRightIcon />
+      </IconButton>
+
       <Box
         ref={ref}
         onPointerDown={onDown}
@@ -106,10 +162,9 @@ export default function MenuScroller({
         sx={{
           display: "grid",
           gridAutoFlow: "column",
-          // กำหนดความกว้างของ 1 สไลด์ (ให้พอดีกับจำนวนคอลัมน์)
           gridAutoColumns: {
-            xs: "min(92vw, 560px)",   // มือถือ: เต็มตาหน่อย ให้เห็นขอบนิดๆ
-            md: "min(960px, 90vw)",   // เดสก์ท็อป: กว้างขึ้นรองรับ 3 คอลัมน์
+            xs: "min(92vw, 560px)",
+            md: "min(960px, 90vw)",
           },
           gap: { xs: 1.5, sm: 2 },
           overflowX: "auto",
@@ -131,7 +186,7 @@ export default function MenuScroller({
             sx={{
               scrollSnapAlign: "center",
               display: "grid",
-              gridTemplateColumns: `repeat(${cols}, 1fr)`, // <<— 2 คอลัมน์ xs, 3 คอลัมน์ md+
+              gridTemplateColumns: `repeat(${cols}, 1fr)`,
               gridAutoRows: "1fr",
               gap: { xs: 1.25, sm: 2 },
               alignItems: "stretch",
@@ -140,7 +195,7 @@ export default function MenuScroller({
             {slideItems.map((p, i) => (
               <MenuCard
                 key={`${p.id}-${i}`}
-                menu={p}
+                menu={p} // ส่ง MenuItemDto เข้าไปได้เลย
                 onAddToCart={onAddToCart}
                 currency={currency}
                 sx={{
