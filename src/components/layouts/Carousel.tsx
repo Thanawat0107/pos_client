@@ -1,28 +1,39 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
-import * as React from "react";
 import { useState, useRef, useEffect } from "react";
-import { Box, IconButton, Fade, useMediaQuery } from "@mui/material";
-import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
+import { Box, IconButton, Fade, useMediaQuery, Typography, Button } from "@mui/material";
+import { ArrowBackIosNew, ArrowForwardIos } from "@mui/icons-material"; // เปลี่ยนไอคอนให้ดูมนขึ้น
+import type { Content } from "../../@types/dto/Content";
 
-const images = [
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
-  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
-  "https://images.unsplash.com/photo-1500534623283-312aade485b7",
-];
+type Props = {
+  items: Content[];
+  autoPlay?: boolean;
+};
 
-export default function Carousel() {
+export default function Carousel({ items, autoPlay = true }: Props) {
   const [index, setIndex] = useState(0);
   const isDesktop = useMediaQuery("(min-width:900px)");
 
-  // ---- swipe state ----
+  // ---- Swipe State ----
   const startX = useRef<number | null>(null);
   const deltaX = useRef(0);
-  const SWIPE_THRESHOLD = 40; // px
+  const SWIPE_THRESHOLD = 40;
 
-  const handlePrev = () => setIndex((p) => (p === 0 ? images.length - 1 : p - 1));
-  const handleNext = () => setIndex((p) => (p === images.length - 1 ? 0 : p + 1));
+  useEffect(() => {
+    setIndex(0);
+  }, [items]);
 
-  // Mobile swipe
+  useEffect(() => {
+    if (!autoPlay || items.length <= 1) return;
+    const timer = setInterval(() => {
+      handleNext();
+    }, 6000); // เพิ่มเวลาเป็น 6 วิ ให้คนอ่านทัน
+    return () => clearInterval(timer);
+  }, [index, autoPlay, items.length]);
+
+  const handlePrev = () => setIndex((p) => (p === 0 ? items.length - 1 : p - 1));
+  const handleNext = () => setIndex((p) => (p === items.length - 1 ? 0 : p + 1));
+
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX;
     deltaX.current = 0;
@@ -39,142 +50,232 @@ export default function Carousel() {
     deltaX.current = 0;
   };
 
-  // Keyboard (desktop accessibility)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") handlePrev();
-      if (e.key === "ArrowRight") handleNext();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  const withParams = (url: string) => {
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}auto=format&fit=crop&w=1600&q=80`;
-};
+  if (!items || items.length === 0) return null;
 
   return (
     <Box
       role="region"
-      aria-label="Carousel"
+      aria-label="Promotional Carousel"
       sx={{
         position: "relative",
         width: "100%",
-        // สูงแบบ responsive (มือถือเด่นสุด)
-        height: { xs: 220, sm: 300, md: 420, lg: 560 },
-        borderRadius: { xs: 2, md: 3 },
+        // ปรับความสูงให้ดูโปร่งขึ้น
+        height: { xs: 240, sm: 360, md: 450, lg: 550 },
+        // เพิ่มเงาฟุ้งๆ ด้านล่างให้ดูลอยออกมา
+        boxShadow: { xs: "0 4px 12px rgba(0,0,0,0.1)", sm: "0 10px 40px -10px rgba(0,0,0,0.2)" },
+        borderRadius: { xs: 0, sm: 4 }, // มุมมนขึ้นอีก
         overflow: "hidden",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
         mx: "auto",
+        bgcolor: "grey.100",
       }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {images.map((img, i) => (
-        <Fade key={i} in={i === index} timeout={400}>
+      {items.map((item, i) => (
+        <Fade key={item.id} in={i === index} timeout={800}>
           <Box
-            component="img"
-            src={withParams(img)}
-            alt={`slide-${i + 1}`}
-            loading="lazy"
-            decoding="async"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = "/fallback.jpg";
-            }} // เผื่อไว้
             sx={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
+              position: "absolute",
+              inset: 0,
               display: i === index ? "block" : "none",
-              objectPosition: "center",
             }}
-          />
+          >
+            {/* 1. รูปภาพพื้นหลัง (Ken Burns Effect เบาๆ) */}
+            <Box
+              component="img"
+              src={item.imageUrl || "https://placehold.co/1200x600?text=Promotion"}
+              alt={item.title}
+              sx={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                // Animation: Zoom เข้าช้าๆ
+                animation: i === index ? "kenburns 10s infinite alternate" : "none",
+                "@keyframes kenburns": {
+                  from: { transform: "scale(1)" },
+                  to: { transform: "scale(1.05)" },
+                },
+              }}
+            />
+
+            {/* 2. Modern Gradient Overlay */}
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                // ไล่เฉดสีดำจากล่างขึ้นบน + มุมซ้ายล่างเข้มพิเศษให้อ่าน Text ง่าย
+                background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0) 100%)",
+              }}
+            />
+
+            {/* 3. Text Content Area */}
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                p: { xs: 3, md: 6 },
+                pt: { xs: 8, md: 12 },
+                color: "white",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "flex-end",
+                // Glassmorphism Effect จางๆ
+                backdropFilter: "blur(0px)", 
+              }}
+            >
+              {/* Badge ประเภท Content */}
+              <Box
+                sx={{
+                  bgcolor: item.contentType === 'Promotion' ? '#FF5722' : '#2196F3',
+                  color: 'white',
+                  px: 1.5, py: 0.5,
+                  borderRadius: 1,
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  mb: 1.5,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5
+                }}
+              >
+                {item.contentType}
+              </Box>
+
+              <Typography
+                variant={isDesktop ? "h3" : "h5"}
+                fontWeight={800}
+                sx={{
+                  textShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                  lineHeight: 1.2,
+                  mb: 1,
+                  maxWidth: "90%"
+                }}
+              >
+                {item.title}
+              </Typography>
+
+              <Typography
+                variant="body1"
+                sx={{
+                  opacity: 0.85,
+                  maxWidth: { xs: "100%", md: "60%" },
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  mb: 2,
+                  lineHeight: 1.6,
+                  fontSize: { xs: '0.9rem', md: '1.1rem' }
+                }}
+              >
+                {item.description}
+              </Typography>
+
+              {/* Action Button */}
+              {item.contentType === 'Promotion' && (
+                <Button
+                  variant="contained"
+                  color="primary" // หรือใช้สีส้ม '#FF5722'
+                  size={isDesktop ? "large" : "medium"}
+                  onClick={() => console.log("Click Banner:", item)}
+                  sx={{
+                    borderRadius: 50,
+                    px: 4,
+                    py: 1,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    fontSize: "1rem",
+                    boxShadow: "0 4px 14px rgba(255, 87, 34, 0.4)",
+                    transition: "transform 0.2s",
+                    "&:hover": {
+                       transform: "scale(1.05)",
+                       boxShadow: "0 6px 20px rgba(255, 87, 34, 0.6)"
+                    }
+                  }}
+                >
+                  ดูรายละเอียด
+                </Button>
+              )}
+            </Box>
+          </Box>
         </Fade>
       ))}
 
-      {/* ปุ่มซ้าย/ขวา — ซ่อนไว้บนมือถือเพื่อความโล่ง */}
-      <IconButton
-        onClick={handlePrev}
-        aria-label="previous slide"
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: 8,
-          transform: "translateY(-50%)",
-          color: "white",
-          bgcolor: "rgba(0,0,0,0.32)",
-          "&:hover": { bgcolor: "rgba(0,0,0,0.5)" },
-          display: { xs: "none", md: "inline-flex" },
-        }}
-      >
-        <ArrowBackIos />
-      </IconButton>
+      {/* Navigation Arrows (Glass style) */}
+      {items.length > 1 && (
+        <>
+          <IconButton
+            onClick={handlePrev}
+            sx={{
+              position: "absolute", top: "50%", left: 16,
+              transform: "translateY(-50%)",
+              color: "white",
+              bgcolor: "rgba(255,255,255,0.15)", // ใสๆ
+              backdropFilter: "blur(4px)", // เบลอพื้นหลังปุ่ม
+              border: "1px solid rgba(255,255,255,0.2)",
+              "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
+              display: { xs: "none", md: "inline-flex" },
+              width: 48, height: 48,
+            }}
+          >
+            <ArrowBackIosNew fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={handleNext}
+            sx={{
+              position: "absolute", top: "50%", right: 16,
+              transform: "translateY(-50%)",
+              color: "white",
+              bgcolor: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(4px)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
+              display: { xs: "none", md: "inline-flex" },
+              width: 48, height: 48,
+            }}
+          >
+            <ArrowForwardIos fontSize="small" />
+          </IconButton>
+        </>
+      )}
 
-      <IconButton
-        onClick={handleNext}
-        aria-label="next slide"
-        sx={{
-          position: "absolute",
-          top: "50%",
-          right: 8,
-          transform: "translateY(-50%)",
-          color: "white",
-          bgcolor: "rgba(0,0,0,0.32)",
-          "&:hover": { bgcolor: "rgba(0,0,0,0.5)" },
-          display: { xs: "none", md: "inline-flex" },
-        }}
-      >
-        <ArrowForwardIos />
-      </IconButton>
-
-      {/* จุดบอกตำแหน่ง — แตะง่ายขึ้นบนมือถือ */}
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 12,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-          gap: 1,
-          px: 2,
-          pointerEvents: "auto",
-        }}
-      >
-        {images.map((_, i) => {
-          const active = i === index;
-          return (
+      {/* Dots Indicator (Modern pill shape) */}
+      {items.length > 1 && (
+        <Box
+          sx={{
+            position: "absolute", bottom: 20, right: 24, // ย้ายมาขวาล่าง
+            display: "flex", gap: 0.8,
+            zIndex: 2,
+            // พื้นหลังจางๆ รองรับ dots
+            p: 0.8, px: 1.5,
+            borderRadius: 20,
+            bgcolor: "rgba(0,0,0,0.2)",
+            backdropFilter: "blur(4px)"
+          }}
+        >
+          {items.map((_, i) => (
             <Box
               key={i}
               component="button"
               onClick={() => setIndex(i)}
-              aria-label={`Go to slide ${i + 1}`}
-              style={{
-                appearance: "none",
-                border: 0,
-                background: "transparent",
-                cursor: "pointer",
-              }}
-              // hit area ใหญ่ขึ้นบนมือถือ
               sx={{
-                width: { xs: 10, sm: 10 },
-                height: { xs: 10, sm: 10 },
-                borderRadius: "50%",
-                bgcolor: active ? "common.white" : "rgba(255,255,255,0.55)",
-                outline: "2px solid transparent",
-                outlineOffset: 2,
-                transition: "transform .2s ease, background-color .2s ease",
-                "&:hover": { transform: "scale(1.1)" },
-                "&:focus-visible": {
-                  outlineColor: "rgba(255,255,255,0.9)",
-                },
+                width: i === index ? 24 : 8,
+                height: 8,
+                borderRadius: 4,
+                bgcolor: i === index ? "white" : "rgba(255,255,255,0.4)",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             />
-          );
-        })}
-      </Box>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }

@@ -18,3 +18,18 @@ export const SD_OrderStatus = {
 } as const;
 
 export type SD_OrderStatus = (typeof SD_OrderStatus)[keyof typeof SD_OrderStatus];
+
+// ย้ายมาไว้ที่นี่
+export const ContentType = {
+  NEWS: "News",
+  PROMOTION: "Promotion",
+  EVENT: "Event"
+} as const;
+
+export type ContentType = typeof ContentType[keyof typeof ContentType];
+
+export const CONTENT_TYPE_OPTIONS = [
+  { value: ContentType.NEWS, label: "ข่าวสาร (News)" },
+  { value: ContentType.PROMOTION, label: "โปรโมชั่น (Promotion)" },
+  { value: ContentType.EVENT, label: "กิจกรรม (Event)" },
+];

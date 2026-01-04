@@ -14,35 +14,16 @@ import {
   CircularProgress,
   Alert,
   InputAdornment,
+  FormHelperText,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { FormikProvider, useFormik } from "formik";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-// Types
 import type { Content } from "../../../../@types/dto/Content";
 import type { CreateContent } from "../../../../@types/createDto/CreateContent";
 import type { UpdateContent } from "../../../../@types/UpdateDto/UpdateContent";
-
-// Validation
 import { contentSchema } from "../../../../helpers/validationSchema";
-
-// --- Helper Functions ---
-const formatDateForInput = (date: Date | string | undefined) => {
-  if (!date) return "";
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return "";
-  const offset = d.getTimezoneOffset() * 60000;
-  const localISOTime = new Date(d.getTime() - offset).toISOString().slice(0, 16);
-  return localISOTime;
-};
-
-// --- Constants ---
-const CONTENT_TYPES = [
-  { value: "News", label: "ข่าวสาร (News)" },
-  { value: "Promotion", label: "โปรโมชั่น (Promotion)" },
-  { value: "Event", label: "กิจกรรม (Event)" },
-];
+import { CONTENT_TYPE_OPTIONS, ContentType } from "../../../../@types/Enum";
 
 const DISCOUNT_TYPES = [
   { value: "Percent", label: "เปอร์เซ็นต์ (%)" },
@@ -50,6 +31,18 @@ const DISCOUNT_TYPES = [
 ];
 
 const MAX_FILE_SIZE_MB = 5;
+
+// --- Helper Functions ---
+const formatDateForInput = (date: Date | string | undefined) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  const offset = d.getTimezoneOffset() * 60000;
+  const localISOTime = new Date(d.getTime() - offset)
+    .toISOString()
+    .slice(0, 16);
+  return localISOTime;
+};
 
 type Props = {
   open: boolean;
@@ -73,7 +66,7 @@ export default function FormContent({
   // 1. Initial Values
   const formInitialValues = useMemo(() => {
     return {
-      contentType: initial?.contentType ?? "News",
+      contentType: initial?.contentType ?? ContentType.NEWS,
       title: initial?.title ?? "",
       description: initial?.description ?? "",
       imageUrl: initial?.imageUrl ?? "",
@@ -83,7 +76,7 @@ export default function FormContent({
       discountType: initial?.discountType ?? "Percent",
       discountValue: initial?.discountValue ?? 0,
       minOrderAmount: initial?.minOrderAmount ?? 0,
-      promoCode: initial?.promoCode ?? "", // ถ้าแก้ไข จะมีค่ามา
+      promoCode: initial?.promoCode ?? "",
 
       // Date Fields
       startDate: initial?.startDate ? new Date(initial.startDate) : new Date(),
@@ -101,17 +94,17 @@ export default function FormContent({
       try {
         // จัดเตรียม Payload
         const payload = {
-            ...values,
-            // แปลง Date -> ISO String (Backend ชอบแบบนี้)
-            startDate: new Date(values.startDate).toISOString(),
-            endDate: new Date(values.endDate).toISOString(),
+          ...values,
+          // แปลง Date -> ISO String
+          startDate: new Date(values.startDate).toISOString(),
+          endDate: new Date(values.endDate).toISOString(),
         };
 
-        // ถ้าไม่ใช่ Promotion ให้ล้างค่าทิ้งเพื่อความสะอาด (Double check)
-        if (values.contentType !== 'Promotion') {
-            payload.discountValue = 0;
-            payload.minOrderAmount = 0;
-            payload.promoCode = "";
+        // ถ้าไม่ใช่ Promotion ให้ล้างค่าทิ้งเพื่อความสะอาด
+        if (values.contentType !== ContentType.PROMOTION) {
+          payload.discountValue = 0;
+          payload.minOrderAmount = 0;
+          payload.promoCode = "";
         }
 
         await onSubmit(payload as any, initial?.id);
@@ -147,13 +140,22 @@ export default function FormContent({
     }
   }, [open, initial, resetForm]);
 
-  // ✅ Auto Reset Promotion Fields: เมื่อเปลี่ยน Type เป็นอย่างอื่น ให้เคลียร์ค่า
+  // ✅ เพิ่ม Cleanup function เพื่อป้องกัน Memory Leak จาก URL.createObjectURL
   useEffect(() => {
-    if (values.contentType !== "Promotion") {
-       setFieldValue("discountValue", 0);
-       setFieldValue("minOrderAmount", 0);
-       setFieldValue("promoCode", "");
-       setFieldValue("discountType", "Percent");
+    return () => {
+      if (imagePreview && imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  // ✅ Auto Reset Promotion Fields
+  useEffect(() => {
+    if (values.contentType !== ContentType.PROMOTION) {
+      setFieldValue("discountValue", 0);
+      setFieldValue("minOrderAmount", 0);
+      setFieldValue("promoCode", "");
+      setFieldValue("discountType", "Percent");
     }
   }, [values.contentType, setFieldValue]);
 
@@ -161,12 +163,19 @@ export default function FormContent({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // ✅ Check File Size
+      // ✅ Check File Size (ใช้ setFieldError แทน alert)
       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        alert(`ขนาดไฟล์ต้องไม่เกิน ${MAX_FILE_SIZE_MB}MB`);
+        setFieldValue("fileImage", undefined); // Clear file
+        formik.setFieldError(
+          "fileImage",
+          `ขนาดไฟล์ต้องไม่เกิน ${MAX_FILE_SIZE_MB}MB`
+        );
         e.target.value = ""; // Reset input
         return;
       }
+
+      // ถ้าผ่าน ให้เคลียร์ error เก่า
+      formik.setFieldError("fileImage", undefined);
       setFieldValue("fileImage", file);
       setImagePreview(URL.createObjectURL(file));
     }
@@ -176,10 +185,11 @@ export default function FormContent({
     setFieldValue("fileImage", undefined);
     setFieldValue("imageUrl", "");
     setImagePreview(null);
+    formik.setFieldError("fileImage", undefined); // Clear error เมื่อลบรูป
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const isPromotion = values.contentType === "Promotion";
+  const isPromotion = values.contentType === ContentType.PROMOTION;
 
   return (
     <Drawer
@@ -263,11 +273,19 @@ export default function FormContent({
                     height: 120,
                     borderStyle: "dashed",
                     color: "text.secondary",
+                    borderColor: errors.fileImage ? "error.main" : "inherit", // เปลี่ยนสีขอบถ้ามี error
                   }}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   คลิกเพื่ออัปโหลดรูปภาพปก (Banner)
                 </Button>
+              )}
+
+              {/* ✅ แสดง Error ของรูปภาพใต้ปุ่ม */}
+              {errors.fileImage && (
+                <FormHelperText error sx={{ textAlign: "center", mt: 1 }}>
+                  {errors.fileImage as string}
+                </FormHelperText>
               )}
             </Box>
 
@@ -283,9 +301,9 @@ export default function FormContent({
                 error={touched.contentType && !!errors.contentType}
                 helperText={touched.contentType && errors.contentType}
                 sx={{ width: "40%" }}
-                disabled={!!initial} // ✅ เพิ่มบรรทัดนี้: ถ้าเป็นการแก้ไข (มี initial) ห้ามเปลี่ยน Type
+                disabled={!!initial}
               >
-                {CONTENT_TYPES.map((c) => (
+                {CONTENT_TYPE_OPTIONS.map((c) => (
                   <MenuItem key={c.value} value={c.value}>
                     {c.label}
                   </MenuItem>
@@ -360,9 +378,8 @@ export default function FormContent({
                   ข้อมูลโปรโมชั่น (Promotion Details)
                 </Typography>
                 <Stack spacing={2}>
-                  {/* ✅ Logic: PromoCode */}
+                  {/* Logic: PromoCode */}
                   {initial ? (
-                    // กรณีแก้ไข: แสดงรหัสเดิม (Read-only)
                     <TextField
                       label="รหัสโปรโมชั่น (Promo Code)"
                       value={values.promoCode || "-"}
@@ -372,7 +389,6 @@ export default function FormContent({
                       variant="filled"
                     />
                   ) : (
-                    // กรณีสร้างใหม่: แจ้งเตือน
                     <Alert severity="info">
                       ระบบจะสร้างรหัสโปรโมชั่น (Promo Code)
                       ให้อัตโนมัติหลังจากบันทึก
@@ -402,6 +418,8 @@ export default function FormContent({
                       onChange={handleChange}
                       fullWidth
                       inputProps={{ min: 0 }}
+                      error={touched.discountValue && !!errors.discountValue}
+                      helperText={touched.discountValue && errors.discountValue}
                     />
                   </Stack>
                   <TextField
