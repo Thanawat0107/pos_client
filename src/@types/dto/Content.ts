@@ -13,7 +13,7 @@ export interface Content {
 
   // --- Common ---
   startDate: Date;
-  endDate: Date;
+  endDate?: Date;
   isUsed: boolean;
   createdAt: Date;
   userId: string;

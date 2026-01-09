@@ -12,15 +12,18 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { Content } from "../../../../@types/dto/Content";
 
-const formatDate = (date: Date | string) => {
+// ✅ [แก้ไข] รองรับ undefined (ไม่มีวันที่)
+const formatDate = (date?: Date | string) => {
+  if (!date) return "ตลอดไป";
   return new Date(date).toLocaleDateString("th-TH", {
     day: "numeric",
     month: "short",
   });
 };
 
-// ✅ [เพิ่ม] Helper เช็ควันหมดอายุ
-const isExpired = (endDate: Date | string) => {
+// ✅ [แก้ไข] รองรับ undefined -> ถ้าไม่มีวันสิ้นสุด = ไม่หมดอายุ (false)
+const isExpired = (endDate?: Date | string) => {
+  if (!endDate) return false; 
   return new Date(endDate) < new Date();
 };
 
@@ -37,7 +40,7 @@ export default function MobileContentItem({
   onDelete,
   onToggleActive,
 }: Props) {
-  // ✅ คำนวณสถานะ
+  // ✅ คำนวณสถานะ (ไม่ Error แล้ว)
   const expired = isExpired(row.endDate);
 
   return (
@@ -46,7 +49,7 @@ export default function MobileContentItem({
       sx={{
         borderRadius: 2,
         p: 1.5,
-        // ✅ [ปรับปรุง] พื้นหลังสีแดงจางๆ ถ้าหมดอายุ
+        // ✅ พื้นหลังสีแดงจางๆ ถ้าหมดอายุ
         bgcolor: expired ? "#fff4f4" : "background.paper",
         borderColor: expired ? "error.light" : "divider",
       }}
@@ -90,9 +93,11 @@ export default function MobileContentItem({
               size="small"
               sx={{ height: 20, fontSize: 10 }}
               color={
-                 expired 
-                   ? "default" 
-                   : row.contentType === "Promotion" ? "warning" : "default"
+                expired
+                  ? "default"
+                  : row.contentType === "Promotion"
+                  ? "warning"
+                  : "default"
               }
               variant={expired ? "outlined" : "filled"}
             />
@@ -122,21 +127,37 @@ export default function MobileContentItem({
             >
               {formatDate(row.startDate)} - {formatDate(row.endDate)}
             </Typography>
-            
+
             {expired && (
-                <Box 
-                    component="span" 
-                    sx={{ 
-                        bgcolor: 'error.main', 
-                        color: 'white', 
-                        px: 0.5, 
-                        borderRadius: 0.5, 
-                        fontSize: 9,
-                        fontWeight: 'bold'
-                    }}
-                >
-                    Expired
-                </Box>
+              <Box
+                component="span"
+                sx={{
+                  bgcolor: "error.main",
+                  color: "white",
+                  px: 0.5,
+                  borderRadius: 0.5,
+                  fontSize: 9,
+                  fontWeight: "bold",
+                }}
+              >
+                Expired
+              </Box>
+            )}
+             {/* เพิ่ม Tag ระยะยาว กรณีไม่มีวันสิ้นสุด */}
+             {!row.endDate && (
+              <Box
+                component="span"
+                sx={{
+                  bgcolor: "success.light",
+                  color: "white",
+                  px: 0.5,
+                  borderRadius: 0.5,
+                  fontSize: 9,
+                  fontWeight: "bold",
+                }}
+              >
+                Always
+              </Box>
             )}
           </Stack>
 

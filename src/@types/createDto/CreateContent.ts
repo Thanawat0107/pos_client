@@ -15,5 +15,7 @@ export interface CreateContent {
 
   // --- ระยะเวลา ---
   startDate: Date;
-  endDate: Date;
+  endDate?: Date;
+
+  isPermanent: boolean;
 }

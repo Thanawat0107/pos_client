@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useMemo } from "react";
 import {
@@ -53,31 +54,35 @@ export default function Home() {
   const menuItems: MenuItemDto[] = menuData?.result ?? [];
   const contents: Content[] = contentData?.result ?? [];
 
-  // --- 3. Logic แยกประเภท Content (ใช้ Enum) ---
+// --- 3. Logic แยกประเภท Content (ใช้ Enum) ---
   const { promotions, news, banners } = useMemo(() => {
     const now = new Date();
-    
+
     // กรองเอาเฉพาะที่ Active (isUsed = true และอยู่ในช่วงเวลา)
     const active = contents.filter((c) => {
       const start = new Date(c.startDate);
-      const end = new Date(c.endDate);
-      return c.isUsed && start <= now && end >= now;
+      const isNotExpired = !c.endDate || new Date(c.endDate) >= now;
+      return c.isUsed && start <= now && isNotExpired;
     });
 
     return {
-      // Banner: เอา 5 รายการแรกที่ Active
-      banners: active.slice(0, 5),
-      
-      // Coupon: เฉพาะ Promotion (✅ ใช้ Enum)
+      // Banner: เอา 5 รายการแรกที่ "มีรูปเท่านั้น" (ไม่ว่า Type ไหน)
+      banners: active
+        .filter((c) => c.imageUrl && c.imageUrl.trim() !== "") // ✅ บังคับต้องมีรูปทุกตัว
+        .slice(0, 5),
+
+      // Coupon: เฉพาะ Promotion (เหมือนเดิม)
       promotions: active.filter((c) => c.contentType === ContentType.PROMOTION),
-      
-      // News: ข่าวสารและกิจกรรม (✅ ใช้ Enum)
+
+      // News: ข่าวสารและกิจกรรม (เหมือนเดิม)
       news: active.filter(
-        (c) => c.contentType === ContentType.NEWS || c.contentType === ContentType.EVENT
+        (c) =>
+          c.contentType === ContentType.NEWS ||
+          c.contentType === ContentType.EVENT
       ),
     };
   }, [contents]);
-
+  
   const isLoading = menuLoading || contentLoading;
 
   if (isLoading) {

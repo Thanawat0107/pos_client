@@ -69,7 +69,20 @@ export const contentSchema = Yup.object().shape({
   title: Yup.string().required("กรุณาระบุหัวข้อ"),
   contentType: Yup.string().required("กรุณาเลือกประเภท"),
   startDate: Yup.date().required("ระบุวันเริ่มต้น"),
+  
+  // ✅ ต้องเพิ่ม field นี้เพื่อให้ .when มองเห็น (ค่า default คือ false)
+  isPermanent: Yup.boolean(),
+
+  // ✅ ปรับ Logic ของ EndDate
   endDate: Yup.date()
-    .required("ระบุวันสิ้นสุด")
-    .min(Yup.ref("startDate"), "วันสิ้นสุดต้องหลังจากวันเริ่มต้น"),
+    .nullable() // 1. อนุญาตให้เป็น null ได้ (สำคัญมากสำหรับเคสถาวร)
+    .when("isPermanent", {
+      is: true, // 2. กรณี isPermanent เป็น "จริง" (ถาวร)
+      then: (schema) => schema.notRequired(), // -> ไม่บังคับกรอก, ไม่เช็ค min
+      otherwise: (schema) => 
+        schema
+          .required("ระบุวันสิ้นสุด") // -> ถ้าไม่ถาวร "ต้องระบุ"
+          .typeError("รูปแบบวันที่ไม่ถูกต้อง")
+          .min(Yup.ref("startDate"), "วันสิ้นสุดต้องหลังจากวันเริ่มต้น"),
+    }),
 });

@@ -15,6 +15,9 @@ import {
   Alert,
   InputAdornment,
   FormHelperText,
+  FormControlLabel, // ✅ Import เพิ่ม
+  Checkbox,
+  Grid,         // ✅ Import เพิ่ม
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { FormikProvider, useFormik } from "formik";
@@ -38,6 +41,7 @@ const formatDateForInput = (date: Date | string | undefined) => {
   const d = new Date(date);
   if (isNaN(d.getTime())) return "";
   const offset = d.getTimezoneOffset() * 60000;
+  // ตัดวินาทีออกให้เหลือแค่ yyyy-MM-ddThh:mm เพื่อใส่ใน datetime-local
   const localISOTime = new Date(d.getTime() - offset)
     .toISOString()
     .slice(0, 16);
@@ -47,7 +51,7 @@ const formatDateForInput = (date: Date | string | undefined) => {
 type Props = {
   open: boolean;
   onClose: () => void;
-  initial?: Content; // ถ้ามีค่า = โหมดแก้ไข, ถ้าไม่มี = โหมดสร้าง
+  initial?: Content;
   onSubmit: (
     data: CreateContent | UpdateContent,
     id?: number
@@ -65,6 +69,9 @@ export default function FormContent({
 
   // 1. Initial Values
   const formInitialValues = useMemo(() => {
+    // ✅ Logic: ถ้ามี initial และ EndDate เป็น null แสดงว่าเป็นถาวร
+    const isPermanentInit = initial ? initial.endDate === null : false;
+
     return {
       contentType: initial?.contentType ?? ContentType.NEWS,
       title: initial?.title ?? "",
@@ -80,24 +87,29 @@ export default function FormContent({
 
       // Date Fields
       startDate: initial?.startDate ? new Date(initial.startDate) : new Date(),
-      endDate: initial?.endDate ? new Date(initial.endDate) : new Date(),
-
+      // ✅ ถ้าเป็นถาวร (endDate=null) ให้ใส่ค่า Default ไว้กัน error แต่อย่าเพิ่งใช้น
+      endDate: initial?.endDate ? new Date(initial.endDate) : new Date(), 
+      
+      // ✅ เพิ่ม isPermanent
+      isPermanent: isPermanentInit,
+      
       isUsed: initial ? initial.isUsed : true,
     };
   }, [initial]);
 
   const formik = useFormik({
     enableReinitialize: true,
-    validationSchema: contentSchema,
+    validationSchema: contentSchema, 
     initialValues: formInitialValues,
     onSubmit: async (values, { setSubmitting }) => {
       try {
         // จัดเตรียม Payload
-        const payload = {
+        const payload: any = {
           ...values,
-          // แปลง Date -> ISO String
           startDate: new Date(values.startDate).toISOString(),
-          endDate: new Date(values.endDate).toISOString(),
+          // ✅ Logic: ถ้าถาวร ไม่ต้องส่ง endDate (หรือส่ง null ตาม interface)
+          endDate: values.isPermanent ? undefined : new Date(values.endDate).toISOString(),
+          isPermanent: values.isPermanent, 
         };
 
         // ถ้าไม่ใช่ Promotion ให้ล้างค่าทิ้งเพื่อความสะอาด
@@ -107,7 +119,7 @@ export default function FormContent({
           payload.promoCode = "";
         }
 
-        await onSubmit(payload as any, initial?.id);
+        await onSubmit(payload, initial?.id);
         onClose();
       } catch (error) {
         console.error("Submit error:", error);
@@ -140,7 +152,6 @@ export default function FormContent({
     }
   }, [open, initial, resetForm]);
 
-  // ✅ เพิ่ม Cleanup function เพื่อป้องกัน Memory Leak จาก URL.createObjectURL
   useEffect(() => {
     return () => {
       if (imagePreview && imagePreview.startsWith("blob:")) {
@@ -149,7 +160,6 @@ export default function FormContent({
     };
   }, [imagePreview]);
 
-  // ✅ Auto Reset Promotion Fields
   useEffect(() => {
     if (values.contentType !== ContentType.PROMOTION) {
       setFieldValue("discountValue", 0);
@@ -163,18 +173,15 @@ export default function FormContent({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // ✅ Check File Size (ใช้ setFieldError แทน alert)
       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        setFieldValue("fileImage", undefined); // Clear file
+        setFieldValue("fileImage", undefined);
         formik.setFieldError(
           "fileImage",
           `ขนาดไฟล์ต้องไม่เกิน ${MAX_FILE_SIZE_MB}MB`
         );
-        e.target.value = ""; // Reset input
+        e.target.value = "";
         return;
       }
-
-      // ถ้าผ่าน ให้เคลียร์ error เก่า
       formik.setFieldError("fileImage", undefined);
       setFieldValue("fileImage", file);
       setImagePreview(URL.createObjectURL(file));
@@ -185,7 +192,7 @@ export default function FormContent({
     setFieldValue("fileImage", undefined);
     setFieldValue("imageUrl", "");
     setImagePreview(null);
-    formik.setFieldError("fileImage", undefined); // Clear error เมื่อลบรูป
+    formik.setFieldError("fileImage", undefined);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -222,7 +229,6 @@ export default function FormContent({
 
           {/* --- Body --- */}
           <Stack spacing={2.5} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-            {/* Error Alert */}
             {Object.keys(errors).length > 0 && submitCount > 0 && (
               <Alert severity="error">
                 กรุณากรอกข้อมูลให้ครบถ้วน (ตรวจสอบช่องสีแดง)
@@ -273,15 +279,13 @@ export default function FormContent({
                     height: 120,
                     borderStyle: "dashed",
                     color: "text.secondary",
-                    borderColor: errors.fileImage ? "error.main" : "inherit", // เปลี่ยนสีขอบถ้ามี error
+                    borderColor: errors.fileImage ? "error.main" : "inherit",
                   }}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   คลิกเพื่ออัปโหลดรูปภาพปก (Banner)
                 </Button>
               )}
-
-              {/* ✅ แสดง Error ของรูปภาพใต้ปุ่ม */}
               {errors.fileImage && (
                 <FormHelperText error sx={{ textAlign: "center", mt: 1 }}>
                   {errors.fileImage as string}
@@ -333,38 +337,110 @@ export default function FormContent({
             />
 
             {/* 3. Duration */}
-            <Stack direction="row" spacing={2}>
-              <TextField
-                label="วันเริ่มต้น"
-                type="datetime-local"
-                name="startDate"
-                value={formatDateForInput(values.startDate as any)}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFieldValue("startDate", val ? new Date(val) : new Date());
-                }}
-                onBlur={handleBlur}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                error={touched.startDate && !!errors.startDate}
-                helperText={touched.startDate && (errors.startDate as string)}
-              />
-              <TextField
-                label="วันสิ้นสุด"
-                type="datetime-local"
-                name="endDate"
-                value={formatDateForInput(values.endDate as any)}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setFieldValue("endDate", val ? new Date(val) : new Date());
-                }}
-                onBlur={handleBlur}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                error={touched.endDate && !!errors.endDate}
-                helperText={touched.endDate && (errors.endDate as string)}
-              />
-            </Stack>
+            {/* ✅ Wrap ด้วย Paper เพื่อแบ่งกลุ่มให้ชัดเจนขึ้น */}
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="subtitle2" fontWeight="bold">
+                  ระยะเวลาแสดงผล (Duration)
+                </Typography>
+
+                {/* ย้าย Checkbox มาไว้ตรงหัวข้อ เพื่อความสวยงามและประหยัดพื้นที่ */}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={values.isPermanent}
+                      onChange={(e) => {
+                        setFieldValue("isPermanent", e.target.checked);
+                        if (!e.target.checked && !values.endDate) {
+                          setFieldValue("endDate", new Date());
+                        }
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" color="text.secondary">
+                      ไม่มีวันหมดอายุ (ถาวร)
+                    </Typography>
+                  }
+                />
+              </Stack>
+
+              <Grid container spacing={2}>
+                {/* วันเริ่มต้น */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  {" "}
+                  {/* ✅ แก้ไขตรงนี้ */}
+                  <TextField
+                    label="วันเริ่มต้น"
+                    type="datetime-local"
+                    name="startDate"
+                    value={formatDateForInput(values.startDate as any)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFieldValue(
+                        "startDate",
+                        val ? new Date(val) : new Date()
+                      );
+                    }}
+                    onBlur={handleBlur}
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                    error={touched.startDate && !!errors.startDate}
+                    helperText={
+                      touched.startDate && (errors.startDate as string)
+                    }
+                  />
+                </Grid>
+
+                {/* วันสิ้นสุด */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  {" "}
+                  {/* ✅ แก้ไขตรงนี้ */}
+                  <TextField
+                    label="วันสิ้นสุด"
+                    type="datetime-local"
+                    name="endDate"
+                    value={
+                      values.isPermanent
+                        ? ""
+                        : formatDateForInput(values.endDate as any)
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFieldValue(
+                        "endDate",
+                        val ? new Date(val) : new Date()
+                      );
+                    }}
+                    onBlur={handleBlur}
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                    disabled={values.isPermanent}
+                    sx={{
+                      "& .MuiInputBase-root.Mui-disabled": {
+                        bgcolor: "action.hover",
+                      },
+                    }}
+                    error={
+                      !values.isPermanent && touched.endDate && !!errors.endDate
+                    }
+                    helperText={
+                      values.isPermanent
+                        ? "ตั้งค่าเป็นถาวรแล้ว"
+                        : !values.isPermanent &&
+                          touched.endDate &&
+                          (errors.endDate as string)
+                    }
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
 
             {/* 4. Promotion Fields (Conditional) */}
             {isPromotion && (
@@ -378,7 +454,6 @@ export default function FormContent({
                   ข้อมูลโปรโมชั่น (Promotion Details)
                 </Typography>
                 <Stack spacing={2}>
-                  {/* Logic: PromoCode */}
                   {initial ? (
                     <TextField
                       label="รหัสโปรโมชั่น (Promo Code)"

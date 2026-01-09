@@ -15,8 +15,9 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EventIcon from "@mui/icons-material/Event";
 import type { Content } from "../../../../@types/dto/Content";
 
-// Helper จัดรูปแบบวันที่
-const formatDate = (date: Date | string) => {
+// ✅ [แก้ไข 1] Helper จัดรูปแบบวันที่: รองรับ undefined
+const formatDate = (date?: Date | string) => {
+  if (!date) return "ตลอดไป";
   return new Date(date).toLocaleDateString("th-TH", {
     day: "2-digit",
     month: "short",
@@ -24,8 +25,9 @@ const formatDate = (date: Date | string) => {
   });
 };
 
-// ✅ [เพิ่ม] Helper เช็คหมดอายุ
-const isExpired = (endDate: Date | string) => {
+// ✅ [แก้ไข 2] Helper เช็คหมดอายุ: รองรับ undefined
+const isExpired = (endDate?: Date | string) => {
+  if (!endDate) return false; // ถ้าไม่มีวันสิ้นสุด = ไม่หมดอายุ
   return new Date(endDate) < new Date();
 };
 
@@ -44,15 +46,14 @@ export default function ManageContentItem({
   onDelete,
   onToggleActive,
 }: Props) {
-  // ✅ คำนวณสถานะหมดอายุ
+  // ✅ คำนวณสถานะหมดอายุ (จะไม่ error แล้วเพราะแก้ helper แล้ว)
   const expired = isExpired(row.endDate);
 
   return (
-    // ✅ [ปรับปรุง] เปลี่ยนสีพื้นหลังถ้าหมดอายุ
-    <TableRow 
-      hover 
-      sx={{ 
-        bgcolor: expired ? "#fff4f4" : "inherit" // สีแดงจางๆ
+    <TableRow
+      hover
+      sx={{
+        bgcolor: expired ? "#fff4f4" : "inherit", // สีแดงจางๆ ถ้าหมดอายุ
       }}
     >
       {/* ลำดับ */}
@@ -74,7 +75,7 @@ export default function ManageContentItem({
             height: 60,
             borderRadius: 2,
             bgcolor: "grey.100",
-            filter: expired ? "grayscale(100%)" : "none", // (Optional) ทำให้รูปเป็นขาวดำถ้าหมดอายุ
+            filter: expired ? "grayscale(100%)" : "none",
           }}
         />
       </TableCell>
@@ -82,7 +83,11 @@ export default function ManageContentItem({
       {/* ข้อมูลหลัก */}
       <TableCell>
         <Stack spacing={0.5}>
-          <Typography fontWeight={700} variant="body2" color={expired ? "text.secondary" : "text.primary"}>
+          <Typography
+            fontWeight={700}
+            variant="body2"
+            color={expired ? "text.secondary" : "text.primary"}
+          >
             {row.title}
           </Typography>
           <Typography
@@ -97,7 +102,7 @@ export default function ManageContentItem({
             <Chip
               label={`Code: ${row.promoCode}`}
               size="small"
-              color={expired ? "default" : "primary"} // ถ้าหมดอายุให้สีเทา
+              color={expired ? "default" : "primary"}
               variant="outlined"
               sx={{ width: "fit-content", height: 20, fontSize: 10 }}
             />
@@ -110,11 +115,12 @@ export default function ManageContentItem({
         <Chip
           label={row.contentType}
           size="small"
-          // ถ้าหมดอายุ ปรับสีให้ดูจางลง หรือใช้สี default
           color={
-            expired 
+            expired
               ? "default"
-              : row.contentType === "Promotion" ? "warning" : "info"
+              : row.contentType === "Promotion"
+              ? "warning"
+              : "info"
           }
           variant={expired ? "outlined" : "filled"}
         />
@@ -128,25 +134,35 @@ export default function ManageContentItem({
             <Typography variant="caption" display="block">
               เริ่ม: {formatDate(row.startDate)}
             </Typography>
-            
-            {/* ✅ [ปรับปรุง] ไฮไลท์วันสิ้นสุด */}
-            <Typography 
-                variant="caption" 
-                display="block" 
-                fontWeight={expired ? "bold" : "normal"}
-                color={expired ? "error.main" : "text.primary"}
+
+            {/* ส่วนวันสิ้นสุด */}
+            <Typography
+              variant="caption"
+              display="block"
+              fontWeight={expired ? "bold" : "normal"}
+              color={expired ? "error.main" : "text.primary"}
             >
-              สิ้นสุด: {formatDate(row.endDate)}
+              สิ้นสุด: {formatDate(row.endDate)} 
             </Typography>
 
-            {/* ✅ [เพิ่ม] Badge บอกว่า Expired */}
+            {/* Badge บอกว่า หมดอายุ */}
             {expired && (
-                <Chip 
-                    label="หมดอายุ" 
-                    color="error" 
-                    size="small" 
-                    sx={{ mt: 0.5, height: 18, fontSize: 10 }} 
-                />
+              <Chip
+                label="หมดอายุ"
+                color="error"
+                size="small"
+                sx={{ mt: 0.5, height: 18, fontSize: 10 }}
+              />
+            )}
+             {/* Badge บอกว่า ตลอดไป (Optional: อยากใส่เพิ่มก็ได้) */}
+             {!row.endDate && (
+              <Chip
+                label="ระยะยาว"
+                color="success"
+                size="small"
+                variant="outlined"
+                sx={{ mt: 0.5, height: 18, fontSize: 10 }}
+              />
             )}
           </Box>
         </Stack>
@@ -159,11 +175,15 @@ export default function ManageContentItem({
             checked={row.isUsed}
             onChange={(_, v) => onToggleActive(row.id, v)}
             size="small"
-            color={expired ? "warning" : "success"} // เปลี่ยนสี Switch เตือนใจ
+            color={expired ? "warning" : "success"}
           />
           <Box>
-            <Typography variant="caption" color="text.secondary" display="block">
-                {row.isUsed ? "เปิดใช้งาน" : "ปิด"}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+            >
+              {row.isUsed ? "เปิดใช้งาน" : "ปิด"}
             </Typography>
           </Box>
         </Stack>

@@ -1,29 +1,19 @@
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import MenuList from "../components/pages/menu/MenuList";
-
-// ✅ 1. Import DTO และ API Hook
 import type { MenuItemDto } from "../@types/dto/MenuItem"; 
-import { useGetMenuItemsQuery } from "../services/menuItemApi"; // ตรวจสอบ path ให้ถูกต้อง
+import { useGetMenuItemsQuery } from "../services/menuItemApi";
 
 export default function MenuItem() {
-  // ✅ 2. เรียกข้อมูลจาก API (ไม่ต้องใช้ Mock แล้ว)
   const { data, isLoading, isError } = useGetMenuItemsQuery({});
 
   const handleAdd = (m: MenuItemDto) => {
-    // m ในที่นี้คือข้อมูลสินค้าทั้งก้อนจาก Database
     console.log("add to cart:", m);
   };
 
-  // ✅ 3. แสดง Loading ระหว่างรอข้อมูล
-  if (isLoading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // ❌ ลบ Loading แบบหมุนๆ ออก เพื่อไปใช้ Skeleton ใน MenuList แทน
+  // if (isLoading) return <CircularProgress ... />;
 
-  // ✅ 4. แสดง Error หากโหลดไม่ได้
+  // ⚠️ ส่วน Error ยังคงไว้ได้ หรือจะส่ง error state ไปจัดการข้างในก็ได้
   if (isError) {
     return (
       <Box sx={{ textAlign: "center", mt: 10, color: "error.main" }}>
@@ -32,14 +22,12 @@ export default function MenuItem() {
     );
   }
 
-  // ✅ 5. ส่งข้อมูลจริง (data.result) ไปที่ MenuList
   return (
-    <>
-      <MenuList 
-        items={data?.result ?? []} 
-        onAddToCart={handleAdd} 
-        currency="THB" 
-      />
-    </>
+    <MenuList 
+      items={data?.result ?? []} 
+      isLoading={isLoading} // ✅ ส่ง isLoading เข้าไป เพื่อโชว์ Skeleton สวยๆ
+      onAddToCart={handleAdd} 
+      currency="THB"
+    />
   );
 }

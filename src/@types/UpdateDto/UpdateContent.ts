@@ -16,5 +16,6 @@ export interface UpdateContent {
   // --- Common ---
   startDate?: Date;
   endDate?: Date;
+  isPermanent?: boolean;
   isUsed?: boolean;
 }
