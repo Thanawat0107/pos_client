@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Box, IconButton, Fade, useMediaQuery, Typography, Button } from "@mui/material";
 import { ArrowBackIosNew, ArrowForwardIos } from "@mui/icons-material"; // เปลี่ยนไอคอนให้ดูมนขึ้น
 import type { Content } from "../../@types/dto/Content";
+import { baseUrl } from "../../helpers/SD";
 
 type Props = {
   items: Content[];
@@ -84,7 +85,7 @@ export default function Carousel({ items, autoPlay = true }: Props) {
             {/* 1. รูปภาพพื้นหลัง (Ken Burns Effect เบาๆ) */}
             <Box
               component="img"
-              src={item.imageUrl || "https://placehold.co/1200x600?text=Promotion"}
+              src={baseUrl + item.imageUrl || "https://placehold.co/1200x600?text=Promotion"}
               alt={item.title}
               sx={{
                 width: "100%",

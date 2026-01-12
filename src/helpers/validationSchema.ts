@@ -68,10 +68,7 @@ export const manualSchema = Yup.object().shape({
 export const contentSchema = Yup.object().shape({
   title: Yup.string().required("กรุณาระบุหัวข้อ"),
   contentType: Yup.string().required("กรุณาเลือกประเภท"),
-  startDate: Yup.date().required("ระบุวันเริ่มต้น"),
-  
-  // ✅ ต้องเพิ่ม field นี้เพื่อให้ .when มองเห็น (ค่า default คือ false)
-  isPermanent: Yup.boolean(),
+    isPermanent: Yup.boolean(),
 
   // ✅ ปรับ Logic ของ EndDate
   endDate: Yup.date()

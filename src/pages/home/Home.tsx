@@ -44,7 +44,7 @@ export default function Home() {
         )}
 
         {/* Categories */}
-        <Box sx={{ mb: 4 }}>
+        {/* <Box sx={{ mb: 4 }}>
           <Container maxWidth="xl">
             <Typography variant="h6" fontWeight={800} mb={2} sx={{ opacity: 0.9 }}>
               อยากทานอะไรดี? 🍕
@@ -56,7 +56,7 @@ export default function Home() {
             onChange={setCat}
             maxWidth="xl"
           />
-        </Box>
+        </Box> */}
 
         {/* Promotions: Section เด่น */}
         <HomePromotions promotions={promotions} />

@@ -12,6 +12,7 @@ import {
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { ContentType } from "../../../@types/Enum";
 import type { Content } from "../../../@types/dto/Content";
+import { baseUrl } from "../../../helpers/SD";
 
 function NewsCard({ item }: { item: Content }) {
   const imageSrc = item.imageUrl || "https://placehold.co/600x400?text=News";
@@ -35,7 +36,7 @@ function NewsCard({ item }: { item: Content }) {
     >
       {/* Image with Tag */}
       <Box className="img-container" sx={{ position: "relative", borderRadius: 4, overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", transition: "box-shadow 0.3s" }}>
-        <CardMedia component="img" height="180" image={imageSrc} alt={item.title} sx={{ objectFit: "cover" }} />
+        <CardMedia component="img" height="180" image={baseUrl + imageSrc} alt={item.title} sx={{ objectFit: "cover" }} />
         <Box 
           sx={{ 
             position: "absolute", 
