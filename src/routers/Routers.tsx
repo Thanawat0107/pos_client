@@ -12,13 +12,14 @@ import ManageMenuItemOptionList from "../components/pages/adminManage/menuItemOp
 import ManageRecipeList from "../components/pages/adminManage/recipe/ManageRecipeList";
 import ManageManualList from "../components/pages/adminManage/manual/ManageManualList";
 import ManageContentList from "../components/pages/adminManage/content/ManageContentList";
+import MenuDetails from "../components/pages/menu/MenuDetails";
 
 export default function Routers() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/menuItem" element={<MenuItem />} />
-      {/* <Route path="/productDetails/:id" element={<ProductDetails />} /> */}
+      <Route path="/menu/:id" element={<MenuDetails />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />

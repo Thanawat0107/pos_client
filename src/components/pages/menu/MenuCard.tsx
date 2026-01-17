@@ -11,13 +11,11 @@ import {
 import type { SxProps, Theme } from "@mui/material";
 import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
 import { memo } from "react";
+import { useNavigate } from "react-router-dom"; // 1. นำเข้า useNavigate
 import type { MenuItemDto } from "../../../@types/dto/MenuItem";
 
-// ✅ 1. Import Interface จากไฟล์ DTO ของคุณ
-// (ตรวจสอบ path "../@types/dto/MenuItem" ให้ตรงกับโปรเจกต์จริงนะครับ)
-
 type Props = {
-  menu: MenuItemDto; // ✅ เปลี่ยน Type เป็น DTO ตรงๆ
+  menu: MenuItemDto;
   onAddToCart?: (p: MenuItemDto) => void;
   currency?: string;
   sx?: SxProps<Theme>;
@@ -25,17 +23,19 @@ type Props = {
 
 function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
   const theme = useTheme();
+  const navigate = useNavigate(); // 2. ประกาศตัวแปร navigate
 
-  // ✅ 2. ดึงค่าตามชื่อ field จริงของ API
-  // API: basePrice -> UI: ใช้แสดงราคา
-  // API: imageUrl -> UI: ใช้แสดงรูป (อาจเป็น null ได้)
-  const { name, basePrice, imageUrl, description } = menu;
+  const { id, name, basePrice, imageUrl, description } = menu; // สมมติว่า DTO มี field 'id'
 
-  // ✅ 3. จัดการ Fallback กรณีไม่มีรูป
   const displayImage = imageUrl || "https://placehold.co/600x400?text=No+Image";
+
+  const handleNavigateToDetails = () => {
+    navigate(`/menu/${id}`); 
+  };
 
   return (
     <Card
+      onClick={handleNavigateToDetails} // 4. ใส่ onClick ที่ตัว Card
       sx={{
         height: "100%",
         display: "flex",
@@ -48,6 +48,7 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
         transition: "all 0.3s ease-in-out",
         boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
         overflow: "hidden",
+        cursor: "pointer", // 5. เปลี่ยน mouse cursor
         "&:hover": {
           transform: "translateY(-6px)",
           boxShadow: `0 12px 24px ${alpha(theme.palette.primary.main, 0.15)}`,
@@ -63,7 +64,7 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
       <Box sx={{ position: "relative", overflow: "hidden", pt: "65%" }}>
         <Box
           component="img"
-          src={displayImage} // ✅ ใช้รูปที่เตรียมไว้
+          src={displayImage}
           alt={name}
           className="menu-image"
           loading="lazy"
@@ -79,9 +80,8 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
           }}
         />
 
-        {/* Price Tag */}
         <Chip
-          label={basePrice.toLocaleString(undefined, { // ✅ ใช้ basePrice
+          label={basePrice.toLocaleString(undefined, {
             style: "currency",
             currency,
             minimumFractionDigits: 0,
@@ -147,7 +147,10 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx }: Props) {
             fullWidth
             variant="contained"
             disableElevation
-            onClick={() => onAddToCart?.(menu)} // ส่ง object DTO กลับไป
+            onClick={(e) => {
+              e.stopPropagation(); // 6. 🔥 หยุดการส่งต่อ Event ไม่ให้ Card คลิกทำงาน
+              onAddToCart?.(menu);
+            }}
             startIcon={<AddShoppingCartIcon />}
             sx={{
               borderRadius: 2.5,

@@ -15,7 +15,11 @@ import type { Content } from "../../../@types/dto/Content";
 import { baseUrl } from "../../../helpers/SD";
 
 function NewsCard({ item }: { item: Content }) {
-  const imageSrc = item.imageUrl || "https://placehold.co/600x400?text=News";
+  // 1. Logic การเลือกรูป: ถ้ามีรูปให้ใช้รูป ถ้าไม่มีใช้ Placeholder
+  // และเช็คว่าเป็น HTTP อยู่แล้วหรือไม่ (เพื่อกัน baseUrl ต่อซ้ำ)
+  const rawImage = item.imageUrl || "https://placehold.co/600x400?text=News";
+  const displayImage = rawImage.startsWith("http") ? rawImage : baseUrl + rawImage;
+
   const isEvent = item.contentType === ContentType.EVENT;
 
   return (
@@ -26,7 +30,7 @@ function NewsCard({ item }: { item: Content }) {
         display: "flex",
         flexDirection: "column",
         borderRadius: 4,
-        bgcolor: "transparent", // กลืนกับพื้นหลัง
+        bgcolor: "transparent",
         transition: "transform 0.3s",
         "&:hover": {
            transform: "translateY(-4px)",
@@ -36,7 +40,22 @@ function NewsCard({ item }: { item: Content }) {
     >
       {/* Image with Tag */}
       <Box className="img-container" sx={{ position: "relative", borderRadius: 4, overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", transition: "box-shadow 0.3s" }}>
-        <CardMedia component="img" height="180" image={baseUrl + imageSrc} alt={item.title} sx={{ objectFit: "cover" }} />
+        <CardMedia 
+          component="img" 
+          height="180" 
+          // 2. ใช้ตัวแปรที่ผ่านการเช็ค URL แล้ว
+          image={displayImage} 
+          alt={item.title} 
+          sx={{ objectFit: "cover" }} 
+          // 3. เพิ่ม onError กันเหนียว
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.onerror = null;
+            target.src = "https://placehold.co/600x400?text=No+Image";
+          }}
+        />
+        
+        {/* ... (ส่วน Label EVENT/NEWS เหมือนเดิม) ... */}
         <Box 
           sx={{ 
             position: "absolute", 
@@ -54,6 +73,7 @@ function NewsCard({ item }: { item: Content }) {
         </Box>
       </Box>
 
+      {/* ... (ส่วนเนื้อหา CardContent เหมือนเดิม ไม่ต้องแก้) ... */}
       <CardContent sx={{ px: 1, py: 2, flexGrow: 1 }}>
         <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
            {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}

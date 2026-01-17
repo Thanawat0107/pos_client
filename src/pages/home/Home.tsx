@@ -1,6 +1,5 @@
-import { Box, CircularProgress, Container, Typography, Fade } from "@mui/material";
+import { Box, CircularProgress, Fade } from "@mui/material";
 import Carousel from "../../components/layouts/Carousel";
-import CategoryScroller, { demoCategories } from "../../components/pages/category/CategoryScroller";
 import { useHomeData } from "./useHomeData";
 import HomeHeader from "../../components/pages/home/HomeHeader";
 import HomePromotions from "../../components/pages/home/HomePromotions";
@@ -9,7 +8,6 @@ import HomeNews from "../../components/pages/home/HomeNews";
 
 export default function Home() {
   const { 
-    cat, setCat, 
     menuItems, banners, promotions, news, 
     isLoading, menuError 
   } = useHomeData();

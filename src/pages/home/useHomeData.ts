@@ -15,7 +15,10 @@ export const useHomeData = () => {
     pageSize: 6,
   });
 
-  const { data: contentData, isLoading: contentLoading } = useGetContentsQuery({});
+  const { data: contentData, isLoading: contentLoading } = useGetContentsQuery({
+    pageNumber: 1,
+    pageSize: 100
+  });
 
   // Prepare Data
   const menuItems: MenuItemDto[] = menuData?.result ?? [];

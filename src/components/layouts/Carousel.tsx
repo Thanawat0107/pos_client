@@ -63,7 +63,10 @@ export default function Carousel({ items, autoPlay = true }: Props) {
         // ปรับความสูงให้ดูโปร่งขึ้น
         height: { xs: 240, sm: 360, md: 450, lg: 550 },
         // เพิ่มเงาฟุ้งๆ ด้านล่างให้ดูลอยออกมา
-        boxShadow: { xs: "0 4px 12px rgba(0,0,0,0.1)", sm: "0 10px 40px -10px rgba(0,0,0,0.2)" },
+        boxShadow: {
+          xs: "0 4px 12px rgba(0,0,0,0.1)",
+          sm: "0 10px 40px -10px rgba(0,0,0,0.2)",
+        },
         borderRadius: { xs: 0, sm: 4 }, // มุมมนขึ้นอีก
         overflow: "hidden",
         mx: "auto",
@@ -85,14 +88,28 @@ export default function Carousel({ items, autoPlay = true }: Props) {
             {/* 1. รูปภาพพื้นหลัง (Ken Burns Effect เบาๆ) */}
             <Box
               component="img"
-              src={baseUrl + item.imageUrl || "https://placehold.co/1200x600?text=Promotion"}
+              // เช็คก่อนว่า imageUrl เป็น Full URL หรือ Path ถ้าเป็น Path ให้ต่อ baseUrl
+              src={
+                item.imageUrl
+                  ? item.imageUrl.startsWith("http")
+                    ? item.imageUrl
+                    : baseUrl + item.imageUrl
+                  : "https://placehold.co/1200x600?text=Promotion"
+              }
               alt={item.title}
+              // ✅ เพิ่มตรงนี้: ถ้าโหลดพัง ให้เปลี่ยน src เป็นรูปสำรองทันที
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // กัน Loop นรกเผื่อรูปสำรองก็พัง
+                target.src = "https://placehold.co/1200x600?text=No+Image";
+              }}
               sx={{
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
                 // Animation: Zoom เข้าช้าๆ
-                animation: i === index ? "kenburns 10s infinite alternate" : "none",
+                animation:
+                  i === index ? "kenburns 10s infinite alternate" : "none",
                 "@keyframes kenburns": {
                   from: { transform: "scale(1)" },
                   to: { transform: "scale(1.05)" },
@@ -106,7 +123,8 @@ export default function Carousel({ items, autoPlay = true }: Props) {
                 position: "absolute",
                 inset: 0,
                 // ไล่เฉดสีดำจากล่างขึ้นบน + มุมซ้ายล่างเข้มพิเศษให้อ่าน Text ง่าย
-                background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0) 100%)",
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0) 100%)",
               }}
             />
 
@@ -125,22 +143,24 @@ export default function Carousel({ items, autoPlay = true }: Props) {
                 alignItems: "flex-start",
                 justifyContent: "flex-end",
                 // Glassmorphism Effect จางๆ
-                backdropFilter: "blur(0px)", 
+                backdropFilter: "blur(0px)",
               }}
             >
               {/* Badge ประเภท Content */}
               <Box
                 sx={{
-                  bgcolor: item.contentType === 'Promotion' ? '#FF5722' : '#2196F3',
-                  color: 'white',
-                  px: 1.5, py: 0.5,
+                  bgcolor:
+                    item.contentType === "Promotion" ? "#FF5722" : "#2196F3",
+                  color: "white",
+                  px: 1.5,
+                  py: 0.5,
                   borderRadius: 1,
-                  fontSize: '0.75rem',
+                  fontSize: "0.75rem",
                   fontWeight: 700,
                   mb: 1.5,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
                 }}
               >
                 {item.contentType}
@@ -153,7 +173,7 @@ export default function Carousel({ items, autoPlay = true }: Props) {
                   textShadow: "0 4px 12px rgba(0,0,0,0.4)",
                   lineHeight: 1.2,
                   mb: 1,
-                  maxWidth: "90%"
+                  maxWidth: "90%",
                 }}
               >
                 {item.title}
@@ -170,14 +190,14 @@ export default function Carousel({ items, autoPlay = true }: Props) {
                   overflow: "hidden",
                   mb: 2,
                   lineHeight: 1.6,
-                  fontSize: { xs: '0.9rem', md: '1.1rem' }
+                  fontSize: { xs: "0.9rem", md: "1.1rem" },
                 }}
               >
                 {item.description}
               </Typography>
 
               {/* Action Button */}
-              {item.contentType === 'Promotion' && (
+              {item.contentType === "Promotion" && (
                 <Button
                   variant="contained"
                   color="primary" // หรือใช้สีส้ม '#FF5722'
@@ -193,9 +213,9 @@ export default function Carousel({ items, autoPlay = true }: Props) {
                     boxShadow: "0 4px 14px rgba(255, 87, 34, 0.4)",
                     transition: "transform 0.2s",
                     "&:hover": {
-                       transform: "scale(1.05)",
-                       boxShadow: "0 6px 20px rgba(255, 87, 34, 0.6)"
-                    }
+                      transform: "scale(1.05)",
+                      boxShadow: "0 6px 20px rgba(255, 87, 34, 0.6)",
+                    },
                   }}
                 >
                   ดูรายละเอียด
@@ -212,7 +232,9 @@ export default function Carousel({ items, autoPlay = true }: Props) {
           <IconButton
             onClick={handlePrev}
             sx={{
-              position: "absolute", top: "50%", left: 16,
+              position: "absolute",
+              top: "50%",
+              left: 16,
               transform: "translateY(-50%)",
               color: "white",
               bgcolor: "rgba(255,255,255,0.15)", // ใสๆ
@@ -220,7 +242,8 @@ export default function Carousel({ items, autoPlay = true }: Props) {
               border: "1px solid rgba(255,255,255,0.2)",
               "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
               display: { xs: "none", md: "inline-flex" },
-              width: 48, height: 48,
+              width: 48,
+              height: 48,
             }}
           >
             <ArrowBackIosNew fontSize="small" />
@@ -228,7 +251,9 @@ export default function Carousel({ items, autoPlay = true }: Props) {
           <IconButton
             onClick={handleNext}
             sx={{
-              position: "absolute", top: "50%", right: 16,
+              position: "absolute",
+              top: "50%",
+              right: 16,
               transform: "translateY(-50%)",
               color: "white",
               bgcolor: "rgba(255,255,255,0.15)",
@@ -236,7 +261,8 @@ export default function Carousel({ items, autoPlay = true }: Props) {
               border: "1px solid rgba(255,255,255,0.2)",
               "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
               display: { xs: "none", md: "inline-flex" },
-              width: 48, height: 48,
+              width: 48,
+              height: 48,
             }}
           >
             <ArrowForwardIos fontSize="small" />
@@ -248,14 +274,18 @@ export default function Carousel({ items, autoPlay = true }: Props) {
       {items.length > 1 && (
         <Box
           sx={{
-            position: "absolute", bottom: 20, right: 24, // ย้ายมาขวาล่าง
-            display: "flex", gap: 0.8,
+            position: "absolute",
+            bottom: 20,
+            right: 24, // ย้ายมาขวาล่าง
+            display: "flex",
+            gap: 0.8,
             zIndex: 2,
             // พื้นหลังจางๆ รองรับ dots
-            p: 0.8, px: 1.5,
+            p: 0.8,
+            px: 1.5,
             borderRadius: 20,
             bgcolor: "rgba(0,0,0,0.2)",
-            backdropFilter: "blur(4px)"
+            backdropFilter: "blur(4px)",
           }}
         >
           {items.map((_, i) => (
