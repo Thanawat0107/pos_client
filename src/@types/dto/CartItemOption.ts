@@ -1,11 +1,17 @@
 export interface CartItemOption {
-    optionId: number;
-    optionGroupId?: number;
-    optionValueId?: number;
+  id: number; // PK ของตาราง CartItemOption (เอาไว้เผื่อลบเฉพาะ option นี้)
 
-    optionGroupName: string;
-    optionValueName: string;
+  // ✅ ID ต้นทาง (สำคัญมากสำหรับ Frontend ใช้ Re-select)
+  menuItemOptionId: number; // (OptionGroupId เดิม)
+  menuOptionDetailId?: number | null; // (OptionValueId เดิม)
 
-    optionName: string;
-    extraPrice: number;
+  // ✅ ชื่อสำหรับแสดงผล
+  optionGroupName: string; // เช่น "ความหวาน"
+  optionValueName: string; // เช่น "หวานน้อย"
+
+  // ✅ Helper สำหรับแสดงผลรวม
+  displayName: string; // เช่น "ความหวาน: หวานน้อย (+0 บาท)"
+
+  // ✅ ราคา
+  extraPrice: number;
 }
