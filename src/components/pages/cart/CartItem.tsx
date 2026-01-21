@@ -8,27 +8,20 @@ import {
   Divider,
   Tooltip,
   useMediaQuery,
+  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-
-export type CartLine = {
-  id: string;
-  name: string;
-  image?: string;
-  price: number;        // ราคาต่อชิ้น
-  qty: number;
-  note?: string;        // เผื่อ future (ไม่จำเป็น)
-  optionsText?: string; // “Size L • Extra cheese” เป็นต้น
-};
+import type { CartItemDto } from "../../../@types/dto/CartItemDto";
 
 type Props = {
-  item: CartLine;
-  onQtyChange?: (id: string, qty: number) => void;
-  onRemove?: (id: string) => void;
-  currency?: string; // default: THB
+  item: CartItemDto;
+  onQtyChange: (id: number, qty: number, note?: string | null) => void;
+  onRemove: (id: number) => void;
+  currency?: string;
+  isUpdating?: boolean;
 };
 
 export default function CartItem({
@@ -36,17 +29,31 @@ export default function CartItem({
   onQtyChange,
   onRemove,
   currency = "THB",
+  isUpdating = false,
 }: Props) {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const sub = item.price * item.qty;
+  const unitPrice = item.price;
+  const sub = unitPrice * item.quantity;
 
-  const dec = () => onQtyChange?.(item.id, Math.max(1, item.qty - 1));
-  const inc = () => onQtyChange?.(item.id, item.qty + 1);
+  const dec = () => {
+    if (item.quantity > 1) {
+      // ✅ ส่ง item.note ไปได้เลย เพราะแก้ Props แล้ว
+      onQtyChange(item.id, item.quantity - 1, item.note);
+    } else {
+      onRemove(item.id);
+    }
+  };
+
+  const inc = () => onQtyChange(item.id, item.quantity + 1, item.note);
 
   const money = (n: number) =>
     n.toLocaleString(undefined, { style: "currency", currency });
+
+  const optionsText = item.options
+    ?.map((o) => `${o.optionGroupName}: ${o.optionValueName}`)
+    .join(" • ");
 
   return (
     <Card
@@ -54,19 +61,33 @@ export default function CartItem({
       sx={{
         borderRadius: 2,
         p: { xs: 1, sm: 2 },
+        position: "relative",
+        opacity: isUpdating ? 0.6 : 1,
       }}
     >
+      {isUpdating && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 1,
+          }}
+        >
+          <CircularProgress size={20} />
+        </Box>
+      )}
+
       <Stack direction="row" spacing={{ xs: 1.25, sm: 2 }}>
-        {/* รูป: ย่อ/ขยายตาม breakpoint */}
         <Box
           component="img"
           src={
-            item.image ||
-            "https://via.placeholder.com/96x96.png?text=Item"
+            item.menuItemImage ||
+            "https://via.placeholder.com/96x96.png?text=No+Image"
           }
-          alt={item.name}
+          alt={item.menuItemName}
           loading="lazy"
-          decoding="async"
           sx={{
             width: { xs: 72, sm: 96 },
             height: { xs: 72, sm: 96 },
@@ -77,14 +98,7 @@ export default function CartItem({
           }}
         />
 
-        {/* เนื้อหา */}
-        <CardContent
-          sx={{
-            p: 0,
-            flexGrow: 1,
-            minWidth: 0,
-          }}
-        >
+        <CardContent sx={{ p: 0, flexGrow: 1, minWidth: 0 }}>
           <Stack
             direction="row"
             alignItems={{ xs: "flex-start", sm: "center" }}
@@ -95,18 +109,18 @@ export default function CartItem({
               <Typography
                 fontWeight={700}
                 variant={isSmUp ? "body1" : "body2"}
-                noWrap={!isSmUp} // มือถือให้ตัดบรรทัดน้อยลง
+                noWrap={!isSmUp}
               >
-                {item.name}
+                {item.menuItemName}
               </Typography>
 
-              {item.optionsText && (
+              {optionsText && (
                 <Typography
                   variant="caption"
                   color="text.secondary"
                   sx={{ display: { xs: "none", sm: "block" } }}
                 >
-                  {item.optionsText}
+                  {optionsText}
                 </Typography>
               )}
               {item.note && (
@@ -120,7 +134,6 @@ export default function CartItem({
               )}
             </Stack>
 
-            {/* ราคา subtotal ต่อบรรทัด */}
             <Typography fontWeight={800} variant={isSmUp ? "body1" : "body2"}>
               {money(sub)}
             </Typography>
@@ -134,11 +147,15 @@ export default function CartItem({
             justifyContent="space-between"
             gap={1}
           >
-            {/* ตัวควบคุมจำนวน: ปรับขนาดให้ tap ง่าย */}
-            <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 1.25 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={{ xs: 1, sm: 1.25 }}
+            >
               <IconButton
                 aria-label="decrease"
                 onClick={dec}
+                disabled={isUpdating}
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
@@ -154,12 +171,13 @@ export default function CartItem({
                 fontWeight={800}
                 sx={{ minWidth: { xs: 28, sm: 32 } }}
               >
-                {item.qty}
+                {item.quantity}
               </Typography>
 
               <IconButton
                 aria-label="increase"
                 onClick={inc}
+                disabled={isUpdating}
                 sx={{
                   border: "1px solid",
                   borderColor: "divider",
@@ -174,7 +192,8 @@ export default function CartItem({
             <Tooltip title="ลบออกจากตะกร้า">
               <IconButton
                 color="error"
-                onClick={() => onRemove?.(item.id)}
+                onClick={() => onRemove(item.id)}
+                disabled={isUpdating}
                 sx={{
                   width: { xs: 36, sm: 40 },
                   height: { xs: 36, sm: 40 },

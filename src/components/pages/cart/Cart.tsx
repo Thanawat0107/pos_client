@@ -12,68 +12,144 @@ import {
   TextField,
   Typography,
   useMediaQuery,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import { keyframes, useTheme } from "@mui/material/styles";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import CartItem, { type CartLine } from "./CartItem";
+import CartItem from "./CartItem";
+import { storage } from "../../../helpers/storageHelper";
+import {
+  useGetCartQuery,
+  useUpdateCartItemMutation,
+  useRemoveCartItemMutation,
+  useClearCartMutation,
+} from "../../../services/shoppingCartApi";
+
+const slideUp = keyframes`
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+`;
 
 export default function Cart() {
-  // mock data (เชื่อม API ได้เลย)
-  const [lines, setLines] = React.useState<CartLine[]>([
-    {
-      id: "1",
-      name: "Apple AirPods",
-      price: 95,
-      qty: 1,
-      image:
-        "https://images.unsplash.com/photo-1518446060624-3c3101a6c29b?q=80&w=1200&auto=format&fit=crop",
-    },
-    {
-      id: "2",
-      name: "Smart Watch",
-      price: 129,
-      qty: 1,
-      image:
-        "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop",
-    },
-  ]);
-
-  const currency = "THB";
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+  const currency = "THB";
 
-  const handleQty = (id: string, qty: number) =>
-    setLines((xs) => xs.map((x) => (x.id === id ? { ...x, qty } : x)));
+  // ✅ 2. แก้ไขการดึง Token: ดึงแบบ Synchronous (ตรงๆ) เพื่อให้ Hook ทำงานได้ทันที
+  // เราไม่ใช้ storage.get() ตรงนี้เพราะมันเป็น async (ต้องรอ await)
+  const cartToken = localStorage.getItem("cartToken");
 
-  const handleRemove = (id: string) =>
-    setLines((xs) => xs.filter((x) => x.id !== id));
+  // 3. เรียก API GetCart
+  const {
+    data: cartData,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetCartQuery(cartToken, {
+    skip: !cartToken, // ถ้าไม่มี Token ไม่ต้องยิง API
+  });
 
-  const subtotal = React.useMemo(
-    () => lines.reduce((s, x) => s + x.price * x.qty, 0),
-    [lines]
-  );
-  const shipping = subtotal > 0 ? 30 : 0; // ตัวอย่าง flat rate
-  const discount = 0; // ต่อโปรฯ ทีหลังได้
-  const total = subtotal + shipping - discount;
+  const [updateCartItem] = useUpdateCartItemMutation();
+  const [removeCartItem] = useRemoveCartItemMutation();
+  const [clearCart] = useClearCartMutation();
+
+  const cartItems = cartData?.cartItems || [];
+  const totalAmount = cartData?.totalAmount || 0;
+
+  // ✅ แก้เป็น (เพิ่ม | null)
+  const handleQty = async (
+    cartItemId: number,
+    qty: number,
+    note?: string | null,
+  ) => {
+    if (!cartToken) return;
+    try {
+      await updateCartItem({
+        cartItemId,
+        quantity: qty,
+        note: note,
+        cartToken,
+      });
+    } catch (error) {
+      console.error("Update failed", error);
+    }
+  };
+
+  // Handler: ลบสินค้า
+  const handleRemove = async (cartItemId: number) => {
+    if (!cartToken) return;
+    try {
+      await removeCartItem({ id: cartItemId, cartToken });
+    } catch (error) {
+      console.error("Remove failed", error);
+    }
+  };
+
+  // Handler: ล้างตะกร้า
+  const handleClear = async () => {
+    if (!cartToken) return;
+    if (window.confirm("คุณต้องการลบสินค้าทั้งหมดใช่หรือไม่?")) {
+      try {
+        await clearCart(cartToken); // ล้างฝั่ง Server
+
+        // ✅ 3. ใช้ storage ของคุณในการลบฝั่ง Client (อันนี้เป็น Async ได้ไม่มีปัญหา)
+        await storage.remove("cartToken");
+
+        // บังคับ reload หน้าจอ หรือ reset state เพื่อให้ตะกร้าว่างเปล่า
+        window.location.reload();
+      } catch (error) {
+        console.error("Clear failed", error);
+      }
+    }
+  };
 
   const formatMoney = (n: number) =>
     n.toLocaleString(undefined, { style: "currency", currency });
 
-  // กันเนื้อหาโดน mobile bar บัง
-  const bottomInset = !isMdUp && lines.length > 0 ? 72 : 0;
+  const bottomInset = !isMdUp && cartItems.length > 0 ? 100 : 24;
+
+  // --- Loading ---
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100dvh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // --- Error ---
+  if (isError) {
+    return (
+      <Box sx={{ p: 4, textAlign: "center", mt: 10 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          ไม่สามารถโหลดข้อมูลตะกร้าได้
+        </Alert>
+        <Button variant="outlined" onClick={() => refetch()}>
+          ลองใหม่อีกครั้ง
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box
       sx={{
         bgcolor: "background.default",
         minHeight: "100dvh",
-        pb: { xs: `${bottomInset}px`, md: 6 }, // เผื่อพื้นที่ให้ MobileBar
+        pb: { xs: `${bottomInset}px`, md: 6 },
         pt: { xs: 2, md: 6 },
       }}
     >
       <Container maxWidth="xl">
-        {/* หัวข้อ: เล็กลงบน xs, หนาขึ้น md+ */}
         <Stack
           direction="row"
           alignItems="center"
@@ -81,32 +157,31 @@ export default function Cart() {
           sx={{ mb: { xs: 2, md: 3 } }}
         >
           <Typography variant={isMdUp ? "h5" : "h6"} fontWeight={800}>
-            ตะกร้าสินค้า
+            ตะกร้าสินค้า {cartItems.length > 0 && `(${cartItems.length})`}
           </Typography>
-
-          {/* ใส่ปุ่มล้างตะกร้าบนมือถือแบบซ่อนในเมนู/ไอคอนเล็ก ๆ ก็ได้ ถ้าต้องการ */}
-          {lines.length > 0 && !isMdUp ? (
+          {cartItems.length > 0 && !isMdUp && (
             <IconButton
               aria-label="clear-cart"
-              onClick={() => setLines([])}
+              onClick={handleClear}
               size="small"
+              color="error"
             >
               <CloseRoundedIcon fontSize="small" />
-              ลบทั้งหมด
             </IconButton>
-          ) : null}
+          )}
         </Stack>
 
-        {/* layout: มือถือเป็นคอลัมน์, md ขึ้นไปค่อยแยกซ้าย/ขวา */}
         <Stack
           direction={{ xs: "column", md: "row" }}
           spacing={{ xs: 1.5, md: 3 }}
           alignItems="stretch"
         >
-          {/* รายการสินค้า */}
           <Stack flex={1} spacing={{ xs: 1.25, md: 2 }}>
-            {lines.length === 0 ? (
-              <Card variant="outlined" sx={{ p: { xs: 3, md: 4 }, borderRadius: 2 }}>
+            {cartItems.length === 0 ? (
+              <Card
+                variant="outlined"
+                sx={{ p: { xs: 3, md: 4 }, borderRadius: 2 }}
+              >
                 <Typography
                   variant="body2"
                   textAlign="center"
@@ -116,7 +191,7 @@ export default function Cart() {
                 </Typography>
               </Card>
             ) : (
-              lines.map((it) => (
+              cartItems.map((it) => (
                 <CartItem
                   key={it.id}
                   item={it}
@@ -126,8 +201,6 @@ export default function Cart() {
                 />
               ))
             )}
-
-            {/* โค้ดส่วนลด (โชว์บนมือถือในลิสต์ เพื่อไม่ต้องเลื่อนขึ้นลง) */}
             <TextField
               size="small"
               placeholder="โค้ดส่วนลด"
@@ -139,83 +212,83 @@ export default function Cart() {
                   </InputAdornment>
                 ),
               }}
-              sx={{
-                display: { xs: "block", md: "none" },
-                mt: 0.5,
-              }}
+              sx={{ display: { xs: "block", md: "none" }, mt: 0.5 }}
             />
           </Stack>
 
-          {/* สรุปราคา (ซ่อนบน xs, โชว์แบบ sticky เฉพาะจอใหญ่) */}
-          <Card
-            variant="outlined"
-            sx={{
-              display: { xs: "none", md: "block" },
-              position: { md: "sticky" },
-              top: { md: 24 },
-              borderRadius: 2,
-              width: { md: 360 },
-              alignSelf: "flex-start",
-              flexShrink: 0,
-            }}
-          >
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>
-                สรุปคำสั่งซื้อ
-              </Typography>
-
-              <Stack spacing={1.25}>
-                <Row label="ยอดรวม">{formatMoney(subtotal)}</Row>
-                <Row label="ค่าจัดส่ง">{formatMoney(shipping)}</Row>
-                <Row label="ส่วนลด">-{formatMoney(discount)}</Row>
-
-                <Divider sx={{ my: 1 }} />
-
-                <Row strong label="ยอดชำระทั้งหมด">
-                  {formatMoney(total)}
-                </Row>
-
-                <TextField
-                  size="small"
-                  placeholder="โค้ดส่วนลด"
-                  fullWidth
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LocalOfferOutlinedIcon fontSize="small" />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <Button
-                  size="large"
-                  variant="contained"
-                  disabled={lines.length === 0}
-                  sx={{ borderRadius: 2, mt: 1 }}
-                  onClick={() => alert("ไปหน้า Checkout")}
-                  fullWidth
-                >
-                  ดำเนินการชำระเงิน
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
+          {cartItems.length > 0 && (
+            <Card
+              variant="outlined"
+              sx={{
+                display: { xs: "none", md: "block" },
+                position: { md: "sticky" },
+                top: { md: 88 },
+                borderRadius: 2,
+                width: { md: 360 },
+                alignSelf: "flex-start",
+                flexShrink: 0,
+              }}
+            >
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>
+                  สรุปคำสั่งซื้อ
+                </Typography>
+                <Stack spacing={1.25}>
+                  <Row label="ยอดรวม">{formatMoney(totalAmount)}</Row>
+                  <Row label="ค่าจัดส่ง">ฟรี</Row>
+                  <Divider sx={{ my: 1 }} />
+                  <Row strong label="ยอดชำระทั้งหมด">
+                    {formatMoney(totalAmount)}
+                  </Row>
+                  <TextField
+                    size="small"
+                    placeholder="โค้ดส่วนลด"
+                    fullWidth
+                    sx={{ mt: 1 }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LocalOfferOutlinedIcon fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <Button
+                    size="large"
+                    variant="contained"
+                    sx={{ borderRadius: 2, mt: 1 }}
+                    onClick={() => alert("ไปหน้า Checkout")}
+                    fullWidth
+                  >
+                    ดำเนินการชำระเงิน
+                  </Button>
+                  <Button
+                    size="small"
+                    color="error"
+                    sx={{ mt: 1 }}
+                    onClick={handleClear}
+                  >
+                    ล้างตะกร้า
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
         </Stack>
       </Container>
 
-      {/* Mobile bottom checkout bar */}
-      {!isMdUp && lines.length > 0 ? (
+      {!isMdUp && cartItems.length > 0 && (
         <MobileCheckoutBar
           totalLabel="ยอดชำระทั้งหมด"
-          amount={formatMoney(total)}
+          amount={formatMoney(totalAmount)}
           onCheckout={() => alert("ไปหน้า Checkout")}
         />
-      ) : null}
+      )}
     </Box>
   );
 }
 
+// ... Component Row และ MobileCheckoutBar ใช้ของเดิมได้เลยครับ
 function Row({
   label,
   children,
@@ -235,17 +308,6 @@ function Row({
   );
 }
 
-const slideUp = keyframes`
-  from {
-    transform: translateY(24px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-`;
-
 export function MobileCheckoutBar({
   totalLabel,
   amount,
@@ -256,7 +318,6 @@ export function MobileCheckoutBar({
   onCheckout: () => void;
 }) {
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-
   return (
     <Box
       sx={{
@@ -267,17 +328,18 @@ export function MobileCheckoutBar({
         bgcolor: "background.paper",
         borderTop: "1px solid",
         borderColor: "divider",
-        py: 3,
+        py: 2,
         px: 2,
-        paddingBottom: "calc(env(safe-area-inset-bottom) + 20px)",
-        boxShadow: (t) => t.shadows[5],
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)",
+        boxShadow: (t) => t.shadows[8],
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
         zIndex: (t) => t.zIndex.appBar,
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
-        // 🔥 slide-up on mount
-        animation: reduceMotion ? "none" : `${slideUp} 320ms cubic-bezier(.2,.8,.2,1) both`,
+        animation: reduceMotion
+          ? "none"
+          : `${slideUp} 320ms cubic-bezier(.2,.8,.2,1) both`,
         willChange: "transform, opacity",
       }}
     >
@@ -287,7 +349,7 @@ export function MobileCheckoutBar({
             <Typography variant="caption" color="text.secondary">
               {totalLabel}
             </Typography>
-            <Typography variant="subtitle1" fontWeight={800} noWrap>
+            <Typography variant="h6" fontWeight={800} color="primary" noWrap>
               {amount}
             </Typography>
           </Stack>
@@ -297,12 +359,10 @@ export function MobileCheckoutBar({
             size="large"
             sx={{
               borderRadius: 2,
-              px: 2.5,
+              px: 3,
               flexShrink: 0,
-              minWidth: 160,
+              minWidth: 140,
               boxShadow: (t) => t.shadows[3],
-              // pop-in เล็ก ๆ ให้ปุ่ม
-              animation: reduceMotion ? "none" : `${slideUp} 380ms 60ms cubic-bezier(.2,.8,.2,1) both`,
             }}
           >
             ชำระเงิน

@@ -1,6 +1,6 @@
 import type { CartItemOption } from "./CartItemOption";
 
-export interface CartItem {
+export interface CartItemDto {
   id: number;
 
   menuItemId: number;

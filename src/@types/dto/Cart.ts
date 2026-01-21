@@ -1,4 +1,4 @@
-import type { CartItem } from "./CartItem";
+import type { CartItemDto } from "./CartItemDto";
 
 export interface Cart {
   id: number;
@@ -6,5 +6,5 @@ export interface Cart {
   userId?: string | null;
   totalAmount: number;
   totalItemsCount: number;
-  cartItems: CartItem[];
+  cartItems: CartItemDto[];
 }
