@@ -3,13 +3,13 @@ import { useMemo, useRef, useEffect } from "react";
 import { Box, useMediaQuery, useTheme, alpha, IconButton } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import MenuCard from "./MenuCard"; // ไม่ต้อง import type { Menu } แล้ว
+import { useNavigate } from "react-router-dom";
+
+import MenuCard from "./MenuCard";
 import type { MenuItemDto } from "../../../@types/dto/MenuItem";
 
-// ✅ Import DTO มาใช้กำหนด Type
-
 type Props = {
-  items: MenuItemDto[]; // ✅ เปลี่ยนจาก Menu[] เป็น MenuItemDto[]
+  items: MenuItemDto[];
   onAddToCart?: (p: MenuItemDto) => void;
   maxWidth?: "sm" | "md" | "lg" | "xl" | false;
   currency?: string;
@@ -28,6 +28,7 @@ export default function MenuScroller({
   maxWidth = "lg",
   currency = "USD",
 }: Props) {
+  const navigate = useNavigate();
   const ref = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const upMd = useMediaQuery(theme.breakpoints.up("md"));
@@ -38,25 +39,57 @@ export default function MenuScroller({
 
   const slides = useMemo(() => chunk(items, perSlide), [items, perSlide]);
 
-  // --- Logic: drag-to-scroll ---
+  // --- Logic: Drag vs Click ---
+  const isDragging = useRef(false);
   const drag = useRef({ active: false, x: 0, left: 0 });
+
   const onDown = (e: React.PointerEvent) => {
+    // ❌ เอา setPointerCapture ออกจากตรงนี้! (นี่คือจุดที่แก้ปัญหา)
     const el = ref.current!;
-    el.setPointerCapture(e.pointerId);
     drag.current = { active: true, x: e.clientX, left: el.scrollLeft };
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!drag.current.active || !ref.current) return;
-    e.preventDefault();
-    ref.current.scrollLeft = drag.current.left - (e.clientX - drag.current.x);
-  };
-  const onUp = (e: React.PointerEvent) => {
-    if (!drag.current.active || !ref.current) return;
-    drag.current.active = false;
-    ref.current.releasePointerCapture(e.pointerId);
+    isDragging.current = false; // Reset สถานะเริ่มใหม่
   };
 
-  // --- Logic: wheel horizontal ---
+  const onMove = (e: React.PointerEvent) => {
+    if (!drag.current.active || !ref.current) return;
+    
+    const dx = Math.abs(e.clientX - drag.current.x);
+
+    // ✅ ถ้าขยับเมาส์เกิน 5px ถึงจะเริ่มนับว่าเป็นการ Drag
+    if (dx > 5) {
+      isDragging.current = true;
+      e.preventDefault();
+
+      // สั่ง Capture ตรงนี้แทน เพื่อให้ลากเมาส์ออกนอกจอก็ยังเลื่อนต่อได้
+      if (!ref.current.hasPointerCapture(e.pointerId)) {
+        ref.current.setPointerCapture(e.pointerId);
+      }
+
+      ref.current.scrollLeft = drag.current.left - (e.clientX - drag.current.x);
+    }
+  };
+
+  const onUp = (e: React.PointerEvent) => {
+    // ปล่อย Capture
+    if (ref.current && ref.current.hasPointerCapture(e.pointerId)) {
+      ref.current.releasePointerCapture(e.pointerId);
+    }
+    drag.current.active = false;
+    
+    // Safety timeout เพื่อให้ Event Click ทำงานทันก่อนจะ Reset Flag
+    setTimeout(() => {
+        isDragging.current = false;
+    }, 0);
+  };
+
+  // ✅ ฟังก์ชัน Click ที่ปลอดภัย (ถ้า Drag อยู่จะไม่เปลี่ยนหน้า)
+  const handleItemClick = (id: number) => {
+    if (!isDragging.current) {
+      navigate(`/menu/${id}`);
+    }
+  };
+
+  // --- Wheel & Button Logic (เหมือนเดิม) ---
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -70,16 +103,10 @@ export default function MenuScroller({
     return () => el.removeEventListener("wheel", handler);
   }, []);
 
-  // --- Logic: Button Scroll ---
   const handleScroll = (direction: "left" | "right") => {
     if (!ref.current) return;
-    const containerWidth = ref.current.clientWidth;
-    const scrollAmount = direction === "left" ? -containerWidth : containerWidth;
-    
-    ref.current.scrollBy({
-      left: scrollAmount,
-      behavior: "smooth",
-    });
+    const w = ref.current.clientWidth;
+    ref.current.scrollBy({ left: direction === "left" ? -w : w, behavior: "smooth" });
   };
 
   return (
@@ -89,67 +116,17 @@ export default function MenuScroller({
         py: { xs: 1.5, sm: 2 },
         mx: "auto",
         maxWidth: maxWidth ? t.breakpoints.values[maxWidth] : "100%",
-
         "&::before, &::after": {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          width: { xs: 20, sm: 36 },
-          pointerEvents: "none",
-          zIndex: 1,
+          content: '""', position: "absolute", top: 0, bottom: 0, width: { xs: 20, sm: 36 }, pointerEvents: "none", zIndex: 1
         },
-        "&::before": {
-          left: 0,
-          background: `linear-gradient(90deg, ${t.palette.background.default}, ${alpha(
-            t.palette.background.default, 0)})`,
-        },
-        "&::after": {
-          right: 0,
-          background: `linear-gradient(270deg, ${t.palette.background.default}, ${alpha(
-            t.palette.background.default, 0)})`,
-        },
+        "&::before": { left: 0, background: `linear-gradient(90deg, ${t.palette.background.default}, ${alpha(t.palette.background.default, 0)})` },
+        "&::after": { right: 0, background: `linear-gradient(270deg, ${t.palette.background.default}, ${alpha(t.palette.background.default, 0)})` },
       })}
     >
-      {/* ปุ่มซ้าย */}
-      <IconButton
-        aria-label="scroll left"
-        onClick={() => handleScroll("left")}
-        sx={{
-          position: "absolute",
-          left: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 2,
-          bgcolor: "background.paper",
-          border: "1px solid",
-          borderColor: "divider",
-          boxShadow: 2,
-          "&:hover": { bgcolor: "action.hover" },
-          display: { xs: "none", md: "flex" },
-        }}
-      >
+      <IconButton onClick={() => handleScroll("left")} sx={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", zIndex: 2, bgcolor: "background.paper", boxShadow: 2, display: { xs: "none", md: "flex" } }}>
         <ChevronLeftIcon />
       </IconButton>
-
-      {/* ปุ่มขวา */}
-      <IconButton
-        aria-label="scroll right"
-        onClick={() => handleScroll("right")}
-        sx={{
-          position: "absolute",
-          right: 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          zIndex: 2,
-          bgcolor: "background.paper",
-          border: "1px solid",
-          borderColor: "divider",
-          boxShadow: 2,
-          "&:hover": { bgcolor: "action.hover" },
-          display: { xs: "none", md: "flex" },
-        }}
-      >
+      <IconButton onClick={() => handleScroll("right")} sx={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", zIndex: 2, bgcolor: "background.paper", boxShadow: 2, display: { xs: "none", md: "flex" } }}>
         <ChevronRightIcon />
       </IconButton>
 
@@ -162,49 +139,33 @@ export default function MenuScroller({
         sx={{
           display: "grid",
           gridAutoFlow: "column",
-          gridAutoColumns: {
-            xs: "min(92vw, 560px)",
-            md: "min(960px, 90vw)",
-          },
+          gridAutoColumns: { xs: "min(92vw, 560px)", md: "min(960px, 90vw)" },
           gap: { xs: 1.5, sm: 2 },
           overflowX: "auto",
           scrollSnapType: "x mandatory",
           scrollBehavior: "smooth",
           px: { xs: 1.25, sm: 2 },
-          WebkitOverflowScrolling: "touch",
-          overscrollBehaviorX: "contain",
           scrollbarWidth: "none",
-          msOverflowStyle: "none",
           "&::-webkit-scrollbar": { display: "none" },
           cursor: "grab",
           "&:active": { cursor: "grabbing" },
+          userSelect: "none" // ✅ ป้องกันการเลือก Text ตอนลาก
         }}
       >
         {slides.map((slideItems, sIdx) => (
-          <Box
-            key={sIdx}
-            sx={{
-              scrollSnapAlign: "center",
-              display: "grid",
-              gridTemplateColumns: `repeat(${cols}, 1fr)`,
-              gridAutoRows: "1fr",
-              gap: { xs: 1.25, sm: 2 },
-              alignItems: "stretch",
-            }}
-          >
+          <Box key={sIdx} sx={{ scrollSnapAlign: "center", display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: { xs: 1.25, sm: 2 } }}>
             {slideItems.map((p, i) => (
               <MenuCard
                 key={`${p.id}-${i}`}
-                menu={p} // ส่ง MenuItemDto เข้าไปได้เลย
+                menu={p}
                 onAddToCart={onAddToCart}
                 currency={currency}
+                // ✅ ส่ง onClick ไปให้ MenuCard
+                onClick={() => handleItemClick(p.id)}
                 sx={{
                   height: "100%",
-                  transition: "transform .15s ease, box-shadow .15s ease",
-                  "&:hover": {
-                    transform: { md: "translateY(-2px)" },
-                    boxShadow: { md: 6 },
-                  },
+                  transition: "transform .15s ease",
+                  "&:hover": { transform: { md: "translateY(-2px)" }, boxShadow: { md: 6 }, cursor: "pointer" },
                 }}
               />
             ))}

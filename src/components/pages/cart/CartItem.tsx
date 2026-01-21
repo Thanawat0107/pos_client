@@ -8,7 +8,6 @@ import {
   Divider,
   Tooltip,
   useMediaQuery,
-  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
@@ -21,7 +20,6 @@ type Props = {
   onQtyChange: (id: number, qty: number, note?: string | null) => void;
   onRemove: (id: number) => void;
   currency?: string;
-  isUpdating?: boolean;
 };
 
 export default function CartItem({
@@ -29,24 +27,25 @@ export default function CartItem({
   onQtyChange,
   onRemove,
   currency = "THB",
-  isUpdating = false,
 }: Props) {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const unitPrice = item.price;
-  const sub = unitPrice * item.quantity;
+  // ราคาที่ Frontend คำนวณเบื้องต้น (แต่จริงๆ Redux Store คำนวณมาให้แล้วในยอดรวม)
+  const sub = item.price * item.quantity;
 
   const dec = () => {
     if (item.quantity > 1) {
-      // ✅ ส่ง item.note ไปได้เลย เพราะแก้ Props แล้ว
       onQtyChange(item.id, item.quantity - 1, item.note);
     } else {
       onRemove(item.id);
     }
   };
 
-  const inc = () => onQtyChange(item.id, item.quantity + 1, item.note);
+  const inc = () => {
+    // ตรงนี้อาจจะเช็ค Max Stock ได้ถ้ามีข้อมูล
+    onQtyChange(item.id, item.quantity + 1, item.note);
+  };
 
   const money = (n: number) =>
     n.toLocaleString(undefined, { style: "currency", currency });
@@ -62,32 +61,16 @@ export default function CartItem({
         borderRadius: 2,
         p: { xs: 1, sm: 2 },
         position: "relative",
-        opacity: isUpdating ? 0.6 : 1,
+        transition: "opacity 0.2s",
+        // เราเอา loading overlay ออกเพื่อให้ดูลื่นไหล
       }}
     >
-      {isUpdating && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 1,
-          }}
-        >
-          <CircularProgress size={20} />
-        </Box>
-      )}
-
       <Stack direction="row" spacing={{ xs: 1.25, sm: 2 }}>
+        {/* Image */}
         <Box
           component="img"
-          src={
-            item.menuItemImage ||
-            "https://via.placeholder.com/96x96.png?text=No+Image"
-          }
+          src={item.menuItemImage || "https://via.placeholder.com/96x96.png?text=No+Image"}
           alt={item.menuItemName}
-          loading="lazy"
           sx={{
             width: { xs: 72, sm: 96 },
             height: { xs: 72, sm: 96 },
@@ -106,34 +89,20 @@ export default function CartItem({
             spacing={1}
           >
             <Stack spacing={0.5} minWidth={0}>
-              <Typography
-                fontWeight={700}
-                variant={isSmUp ? "body1" : "body2"}
-                noWrap={!isSmUp}
-              >
+              <Typography fontWeight={700} variant={isSmUp ? "body1" : "body2"} noWrap={!isSmUp}>
                 {item.menuItemName}
               </Typography>
-
               {optionsText && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: { xs: "none", sm: "block" } }}
-                >
+                <Typography variant="caption" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
                   {optionsText}
                 </Typography>
               )}
               {item.note && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: { xs: "none", sm: "block" } }}
-                >
+                <Typography variant="caption" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
                   Note: {item.note}
                 </Typography>
               )}
             </Stack>
-
             <Typography fontWeight={800} variant={isSmUp ? "body1" : "body2"}>
               {money(sub)}
             </Typography>
@@ -141,64 +110,31 @@ export default function CartItem({
 
           <Divider sx={{ my: { xs: 1, sm: 1.25 } }} />
 
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            gap={1}
-          >
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={{ xs: 1, sm: 1.25 }}
-            >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+            <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 1.25 }}>
               <IconButton
-                aria-label="decrease"
                 onClick={dec}
-                disabled={isUpdating}
-                sx={{
-                  border: "1px solid",
-                  borderColor: "divider",
-                  width: { xs: 36, sm: 40 },
-                  height: { xs: 36, sm: 40 },
-                }}
+                size="small"
+                sx={{ border: "1px solid", borderColor: "divider" }}
               >
-                <RemoveIcon fontSize={isSmUp ? "small" : "inherit"} />
+                <RemoveIcon fontSize="small" />
               </IconButton>
 
-              <Typography
-                textAlign="center"
-                fontWeight={800}
-                sx={{ minWidth: { xs: 28, sm: 32 } }}
-              >
+              <Typography textAlign="center" fontWeight={800} sx={{ minWidth: 32 }}>
                 {item.quantity}
               </Typography>
 
               <IconButton
-                aria-label="increase"
                 onClick={inc}
-                disabled={isUpdating}
-                sx={{
-                  border: "1px solid",
-                  borderColor: "divider",
-                  width: { xs: 36, sm: 40 },
-                  height: { xs: 36, sm: 40 },
-                }}
+                size="small"
+                sx={{ border: "1px solid", borderColor: "divider" }}
               >
-                <AddIcon fontSize={isSmUp ? "small" : "inherit"} />
+                <AddIcon fontSize="small" />
               </IconButton>
             </Stack>
 
             <Tooltip title="ลบออกจากตะกร้า">
-              <IconButton
-                color="error"
-                onClick={() => onRemove(item.id)}
-                disabled={isUpdating}
-                sx={{
-                  width: { xs: 36, sm: 40 },
-                  height: { xs: 36, sm: 40 },
-                }}
-              >
+              <IconButton color="error" onClick={() => onRemove(item.id)}>
                 <DeleteOutlineIcon />
               </IconButton>
             </Tooltip>

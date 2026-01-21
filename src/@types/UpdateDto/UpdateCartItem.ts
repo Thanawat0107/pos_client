@@ -1,8 +1,8 @@
-export interface UpdateCartItem {
+export interface UpdateCartItemDto {
   cartToken: string;
   cartItemId: number;
   quantity: number;
 
-  // ✅ เพิ่ม: ให้แก้ไข Note ได้ด้วย
-  note?: string | null;
+  // ✅ allow editing note
+  note?: string;
 }

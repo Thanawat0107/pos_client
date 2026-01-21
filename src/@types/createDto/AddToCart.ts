@@ -1,13 +1,13 @@
-export interface AddToCart {
-  // --- ข้อมูลสินค้า ---
+export interface AddToCartDto {
+  // --- product info ---
   menuItemId: number;
   quantity: number;
-  optionIds?: number[] | null;
+  optionIds?: number[];
 
-  // ✅ เพิ่ม: หมายเหตุรายตัว (เช่น ไม่ใส่ผัก, เผ็ดน้อย)
-  note?: string | null;
+  // ✅ per-item note (e.g. no veggies, less spicy)
+  note?: string;
 
-  // --- ข้อมูลระบุตัวตน ---
-  userId?: string | null;
-  cartToken?: string | null;
+  // --- identity info ---
+  userId?: string;
+  cartToken?: string;
 }

@@ -26,7 +26,8 @@ import {
   useRemoveCartItemMutation,
   useClearCartMutation,
 } from "../../../services/shoppingCartApi";
-
+import { useAppDispatch, useAppSelector } from "../../../hooks/useAppHookState";
+import { clearLocalCart, removeItemLocal, updateItemLocal } from "../../../stores/slices/shoppingSlice";
 const slideUp = keyframes`
   from { transform: translateY(24px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -37,70 +38,92 @@ export default function Cart() {
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
   const currency = "THB";
 
-  // ✅ 2. แก้ไขการดึง Token: ดึงแบบ Synchronous (ตรงๆ) เพื่อให้ Hook ทำงานได้ทันที
-  // เราไม่ใช้ storage.get() ตรงนี้เพราะมันเป็น async (ต้องรอ await)
+  // ✅ 1. เรียกใช้ Dispatch และ Selector
+  const dispatch = useAppDispatch();
+  
+  // ดึงข้อมูลจาก Redux Store (Local State) มาแสดงผลเพื่อให้ UI ไวที่สุด
+  const { cartItems, totalAmount } = useAppSelector((state) => state.shoppingCart);
+
+  // ดึง Token
   const cartToken = localStorage.getItem("cartToken");
 
-  // 3. เรียก API GetCart
+  // ✅ 2. API Query: เพื่อ Sync ข้อมูลล่าสุดจาก Server ลง Store (ทำงานเบื้องหลัง)
   const {
-    data: cartData,
     isLoading,
     isError,
     refetch,
   } = useGetCartQuery(cartToken, {
-    skip: !cartToken, // ถ้าไม่มี Token ไม่ต้องยิง API
+    skip: !cartToken,
+    // Polling หรือ Refetch ตามความเหมาะสม
   });
 
+  // API Mutations
   const [updateCartItem] = useUpdateCartItemMutation();
   const [removeCartItem] = useRemoveCartItemMutation();
   const [clearCart] = useClearCartMutation();
 
-  const cartItems = cartData?.cartItems || [];
-  const totalAmount = cartData?.totalAmount || 0;
-
-  // ✅ แก้เป็น (เพิ่ม | null)
+  // ✅ 3. Handler: แก้ไขจำนวน (Optimistic Update)
   const handleQty = async (
     cartItemId: number,
     qty: number,
     note?: string | null,
   ) => {
     if (!cartToken) return;
+
+    // A. อัปเดตหน้าจอทันที (ไม่ต้องรอ API)
+    dispatch(updateItemLocal({ 
+      id: cartItemId, 
+      qty, 
+      note: note || undefined 
+    }));
+
+    // B. ส่งข้อมูลไป Server
     try {
       await updateCartItem({
         cartItemId,
         quantity: qty,
         note: note,
         cartToken,
-      });
+      }).unwrap(); 
+      // .unwrap() ช่วยให้เรา catch error ได้จริง
     } catch (error) {
       console.error("Update failed", error);
+      // ถ้า Error ให้ดึงข้อมูลจริงจาก Server มาทับใหม่ (Rollback)
+      refetch();
     }
   };
 
-  // Handler: ลบสินค้า
+  // ✅ 4. Handler: ลบสินค้า (Optimistic Delete)
   const handleRemove = async (cartItemId: number) => {
     if (!cartToken) return;
+
+    // A. ลบออกจากหน้าจอทันที
+    dispatch(removeItemLocal(cartItemId));
+
+    // B. สั่งลบที่ Server
     try {
-      await removeCartItem({ id: cartItemId, cartToken });
+      await removeCartItem({ id: cartItemId, cartToken }).unwrap();
     } catch (error) {
       console.error("Remove failed", error);
+      refetch();
     }
   };
 
-  // Handler: ล้างตะกร้า
+  // ✅ 5. Handler: ล้างตะกร้า
   const handleClear = async () => {
     if (!cartToken) return;
     if (window.confirm("คุณต้องการลบสินค้าทั้งหมดใช่หรือไม่?")) {
+      
+      // A. ล้างหน้าจอทันที
+      dispatch(clearLocalCart());
+
+      // B. ล้าง Server และ LocalStorage
       try {
-        await clearCart(cartToken); // ล้างฝั่ง Server
-
-        // ✅ 3. ใช้ storage ของคุณในการลบฝั่ง Client (อันนี้เป็น Async ได้ไม่มีปัญหา)
+        await clearCart(cartToken).unwrap();
         await storage.remove("cartToken");
-
-        // บังคับ reload หน้าจอ หรือ reset state เพื่อให้ตะกร้าว่างเปล่า
-        window.location.reload();
       } catch (error) {
         console.error("Clear failed", error);
+        refetch();
       }
     }
   };
@@ -111,7 +134,8 @@ export default function Cart() {
   const bottomInset = !isMdUp && cartItems.length > 0 ? 100 : 24;
 
   // --- Loading ---
-  if (isLoading) {
+  // แสดง Loading เฉพาะตอนเข้ามาครั้งแรกจริงๆ และใน Store ยังว่างเปล่า
+  if (isLoading && cartItems.length === 0) {
     return (
       <Box
         sx={{
@@ -150,6 +174,7 @@ export default function Cart() {
       }}
     >
       <Container maxWidth="xl">
+        {/* Header */}
         <Stack
           direction="row"
           alignItems="center"
@@ -176,6 +201,7 @@ export default function Cart() {
           spacing={{ xs: 1.5, md: 3 }}
           alignItems="stretch"
         >
+          {/* Left Side: Cart Items */}
           <Stack flex={1} spacing={{ xs: 1.25, md: 2 }}>
             {cartItems.length === 0 ? (
               <Card
@@ -191,6 +217,7 @@ export default function Cart() {
                 </Typography>
               </Card>
             ) : (
+              // ✅ Loop Items จาก Redux State
               cartItems.map((it) => (
                 <CartItem
                   key={it.id}
@@ -198,9 +225,12 @@ export default function Cart() {
                   onQtyChange={handleQty}
                   onRemove={handleRemove}
                   currency={currency}
+                  // ไม่ต้องส่ง isUpdating แล้วเพราะ UI จะเปลี่ยนทันที
                 />
               ))
             )}
+
+            {/* Discount Code Input (Mobile) */}
             <TextField
               size="small"
               placeholder="โค้ดส่วนลด"
@@ -216,6 +246,7 @@ export default function Cart() {
             />
           </Stack>
 
+          {/* Right Side: Summary (Desktop) */}
           {cartItems.length > 0 && (
             <Card
               variant="outlined"
@@ -240,6 +271,8 @@ export default function Cart() {
                   <Row strong label="ยอดชำระทั้งหมด">
                     {formatMoney(totalAmount)}
                   </Row>
+                  
+                  {/* Discount Code (Desktop) */}
                   <TextField
                     size="small"
                     placeholder="โค้ดส่วนลด"
@@ -253,6 +286,7 @@ export default function Cart() {
                       ),
                     }}
                   />
+                  
                   <Button
                     size="large"
                     variant="contained"
@@ -262,6 +296,7 @@ export default function Cart() {
                   >
                     ดำเนินการชำระเงิน
                   </Button>
+                  
                   <Button
                     size="small"
                     color="error"
@@ -277,6 +312,7 @@ export default function Cart() {
         </Stack>
       </Container>
 
+      {/* Mobile Checkout Bar */}
       {!isMdUp && cartItems.length > 0 && (
         <MobileCheckoutBar
           totalLabel="ยอดชำระทั้งหมด"
@@ -288,7 +324,8 @@ export default function Cart() {
   );
 }
 
-// ... Component Row และ MobileCheckoutBar ใช้ของเดิมได้เลยครับ
+// --- Sub Components ---
+
 function Row({
   label,
   children,
