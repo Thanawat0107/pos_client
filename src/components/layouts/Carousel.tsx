@@ -1,312 +1,155 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useRef, useEffect } from "react";
-import { Box, IconButton, Fade, useMediaQuery, Typography, Button } from "@mui/material";
-import { ArrowBackIosNew, ArrowForwardIos } from "@mui/icons-material"; // เปลี่ยนไอคอนให้ดูมนขึ้น
+import { Box, IconButton, Fade, useMediaQuery, Typography, Button, Stack } from "@mui/material";
+import { ArrowBackIosNew, ArrowForwardIos } from "@mui/icons-material";
+import { alpha, useTheme } from "@mui/material/styles";
 import type { Content } from "../../@types/dto/Content";
 import { baseUrl } from "../../helpers/SD";
 
-type Props = {
-  items: Content[];
-  autoPlay?: boolean;
-};
-
-export default function Carousel({ items, autoPlay = true }: Props) {
+export default function Carousel({ items, autoPlay = true }: { items: Content[]; autoPlay?: boolean }) {
+  const theme = useTheme();
   const [index, setIndex] = useState(0);
-  const isDesktop = useMediaQuery("(min-width:900px)");
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
 
-  // ---- Swipe State ----
+  // Swipe logic
   const startX = useRef<number | null>(null);
   const deltaX = useRef(0);
-  const SWIPE_THRESHOLD = 40;
 
-  useEffect(() => {
-    setIndex(0);
-  }, [items]);
-
-  useEffect(() => {
-    if (!autoPlay || items.length <= 1) return;
-    const timer = setInterval(() => {
-      handleNext();
-    }, 6000); // เพิ่มเวลาเป็น 6 วิ ให้คนอ่านทัน
+  useEffect(() => { if (!autoPlay || items.length <= 1) return;
+    const timer = setInterval(() => handleNext(), 7000);
     return () => clearInterval(timer);
   }, [index, autoPlay, items.length]);
 
   const handlePrev = () => setIndex((p) => (p === 0 ? items.length - 1 : p - 1));
   const handleNext = () => setIndex((p) => (p === items.length - 1 ? 0 : p + 1));
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX;
-    deltaX.current = 0;
-  };
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (startX.current == null) return;
-    deltaX.current = e.touches[0].clientX - startX.current;
-  };
-  const onTouchEnd = () => {
-    if (Math.abs(deltaX.current) > SWIPE_THRESHOLD) {
-      deltaX.current < 0 ? handleNext() : handlePrev();
-    }
-    startX.current = null;
-    deltaX.current = 0;
-  };
-
-  if (!items || items.length === 0) return null;
+  if (!items?.length) return null;
 
   return (
     <Box
-      role="region"
-      aria-label="Promotional Carousel"
       sx={{
         position: "relative",
         width: "100%",
-        // ปรับความสูงให้ดูโปร่งขึ้น
-        height: { xs: 240, sm: 360, md: 450, lg: 550 },
-        // เพิ่มเงาฟุ้งๆ ด้านล่างให้ดูลอยออกมา
-        boxShadow: {
-          xs: "0 4px 12px rgba(0,0,0,0.1)",
-          sm: "0 10px 40px -10px rgba(0,0,0,0.2)",
-        },
-        borderRadius: { xs: 0, sm: 4 }, // มุมมนขึ้นอีก
+        height: { xs: 300, sm: 400, md: 500, lg: 600 },
+        borderRadius: { xs: 0, md: "24px" }, // โค้งมนรับกับธีมใหม่
         overflow: "hidden",
-        mx: "auto",
-        bgcolor: "grey.100",
+        boxShadow: "0 20px 50px rgba(0,0,0,0.15)",
+        bgcolor: "background.paper",
       }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      onTouchStart={(e) => (startX.current = e.touches[0].clientX)}
+      onTouchMove={(e) => startX.current && (deltaX.current = e.touches[0].clientX - startX.current)}
+      onTouchEnd={() => {
+        if (Math.abs(deltaX.current) > 50) deltaX.current < 0 ? handleNext() : handlePrev();
+        startX.current = null; deltaX.current = 0;
+      }}
     >
       {items.map((item, i) => (
-        <Fade key={item.id} in={i === index} timeout={800}>
-          <Box
-            sx={{
-              position: "absolute",
-              inset: 0,
-              display: i === index ? "block" : "none",
-            }}
-          >
-            {/* 1. รูปภาพพื้นหลัง (Ken Burns Effect เบาๆ) */}
+        <Fade key={item.id} in={i === index} timeout={1000}>
+          <Box sx={{ position: "absolute", inset: 0, display: i === index ? "block" : "none" }}>
+            
+            {/* 1. Image with Ken Burns Effect */}
             <Box
               component="img"
-              // เช็คก่อนว่า imageUrl เป็น Full URL หรือ Path ถ้าเป็น Path ให้ต่อ baseUrl
-              src={
-                item.imageUrl
-                  ? item.imageUrl.startsWith("http")
-                    ? item.imageUrl
-                    : baseUrl + item.imageUrl
-                  : "https://placehold.co/1200x600?text=Promotion"
-              }
+              src={item.imageUrl?.startsWith("http") ? item.imageUrl : baseUrl + item.imageUrl}
               alt={item.title}
-              // ✅ เพิ่มตรงนี้: ถ้าโหลดพัง ให้เปลี่ยน src เป็นรูปสำรองทันที
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.onerror = null; // กัน Loop นรกเผื่อรูปสำรองก็พัง
-                target.src = "https://placehold.co/1200x600?text=No+Image";
-              }}
               sx={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                // Animation: Zoom เข้าช้าๆ
-                animation:
-                  i === index ? "kenburns 10s infinite alternate" : "none",
-                "@keyframes kenburns": {
-                  from: { transform: "scale(1)" },
-                  to: { transform: "scale(1.05)" },
-                },
+                width: "100%", height: "100%", objectFit: "cover",
+                animation: i === index ? "kenburns 15s ease-out forwards" : "none",
+                "@keyframes kenburns": { "0%": { transform: "scale(1)" }, "100%": { transform: "scale(1.1)" } },
               }}
             />
 
-            {/* 2. Modern Gradient Overlay */}
-            <Box
-              sx={{
-                position: "absolute",
-                inset: 0,
-                // ไล่เฉดสีดำจากล่างขึ้นบน + มุมซ้ายล่างเข้มพิเศษให้อ่าน Text ง่าย
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0) 100%)",
-              }}
-            />
+            {/* 2. Deep Gradient Overlay (ช่วยให้ข้อความเด่น) */}
+            <Box sx={{
+              position: "absolute", inset: 0,
+              background: `linear-gradient(to right, ${alpha("#000", 0.8)} 0%, ${alpha("#000", 0.4)} 50%, transparent 100%), 
+                           linear-gradient(to top, ${alpha("#000", 0.6)} 0%, transparent 40%)`
+            }} />
 
-            {/* 3. Text Content Area */}
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                p: { xs: 3, md: 6 },
-                pt: { xs: 8, md: 12 },
-                color: "white",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                justifyContent: "flex-end",
-                // Glassmorphism Effect จางๆ
-                backdropFilter: "blur(0px)",
-              }}
-            >
-              {/* Badge ประเภท Content */}
-              <Box
-                sx={{
-                  bgcolor:
-                    item.contentType === "Promotion" ? "#FF5722" : "#2196F3",
-                  color: "white",
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 1,
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  mb: 1.5,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                {item.contentType}
-              </Box>
-
-              <Typography
-                variant={isDesktop ? "h3" : "h5"}
-                fontWeight={800}
-                sx={{
-                  textShadow: "0 4px 12px rgba(0,0,0,0.4)",
-                  lineHeight: 1.2,
-                  mb: 1,
-                  maxWidth: "90%",
-                }}
-              >
-                {item.title}
-              </Typography>
-
-              <Typography
-                variant="body1"
-                sx={{
-                  opacity: 0.85,
-                  maxWidth: { xs: "100%", md: "60%" },
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  mb: 2,
-                  lineHeight: 1.6,
-                  fontSize: { xs: "0.9rem", md: "1.1rem" },
-                }}
-              >
-                {item.description}
-              </Typography>
-
-              {/* Action Button */}
-              {item.contentType === "Promotion" && (
-                <Button
-                  variant="contained"
-                  color="primary" // หรือใช้สีส้ม '#FF5722'
-                  size={isDesktop ? "large" : "medium"}
-                  onClick={() => console.log("Click Banner:", item)}
-                  sx={{
-                    borderRadius: 50,
-                    px: 4,
-                    py: 1,
-                    textTransform: "none",
-                    fontWeight: 700,
-                    fontSize: "1rem",
-                    boxShadow: "0 4px 14px rgba(255, 87, 34, 0.4)",
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "scale(1.05)",
-                      boxShadow: "0 6px 20px rgba(255, 87, 34, 0.6)",
-                    },
+            {/* 3. Content Area with Entrance Animation */}
+            <Box sx={{
+              position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+              justifyContent: "center", p: { xs: 4, md: 10 }, color: "white",
+              zIndex: 2,
+            }}>
+              <Box sx={{
+                animation: i === index ? "slideUp 0.8s cubic-bezier(0.2, 1, 0.3, 1) forwards" : "none",
+                "@keyframes slideUp": { "0%": { opacity: 0, transform: "translateY(30px)" }, "100%": { opacity: 1, transform: "translateY(0)" } }
+              }}>
+                <Typography 
+                  variant="overline" 
+                  sx={{ 
+                    bgcolor: item.contentType === "Promotion" ? "primary.main" : "info.main",
+                    px: 2, py: 0.5, borderRadius: "50px", fontWeight: 700, letterSpacing: 1
                   }}
                 >
-                  ดูรายละเอียด
-                </Button>
-              )}
+                  {item.contentType}
+                </Typography>
+
+                <Typography variant={isDesktop ? "h1" : "h3"} sx={{ mt: 2, mb: 1, fontWeight: 800, textShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                  {item.title}
+                </Typography>
+
+                <Typography variant="h6" sx={{ mb: 4, opacity: 0.8, maxWidth: "600px", fontWeight: 400, display: { xs: 'none', sm: 'block' } }}>
+                  {item.description}
+                </Typography>
+
+                <Stack direction="row" spacing={2}>
+                  <Button 
+                    variant="contained" size="large"
+                    sx={{ borderRadius: "50px", px: 4, py: 1.5, fontSize: "1.1rem", boxShadow: `0 10px 20px ${alpha(theme.palette.primary.main, 0.4)}` }}
+                  >
+                    สั่งเลยตอนนี้
+                  </Button>
+                  <Button 
+                    variant="outlined" size="large"
+                    sx={{ borderRadius: "50px", px: 4, color: "white", borderColor: "rgba(255,255,255,0.5)", "&:hover": { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" } }}
+                  >
+                    รายละเอียด
+                  </Button>
+                </Stack>
+              </Box>
             </Box>
           </Box>
         </Fade>
       ))}
 
-      {/* Navigation Arrows (Glass style) */}
-      {items.length > 1 && (
-        <>
-          <IconButton
-            onClick={handlePrev}
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: 16,
-              transform: "translateY(-50%)",
-              color: "white",
-              bgcolor: "rgba(255,255,255,0.15)", // ใสๆ
-              backdropFilter: "blur(4px)", // เบลอพื้นหลังปุ่ม
-              border: "1px solid rgba(255,255,255,0.2)",
-              "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
-              display: { xs: "none", md: "inline-flex" },
-              width: 48,
-              height: 48,
-            }}
-          >
-            <ArrowBackIosNew fontSize="small" />
-          </IconButton>
-          <IconButton
-            onClick={handleNext}
-            sx={{
-              position: "absolute",
-              top: "50%",
-              right: 16,
-              transform: "translateY(-50%)",
-              color: "white",
-              bgcolor: "rgba(255,255,255,0.15)",
-              backdropFilter: "blur(4px)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
-              display: { xs: "none", md: "inline-flex" },
-              width: 48,
-              height: 48,
-            }}
-          >
-            <ArrowForwardIos fontSize="small" />
-          </IconButton>
-        </>
-      )}
+      {/* Navigation Arrows */}
+      <NavArrow direction="left" onClick={handlePrev} icon={<ArrowBackIosNew />} />
+      <NavArrow direction="right" onClick={handleNext} icon={<ArrowForwardIos />} />
 
-      {/* Dots Indicator (Modern pill shape) */}
-      {items.length > 1 && (
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 20,
-            right: 24, // ย้ายมาขวาล่าง
-            display: "flex",
-            gap: 0.8,
-            zIndex: 2,
-            // พื้นหลังจางๆ รองรับ dots
-            p: 0.8,
-            px: 1.5,
-            borderRadius: 20,
-            bgcolor: "rgba(0,0,0,0.2)",
-            backdropFilter: "blur(4px)",
-          }}
-        >
-          {items.map((_, i) => (
-            <Box
-              key={i}
-              component="button"
-              onClick={() => setIndex(i)}
-              sx={{
-                width: i === index ? 24 : 8,
-                height: 8,
-                borderRadius: 4,
-                bgcolor: i === index ? "white" : "rgba(255,255,255,0.4)",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            />
-          ))}
-        </Box>
-      )}
+      {/* Indicators */}
+      <Box sx={{ position: "absolute", bottom: 30, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 1.5, zIndex: 10 }}>
+        {items.map((_, i) => (
+          <Box
+            key={i} component="button" onClick={() => setIndex(i)}
+            sx={{
+              width: i === index ? 30 : 10, height: 10, borderRadius: 5, border: "none", p: 0, cursor: "pointer",
+              bgcolor: i === index ? "primary.main" : "rgba(255,255,255,0.4)",
+              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)"
+            }}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }
+
+// Sub-component for Arrows
+const NavArrow = ({ direction, onClick, icon }: any) => (
+  <IconButton
+    onClick={onClick}
+    sx={{
+      position: "absolute", top: "50%", transform: "translateY(-50%)",
+      [direction]: 24, zIndex: 10, color: "white",
+      bgcolor: "rgba(255,255,255,0.1)", backdropFilter: "blur(10px)",
+      border: "1px solid rgba(255,255,255,0.2)",
+      "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+      display: { xs: "none", md: "flex" }
+    }}
+  >
+    {icon}
+  </IconButton>
+);

@@ -7,19 +7,19 @@ import {
   CardMedia,
   CardContent,
   Grid,
-  Button
+  Button,
+  useTheme,
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { alpha } from "@mui/material/styles";
 import { ContentType } from "../../../@types/Enum";
 import type { Content } from "../../../@types/dto/Content";
 import { baseUrl } from "../../../helpers/SD";
 
+// --- ชิ้นข่าวปกติ (Standard Card) ---
 function NewsCard({ item }: { item: Content }) {
-  // 1. Logic การเลือกรูป: ถ้ามีรูปให้ใช้รูป ถ้าไม่มีใช้ Placeholder
-  // และเช็คว่าเป็น HTTP อยู่แล้วหรือไม่ (เพื่อกัน baseUrl ต่อซ้ำ)
   const rawImage = item.imageUrl || "https://placehold.co/600x400?text=News";
   const displayImage = rawImage.startsWith("http") ? rawImage : baseUrl + rawImage;
-
   const isEvent = item.contentType === ContentType.EVENT;
 
   return (
@@ -29,71 +29,35 @@ function NewsCard({ item }: { item: Content }) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderRadius: 4,
-        bgcolor: "transparent",
-        transition: "transform 0.3s",
+        borderRadius: 5,
+        bgcolor: "background.paper",
+        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+        border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.08)}`,
         "&:hover": {
-           transform: "translateY(-4px)",
-           "& .img-container": { boxShadow: "0 10px 30px rgba(0,0,0,0.15)" }
+          transform: "translateY(-8px)",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+          "& img": { transform: "scale(1.1)" },
         },
       }}
     >
-      {/* Image with Tag */}
-      <Box className="img-container" sx={{ position: "relative", borderRadius: 4, overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", transition: "box-shadow 0.3s" }}>
-        <CardMedia 
-          component="img" 
-          height="180" 
-          // 2. ใช้ตัวแปรที่ผ่านการเช็ค URL แล้ว
-          image={displayImage} 
-          alt={item.title} 
-          sx={{ objectFit: "cover" }} 
-          // 3. เพิ่ม onError กันเหนียว
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.onerror = null;
-            target.src = "https://placehold.co/600x400?text=No+Image";
-          }}
+      <Box sx={{ position: "relative", borderRadius: 5, overflow: "hidden", height: 200 }}>
+        <CardMedia
+          component="img"
+          image={displayImage}
+          alt={item.title}
+          sx={{ height: "100%", transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)" }}
         />
-        
-        {/* ... (ส่วน Label EVENT/NEWS เหมือนเดิม) ... */}
-        <Box 
-          sx={{ 
-            position: "absolute", 
-            top: 12, left: 12, 
-            bgcolor: isEvent ? "rgba(255, 152, 0, 0.9)" : "rgba(33, 150, 243, 0.9)",
-            color: "white",
-            px: 1.5, py: 0.5,
-            borderRadius: 2,
-            fontSize: "0.7rem",
-            fontWeight: "bold",
-            backdropFilter: "blur(4px)"
-          }}
-        >
-          {isEvent ? "EVENT" : "NEWS"}
-        </Box>
+        <TypeTag isEvent={isEvent} />
       </Box>
 
-      {/* ... (ส่วนเนื้อหา CardContent เหมือนเดิม ไม่ต้องแก้) ... */}
-      <CardContent sx={{ px: 1, py: 2, flexGrow: 1 }}>
-        <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
-           {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
+      <CardContent sx={{ p: 3 }}>
+        <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
+          {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
         </Typography>
-        
-        <Typography variant="h6" fontWeight={800} lineHeight={1.3} mb={1} sx={{ fontSize: "1rem" }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, mt: 1, mb: 1, lineHeight: 1.3, fontSize: "1.1rem" }}>
           {item.title}
         </Typography>
-
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            fontSize: "0.85rem",
-          }}
-        >
+        <Typography variant="body2" color="text.secondary" sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {item.description}
         </Typography>
       </CardContent>
@@ -101,30 +65,161 @@ function NewsCard({ item }: { item: Content }) {
   );
 }
 
-export default function HomeNews({ newsList }: { newsList: Content[] }) {
-  if (!newsList || newsList.length === 0) return null;
+// --- ชิ้นข่าวเด่น (Featured Card) ---
+function FeaturedNewsCard({ item }: { item: Content }) {
+  const rawImage = item.imageUrl || "https://placehold.co/1200x800?text=Featured";
+  const displayImage = rawImage.startsWith("http") ? rawImage : baseUrl + rawImage;
+  const isEvent = item.contentType === ContentType.EVENT;
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 6, mb: 4 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Box sx={{ width: 4, height: 28, bgcolor: "#333", borderRadius: 1 }} />
-          <Typography variant="h5" fontWeight={800} color="#333">
-            ข่าวสาร & กิจกรรม
+    <Card
+      elevation={0}
+      sx={{
+        height: { xs: 350, md: "100%" },
+        position: "relative",
+        borderRadius: 6,
+        overflow: "hidden",
+        "&:hover img": { transform: "scale(1.05)" },
+      }}
+    >
+      <CardMedia
+        component="img"
+        image={displayImage}
+        sx={{ height: "100%", width: "100%", objectFit: "cover", transition: "transform 0.8s" }}
+      />
+      {/* Overlay Gradient */}
+      <Box sx={{
+        position: "absolute", inset: 0,
+        background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
+      }} />
+
+      <Box sx={{ position: "absolute", bottom: 0, left: 0, p: { xs: 3, md: 5 }, color: "white" }}>
+        <TypeTag isEvent={isEvent} />
+        <Typography variant="caption" sx={{ display: "block", mt: 2, opacity: 0.8, fontWeight: 600 }}>
+          ข่าวเด่นประจำสัปดาห์ • {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
+        </Typography>
+        <Typography variant="h4" sx={{ fontWeight: 900, mt: 1, textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
+          {item.title}
+        </Typography>
+        <Button variant="contained" sx={{ mt: 2, borderRadius: 50, textTransform: "none", px: 3 }}>
+          อ่านรายละเอียด
+        </Button>
+      </Box>
+    </Card>
+  );
+}
+
+// --- Shared Components ---
+const TypeTag = ({ isEvent }: { isEvent: boolean }) => (
+  <Box sx={{
+    position: "absolute", top: 20, left: 20,
+    bgcolor: isEvent ? alpha("#FF9800", 0.9) : alpha("#2196F3", 0.9),
+    color: "white", px: 2, py: 0.5, borderRadius: "50px",
+    fontSize: "0.75rem", fontWeight: 800, backdropFilter: "blur(8px)",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 1
+  }}>
+    {isEvent ? "EVENT" : "NEWS"}
+  </Box>
+);
+
+export default function HomeNews({ newsList }: { newsList: Content[] }) {
+  const theme = useTheme();
+  if (!newsList || newsList.length === 0) return null;
+
+  // แยกข่าวเด่น (ชิ้นแรก) ออกมา
+  const featuredNews = newsList[0];
+  const otherNews = newsList.slice(1, 4); // เอาข่าวที่เหลืออีก 3 ชิ้น
+
+  return (
+    <Container maxWidth="xl" sx={{ py: 8 }}>
+      {/* Header สไตล์ Magazine */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="flex-end"
+        mb={5}
+      >
+        <Box>
+          <Typography variant="h3" fontWeight={900} letterSpacing="-1px">
+            อัปเดต{" "}
+            <Box component="span" sx={{ color: "primary.main" }}>
+              ข่าวสาร
+            </Box>
           </Typography>
-        </Stack>
-        <Button endIcon={<ArrowForwardIcon />} color="inherit" sx={{ borderRadius: 50, px: 2 }}>
-           ดูทั้งหมด
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            fontWeight={500}
+            sx={{ mt: 1 }}
+          >
+            ไม่พลาดทุกกิจกรรมและโปรโมชั่นพิเศษจากเรา
+          </Typography>
+        </Box>
+        <Button
+          endIcon={<ArrowForwardIcon />}
+          sx={{
+            borderRadius: 50,
+            fontWeight: 700,
+            px: 3,
+            py: 1,
+            bgcolor: alpha(theme.palette.text.primary, 0.05),
+            color: "text.primary",
+          }}
+        >
+          ดูข่าวทั้งหมด
         </Button>
       </Stack>
 
       <Grid container spacing={3}>
-        {newsList.map((item) => (
-          <Grid key={item.id} size={{ xs: 12, sm: 6, md: 4 }}>
-            <NewsCard item={item} />
-          </Grid>
-        ))}
+        {/* Bento Layout: ฝั่งซ้ายข่าวเด่น (ใหญ่) */}
+        {/* ใช้ size แทนการเขียน xs, md, lg แยกกัน และลบ item ออก */}
+        <Grid size={{ xs: 12, md: 7, lg: 8 }}>
+          <FeaturedNewsCard item={featuredNews} />
+        </Grid>
+
+        {/* ฝั่งขวาข่าวรอง (เล็ก) */}
+        <Grid size={{ xs: 12, md: 5, lg: 4 }}>
+          <Stack spacing={3} sx={{ height: "100%" }}>
+            {otherNews.map((item) => (
+              <Box key={item.id} sx={{ flex: 1 }}>
+                <SmallNewsCard item={item} />
+              </Box>
+            ))}
+          </Stack>
+        </Grid>
       </Grid>
     </Container>
+  );
+}
+
+// --- ชิ้นข่าวแบบ Row (สำหรับวางฝั่งขวา) ---
+function SmallNewsCard({ item }: { item: Content }) {
+  const rawImage = item.imageUrl || "https://placehold.co/200x200?text=News";
+  const displayImage = rawImage.startsWith("http") ? rawImage : baseUrl + rawImage;
+
+  return (
+    <Stack 
+      direction="row" 
+      spacing={2} 
+      component={Card} 
+      elevation={0}
+      sx={{ 
+        p: 1.5, borderRadius: 4, height: "100%", transition: "0.3s",
+        border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+        "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.02), transform: "scale(1.02)" }
+      }}
+    >
+      <Box sx={{ width: 100, height: 100, borderRadius: 3, overflow: "hidden", flexShrink: 0 }}>
+        <img src={displayImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </Box>
+      <Box sx={{ py: 0.5 }}>
+        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+           {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}
+        </Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, mt: 0.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          {item.title}
+        </Typography>
+      </Box>
+    </Stack>
   );
 }

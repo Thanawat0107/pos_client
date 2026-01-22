@@ -7,65 +7,48 @@ import HomeMenu from "../../components/pages/home/HomeMenu";
 import HomeNews from "../../components/pages/home/HomeNews";
 
 export default function Home() {
-  const { 
-    menuItems, banners, promotions, news, 
-    isLoading, menuError 
-  } = useHomeData();
+  const { menuItems, banners, promotions, news, isLoading, menuError } = useHomeData();
 
-  if (isLoading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80vh" }}>
-        <CircularProgress thickness={5} size={60} sx={{ color: "#FF5722" }} />
-      </Box>
-    );
-  }
+  // if (isLoading) return <LoadingScreen />; // แยก Loading ออกไปเพื่อความสะอาด
 
   return (
-    <Fade in={!isLoading} timeout={800}>
-      <Box 
-        sx={{ 
-          pb: 12, 
-          minHeight: "100vh",
-          // Background Gradient: สีส้มอ่อนไล่ลงมาขาว ให้ความรู้สึกอบอุ่นและ "เช้าวันใหม่"
-          background: "linear-gradient(180deg, #FFF3E0 0%, #FAFAFA 30%, #FFFFFF 100%)"
-        }}
-      >
+    <Fade in timeout={800}>
+      <Box sx={{ 
+        minHeight: "100vh",
+        bgcolor: "background.default",
+        // สร้าง gradient อ่อนๆ จากบนลงล่างให้ดูละมุน
+        background: (theme) => theme.palette.mode === 'light' 
+          ? "linear-gradient(180deg, #FFEDE5 0%, #FFFFFF 40%)" 
+          : "linear-gradient(180deg, #1A0A05 0%, #0F0F0F 100%)"
+      }}>
         
-        {/* Header */}
-        <HomeHeader />
+        {/* Header Section */}
+        <Box sx={{ pt: { xs: 2, md: 4 } }}>
+          <HomeHeader />
+        </Box>
 
-        {/* Banners: เพิ่มเงาฟุ้งๆ ด้านหลัง */}
+        {/* Hero Section: Carousel */}
         {banners.length > 0 && (
-          <Box sx={{ mb: 4, mt: 2, position: "relative", zIndex: 1 }}>
-             <Carousel items={banners} autoPlay={true} />
+          <Box sx={{ 
+            mt: { xs: 0, md: 2 }, 
+            px: { xs: 0, md: 6 }, // บน Desktop ให้เว้นข้างเพื่อให้ Carousel ดูลอยๆ
+            maxWidth: "1600px",
+            mx: "auto"
+          }}>
+            <Carousel items={banners} />
           </Box>
         )}
 
-        {/* Categories */}
-        {/* <Box sx={{ mb: 4 }}>
-          <Container maxWidth="xl">
-            <Typography variant="h6" fontWeight={800} mb={2} sx={{ opacity: 0.9 }}>
-              อยากทานอะไรดี? 🍕
-            </Typography>
-          </Container>
-          <CategoryScroller
-            items={demoCategories}
-            value={cat}
-            onChange={setCat}
-            maxWidth="xl"
-          />
-        </Box> */}
+        {/* เนื้อหาส่วนถัดไป */}
+        <Box sx={{ mt: 8 }}>
+          <HomePromotions promotions={promotions} />
+          
+          <Box sx={{ position: 'relative', zIndex: 2, mt: 4 }}>
+             <HomeMenu items={menuItems} isError={menuError} />
+          </Box>
 
-        {/* Promotions: Section เด่น */}
-        <HomePromotions promotions={promotions} />
-
-        {/* Menu Items */}
-        <Box sx={{ position: 'relative', zIndex: 2 }}>
-           <HomeMenu items={menuItems} isError={menuError} />
+          <HomeNews newsList={news} />
         </Box>
-
-        {/* News */}
-        <HomeNews newsList={news} />
         
       </Box>
     </Fade>
