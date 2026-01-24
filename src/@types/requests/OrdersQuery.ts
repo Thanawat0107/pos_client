@@ -1,4 +1,4 @@
-export interface OrdersQuery {
+export interface drdersQuery {
   pageNumber?: number;
   pageSize?: number;
   status?: string;

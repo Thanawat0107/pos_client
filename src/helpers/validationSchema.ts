@@ -64,22 +64,40 @@ export const manualSchema = Yup.object().shape({
   targetRole: Yup.string().required("กรุณาระบุผู้มีสิทธิ์ใช้งาน"),
 });
 
-// Validation Schema
 export const contentSchema = Yup.object().shape({
   title: Yup.string().required("กรุณาระบุหัวข้อ"),
   contentType: Yup.string().required("กรุณาเลือกประเภท"),
-    isPermanent: Yup.boolean(),
+  isPermanent: Yup.boolean(),
 
-  // ✅ ปรับ Logic ของ EndDate
+  // ✅ Logic ของ EndDate (ปรับปรุงให้รองรับค่าว่างได้ดีขึ้น)
   endDate: Yup.date()
-    .nullable() // 1. อนุญาตให้เป็น null ได้ (สำคัญมากสำหรับเคสถาวร)
+    .nullable()
     .when("isPermanent", {
-      is: true, // 2. กรณี isPermanent เป็น "จริง" (ถาวร)
-      then: (schema) => schema.notRequired(), // -> ไม่บังคับกรอก, ไม่เช็ค min
-      otherwise: (schema) => 
+      is: false, 
+      then: (schema) => 
         schema
-          .required("ระบุวันสิ้นสุด") // -> ถ้าไม่ถาวร "ต้องระบุ"
-          .typeError("รูปแบบวันที่ไม่ถูกต้อง")
-          .min(Yup.ref("startDate"), "วันสิ้นสุดต้องหลังจากวันเริ่มต้น"),
+          .required("กรุณาระบุวันสิ้นสุด")
+          .min(Yup.ref("startDate"), "วันสิ้นสุดต้องอยู่หลังวันเริ่มต้น"),
+      otherwise: (schema) => schema.notRequired(),
     }),
+
+  // ⭐ เพิ่มการเช็คสำหรับ Promotion (ถ้าประเภทเป็น Promotion ต้องกรอกมูลค่า)
+  discountValue: Yup.number().when("contentType", {
+    is: "Promotion", // หรือใช้ ContentType.PROMOTION
+    then: (schema) => schema.required("กรุณาระบุส่วนลด").min(1, "ส่วนลดต้องมากกว่า 0"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+
+  // ⭐ เพิ่ม Usage Limits (ฟิลด์ใหม่)
+  maxUsageCount: Yup.number()
+    .nullable()
+    .transform((value) => (isNaN(value) ? null : value))
+    .min(1, "จำนวนสิทธิ์ต้องมีอย่างน้อย 1 สิทธิ์"),
+
+  maxUsagePerUser: Yup.number()
+    .nullable()
+    .transform((value) => (isNaN(value) ? null : value))
+    .min(1, "สิทธิ์ต่อคนต้องอย่างน้อย 1 ครั้ง"),
+    
+  minOrderAmount: Yup.number().min(0, "ยอดขั้นต่ำต้องไม่ติดลบ"),
 });

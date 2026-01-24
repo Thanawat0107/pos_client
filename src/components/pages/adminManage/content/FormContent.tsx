@@ -85,14 +85,18 @@ export default function FormContent({
       minOrderAmount: initial?.minOrderAmount ?? 0,
       promoCode: initial?.promoCode ?? "",
 
+      // ⭐ เพิ่ม Usage Limits สำหรับ Type ใหม่
+      maxUsageCount: initial?.maxUsageCount ?? "", // ใช้ string ว่างแทน 0 เพื่อให้สื่อว่า "ไม่จำกัด" ในตอนเริ่ม
+      maxUsagePerUser: initial?.maxUsagePerUser ?? "", // Default ให้ 1 คนใช้ได้ 1 ครั้ง
+
       // Date Fields
       startDate: initial?.startDate ? new Date(initial.startDate) : new Date(),
       // ✅ ถ้าเป็นถาวร (endDate=null) ให้ใส่ค่า Default ไว้กัน error แต่อย่าเพิ่งใช้น
-      endDate: initial?.endDate ? new Date(initial.endDate) : new Date(), 
-      
+      endDate: initial?.endDate ? new Date(initial.endDate) : new Date(),
+
       // ✅ เพิ่ม isPermanent
       isPermanent: isPermanentInit,
-      
+
       isUsed: initial ? initial.isUsed : true,
     };
   }, [initial]);
@@ -108,8 +112,17 @@ export default function FormContent({
           ...values,
           startDate: new Date(values.startDate).toISOString(),
           // ✅ Logic: ถ้าถาวร ไม่ต้องส่ง endDate (หรือส่ง null ตาม interface)
-          endDate: values.isPermanent ? undefined : new Date(values.endDate).toISOString(),
-          isPermanent: values.isPermanent, 
+          endDate: values.isPermanent
+            ? undefined
+            : new Date(values.endDate).toISOString(),
+          // ⭐ จัดการฟิลด์ใหม่ให้เป็น Number หรือ null
+          maxUsageCount:
+            values.maxUsageCount === "" ? null : Number(values.maxUsageCount),
+          maxUsagePerUser:
+            values.maxUsagePerUser === ""
+              ? null
+              : Number(values.maxUsagePerUser),
+          isPermanent: values.isPermanent,
         };
 
         // ถ้าไม่ใช่ Promotion ให้ล้างค่าทิ้งเพื่อความสะอาด
@@ -385,7 +398,7 @@ export default function FormContent({
                       const val = e.target.value;
                       setFieldValue(
                         "startDate",
-                        val ? new Date(val) : new Date()
+                        val ? new Date(val) : new Date(),
                       );
                     }}
                     onBlur={handleBlur}
@@ -415,7 +428,7 @@ export default function FormContent({
                       const val = e.target.value;
                       setFieldValue(
                         "endDate",
-                        val ? new Date(val) : new Date()
+                        val ? new Date(val) : new Date(),
                       );
                     }}
                     onBlur={handleBlur}
@@ -510,6 +523,29 @@ export default function FormContent({
                       ),
                     }}
                     inputProps={{ min: 0 }}
+                  />
+                </Stack>
+
+                {/* เพิ่มต่อจากช่องยอดสั่งซื้อขั้นต่ำ (minOrderAmount) ในส่วน isPromotion */}
+                <Stack direction="row" spacing={2} mt={2}>
+                  <TextField
+                    label="จำนวนสิทธิ์ทั้งหมด (โควตา)"
+                    name="maxUsageCount"
+                    type="number"
+                    placeholder="ไม่จำกัด"
+                    value={values.maxUsageCount}
+                    onChange={handleChange}
+                    fullWidth
+                    helperText="ปล่อยว่างไว้หากไม่ต้องการจำกัดสิทธิ์"
+                  />
+                  <TextField
+                    label="สิทธิ์ต่อ 1 ผู้ใช้งาน"
+                    name="maxUsagePerUser"
+                    type="number"
+                    value={values.maxUsagePerUser}
+                    onChange={handleChange}
+                    fullWidth
+                    helperText="จำนวนครั้งที่ User 1 คนสามารถใช้โค้ดนี้ได้"
                   />
                 </Stack>
               </Paper>

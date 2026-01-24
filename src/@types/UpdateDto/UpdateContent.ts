@@ -2,8 +2,6 @@ export interface UpdateContent {
   contentType?: string;
   title?: string;
   description?: string;
-
-  // ถ้าส่งมา = เปลี่ยนรูปใหม่, ถ้าไม่ส่ง (null) = ใช้รูปเดิม
   imageUrl?: string;
   fileImage?: File;
 
@@ -11,7 +9,12 @@ export interface UpdateContent {
   discountType?: string;
   discountValue?: number;
   minOrderAmount?: number;
-  promoCode?: string;
+  // ❌ ไม่ต้องมี promoCode (แก้ไม่ได้)
+
+  // ⭐ Usage limits (NEW - แก้ไขได้)
+  maxUsageCount?: number;
+  maxUsagePerUser?: number;
+  // ❌ ไม่ต้องมี currentUsageCount (แก้ไม่ได้ ให้ระบบจัดการ)
 
   // --- Common ---
   startDate?: Date;
