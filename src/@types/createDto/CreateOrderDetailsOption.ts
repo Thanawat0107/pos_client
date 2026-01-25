@@ -1,5 +1,5 @@
-export interface UpdateOrderDetailsOption {
-  // Snapshot fields
+export interface CreateOrderDetailsOption {
+  menuOptionDetailId?: number;
   optionGroupName: string;
   optionValueName: string;
   extraPrice: number;

@@ -1,31 +1,32 @@
-import { OrderDetail } from "./OrderDetail";
-import { Payment } from "./Payment";
+import type { OrderDetails } from "./OrderDetails";
 
 export interface OrderHeader {
   id: number;
-  orderCode: string;
-  orderTag: string;
-  orderType: string;
+  orderCode: string; // เลขออเดอร์ (O-2024...)
+  pickUpCode: string; // รหัสรับอาหาร (A123)
+  customerPhone: string; // เบอร์โทรลูกค้า
+  channel: string; // ช่องทาง (PickUp)
+
   userId?: string;
   customerName?: string;
   customerNote?: string;
+  orderStatus: string; // PendingPayment, Paid, Preparing...
 
-  orderStatus: string;
-  channel: string;
-  createdAt: string;
-  cookingStartedAt?: string;
-  readyAt?: string;
-  servedAt?: string;
-  paidAt?: string;
-  updatedAt?: string;
-  cancelledAt?: string;
-
-  isDeleted: boolean;
-
+  // ส่วนลดและโปรโมชั่น
+  appliedPromoCode?: string;
   subTotal: number;
   discount: number;
   total: number;
 
-  orderDetails: OrderDetail[];
-  payment?: Payment;
+  // วันเวลาสำหรับการติดตามสถานะ (Tracking)
+  createdAt: string;
+  estimatedPickUpTime?: string;
+  paidAt?: string;
+  preparingAt?: string;
+  readyAt?: string;
+  completedAt?: string;
+  cancelledAt?: string;
+  updatedAt: string;
+
+  orderDetails: OrderDetails[];
 }
