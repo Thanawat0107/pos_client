@@ -11,9 +11,10 @@ import {
 import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 
-export type OrderStatus = "PENDING" | "COOKING" | "READY" | "COMPLETED" | "CANCELLED";
+// ✅ ปรับสถานะให้ตรงกับที่ใช้ใน OrderHeader DTO และ Drawer Logic
+export type OrderStatus = "PendingPayment" | "Paid" | "Preparing" | "Ready" | "Completed" | "Cancelled";
 export type PayStatus = "UNPAID" | "PAID" | "REFUNDED";
-export type Channel = "DINE_IN" | "TAKEAWAY" | "DELIVERY";
+export type Channel = "PickUp" | "DineIn" | "Delivery"; // ปรับให้ตรงกับ DTO
 
 type Props = {
   q: string;
@@ -21,9 +22,9 @@ type Props = {
   pay: "all" | PayStatus;
   channel: "all" | Channel;
   onSearch: (val: string) => void;
-  onStatusChange: (val: "all" | OrderStatus) => void;
-  onPayChange: (val: "all" | PayStatus) => void;
-  onChannelChange: (val: "all" | Channel) => void;
+  onStatusChange: (val: "all" | any) => void; // ใช้ any เพื่อความยืดหยุ่นในการ Filter
+  onPayChange: (val: "all" | any) => void;
+  onChannelChange: (val: "all" | any) => void;
 };
 
 export default function OrderFilterBar({
@@ -39,8 +40,9 @@ export default function OrderFilterBar({
       spacing={1.25}
       sx={{ mb: 2, width: "100%" }}
     >
+      {/* 1. ค้นหาทั่วไป */}
       <TextField
-        size={isMdUp ? "medium" : "small"}
+        size="small"
         placeholder="ค้นหา: โค้ด, ชื่อลูกค้า, เบอร์"
         value={q}
         onChange={(e) => onSearch(e.target.value)}
@@ -52,33 +54,36 @@ export default function OrderFilterBar({
             </InputAdornment>
           ),
         }}
-        sx={{ "& input": { fontSize: isMdUp ? 14 : 13 } }}
+        sx={{ "& input": { fontSize: 14 } }}
       />
 
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 180 : "100%" }}>
+      {/* 2. กรองสถานะออเดอร์ */}
+      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
         <Select
-          size={isMdUp ? "medium" : "small"}
+          size="small"
           value={status}
-          onChange={(e) => onStatusChange(e.target.value as any)}
+          onChange={(e) => onStatusChange(e.target.value)}
           displayEmpty
-          sx={{ fontSize: isMdUp ? 14 : 13 }}
+          sx={{ fontSize: 14 }}
         >
-          <MenuItem value="all">สถานะออเดอร์ทั้งหมด</MenuItem>
-          <MenuItem value="PENDING">รอรับออเดอร์</MenuItem>
-          <MenuItem value="COOKING">กำลังทำ</MenuItem>
-          <MenuItem value="READY">เสร็จแล้ว</MenuItem>
-          <MenuItem value="COMPLETED">เสิร์ฟแล้ว</MenuItem>
-          <MenuItem value="CANCELLED">ยกเลิก</MenuItem>
+          <MenuItem value="all">ทุกสถานะออเดอร์</MenuItem>
+          <MenuItem value="PendingPayment">รอชำระเงิน</MenuItem>
+          <MenuItem value="Paid">จ่ายแล้ว/รอเตรียม</MenuItem>
+          <MenuItem value="Preparing">กำลังปรุง</MenuItem>
+          <MenuItem value="Ready">พร้อมรับอาหาร</MenuItem>
+          <MenuItem value="Completed">สำเร็จ</MenuItem>
+          <MenuItem value="Cancelled">ยกเลิก</MenuItem>
         </Select>
       </FormControl>
 
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
+      {/* 3. กรองสถานะการชำระ (ถ้ามีฟิลด์นี้แยกใน DTO) */}
+      <FormControl fullWidth sx={{ minWidth: isMdUp ? 150 : "100%" }}>
         <Select
-          size={isMdUp ? "medium" : "small"}
+          size="small"
           value={pay}
-          onChange={(e) => onPayChange(e.target.value as any)}
+          onChange={(e) => onPayChange(e.target.value)}
           displayEmpty
-          sx={{ fontSize: isMdUp ? 14 : 13 }}
+          sx={{ fontSize: 14 }}
         >
           <MenuItem value="all">การชำระทั้งหมด</MenuItem>
           <MenuItem value="UNPAID">ยังไม่จ่าย</MenuItem>
@@ -87,18 +92,19 @@ export default function OrderFilterBar({
         </Select>
       </FormControl>
 
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
+      {/* 4. กรองช่องทาง */}
+      <FormControl fullWidth sx={{ minWidth: isMdUp ? 150 : "100%" }}>
         <Select
-          size={isMdUp ? "medium" : "small"}
+          size="small"
           value={channel}
-          onChange={(e) => onChannelChange(e.target.value as any)}
+          onChange={(e) => onChannelChange(e.target.value)}
           displayEmpty
-          sx={{ fontSize: isMdUp ? 14 : 13 }}
+          sx={{ fontSize: 14 }}
         >
-          <MenuItem value="all">ช่องทางทั้งหมด</MenuItem>
-          <MenuItem value="DINE_IN">ทานที่ร้าน</MenuItem>
-          <MenuItem value="TAKEAWAY">สั่งกลับบ้าน</MenuItem>
-          <MenuItem value="DELIVERY">เดลิเวอรี่</MenuItem>
+          <MenuItem value="all">ทุกช่องทาง</MenuItem>
+          <MenuItem value="PickUp">รับที่ร้าน (PickUp)</MenuItem>
+          <MenuItem value="DineIn">ทานที่ร้าน</MenuItem>
+          <MenuItem value="Delivery">เดลิเวอรี่</MenuItem>
         </Select>
       </FormControl>
     </Stack>

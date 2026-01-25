@@ -2,7 +2,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RegisterResponse } from "../../@types/Responsts/RegisterResponse";
 import type { SD_Roles } from "../../@types/Enum";
-import { signalRService } from "../../services/signalrService";
 import shoppingCartApi from "../../services/shoppingCartApi";
 
 interface AuthState extends RegisterResponse {
@@ -38,11 +37,6 @@ const authSlice = createSlice({
       state.role = role as SD_Roles;
       state.token = token;
       state.isAuthenticated = true;
-
-      // 🔔 1. เมื่อ Login สำเร็จ ให้ Reset SignalR เพื่อส่ง JWT ใบใหม่ไป Server
-      signalRService.stopConnection().then(() => {
-        signalRService.startConnection();
-      });
     },
     logout: (state) => {
       state.userId = "";
@@ -52,14 +46,6 @@ const authSlice = createSlice({
       state.role = "";
       state.token = null;
       state.isAuthenticated = false;
-
-      // 🔔 2. เมื่อ Logout ให้ล้าง Token และ Restart SignalR
-      localStorage.removeItem("token");
-      localStorage.removeItem("cartToken"); // เคลียร์ตะกร้าเดิมทิ้งเพื่อความปลอดภัย
-      
-      signalRService.stopConnection().then(() => {
-        signalRService.startConnection();
-      });
     },
   },
 });

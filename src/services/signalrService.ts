@@ -5,15 +5,29 @@ import { baseUrl } from "../helpers/SD";
 class SignalRService {
   private connection: signalR.HubConnection | null = null;
 
+  // ⭐ เพิ่มฟังก์ชัน Reconnect
+  async reconnect() {
+    console.log("🔄 SignalR: Reconnecting with new tokens...");
+    await this.stopConnection();
+    this.startConnection();
+  }
+
   startConnection() {
+    // 🛡️ Guard: ถ้ากำลังเชื่อมต่อหรือเชื่อมต่ออยู่แล้ว ไม่ต้องทำอะไร
+    if (
+      this.connection &&
+      (this.connection.state === signalR.HubConnectionState.Connected ||
+        this.connection.state === signalR.HubConnectionState.Connecting)
+    ) {
+      console.log("⚠️ SignalR: Connection is already starting or connected.");
+      return;
+    }
+
     const cartToken = localStorage.getItem("cartToken") || "";
-    
+
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(`${baseUrl}/orderHub?cartToken=${cartToken}`, {
-        accessTokenFactory: () => {
-          const token = localStorage.getItem("token");
-          return token ? token : "";
-        },
+        accessTokenFactory: () => localStorage.getItem("token") || "",
       })
       .withAutomaticReconnect()
       .build();
@@ -22,22 +36,31 @@ class SignalRService {
       .start()
       .then(() => console.log("✅ SignalR: OrderHub Connected!"))
       .catch((err) => {
-        console.error("❌ SignalR: Connection Failed: ", err);
-        setTimeout(() => this.startConnection(), 5000);
+        // ถ้าเป็นการสั่งหยุดโดยความตั้งใจ (เช่น เปลี่ยนหน้า หรือ React สั่งรันใหม่) ไม่ต้องพ่น Error แดง
+        if (
+          err.name === "AbortError" ||
+          err.message.includes("stopped during negotiation")
+        ) {
+          console.log("ℹ️ SignalR: Connection aborted as expected.");
+        } else {
+          console.error("❌ SignalR: Connection Failed: ", err);
+          if (this.connection) {
+            setTimeout(() => this.startConnection(), 5000);
+          }
+        }
       });
   }
 
-  // --- จุดสำคัญที่ต้องแก้ ---
   stopConnection(): Promise<void> {
     if (this.connection) {
-      // ต้อง return promise ออกไปเพื่อให้ภายนอกใช้ .then() ได้
-      return this.connection.stop()
+      return this.connection
+        .stop()
         .then(() => {
           console.log("SignalR: Connection Stopped");
-          this.connection = null; // ล้างค่าทิ้งด้วย
-        });
+          this.connection = null; // 🚩 สำคัญมาก: ล้าง instance ทิ้งเพื่อให้ startConnection สร้างใหม่ได้สะอาด
+        })
+        .catch((err) => console.error("Stop error", err));
     }
-    // ถ้าไม่มี connection ให้ return promise ที่สำเร็จแล้วออกไปเลย
     return Promise.resolve();
   }
 
