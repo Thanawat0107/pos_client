@@ -46,11 +46,12 @@ import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 // Hooks & State
 import { useColorMode } from "../../contexts/color-mode";
 import { useAppDispatch, useAppSelector } from "../../hooks/useAppHookState";
-import { logout } from "../../stores/slices/authSlice";
+import { logoutAndClear } from "../../stores/slices/authSlice"; // เปลี่ยนเป็น Action ตัวใหม่ที่รวม resetApiState
 import { storage } from "../../helpers/storageHelper";
 import { SD_Roles } from "../../@types/Enum";
+import { useGetCartQuery } from "../../services/shoppingCartApi";
 
-// 1. Menu Configuration - ปรับแก้ตรงนี้ที่เดียวเมนูเปลี่ยนทั้งเว็ป
+// 1. Menu Configuration
 const MAIN_NAV = [
   { text: "หน้าแรก", path: "/" },
   { text: "เมนูอาหาร", path: "/menuItem" },
@@ -95,6 +96,11 @@ export default function Navbar() {
   );
   const isAdmin = !!token && isAuthenticated && role === SD_Roles.Admin;
 
+  // 🔔 1. เปลี่ยนจาก Mock data เป็นข้อมูลจริงจาก Cache
+  const cartToken = localStorage.getItem("cartToken");
+  const { data: cartData } = useGetCartQuery(cartToken);
+  const cartCount = cartData?.totalItemsCount || 0;
+
   // ตรวจสอบการ Scroll
   const isScrolled = useScrollTrigger({
     disableHysteresis: true,
@@ -110,10 +116,8 @@ export default function Navbar() {
     null,
   );
 
-  const cartCount = 2; // Mock data
-
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutAndClear()); // 🔔 2. ใช้ Action ที่ล้างทั้ง Auth และ API Cache
     storage.remove("token");
     setAnchorProfile(null);
     setOpenDrawer(false);
@@ -140,14 +144,15 @@ export default function Navbar() {
           backgroundColor: isScrolled
             ? alpha(theme.palette.background.default, 0.8)
             : alpha(theme.palette.background.default, 0.5),
-          backdropFilter: "blur(12px)", // เอฟเฟกต์เบลอ
+          backdropFilter: "blur(12px)",
           borderBottom: `1px solid ${isScrolled ? alpha(theme.palette.divider, 0.1) : "transparent"}`,
           color: theme.palette.text.primary,
+          zIndex: theme.zIndex.appBar,
         }}
       >
         <Toolbar
           sx={{
-            height: isScrolled ? 64 : 80, // ย่อความสูงเมื่อเลื่อนลง
+            height: isScrolled ? 64 : 80,
             transition: "height 0.3s ease-in-out",
             px: { xs: 2, md: 6 },
             justifyContent: "space-between",
@@ -207,7 +212,21 @@ export default function Navbar() {
                 to="/cart"
                 sx={{ color: "inherit" }}
               >
-                <Badge badgeContent={cartCount} color="primary">
+                {/* 🔔 3. Badge จะขยับอัตโนมัติเมื่อ SignalR ส่งข้อมูลมาอัปเดต Cache */}
+                <Badge 
+                  badgeContent={cartCount} 
+                  color="primary"
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      animation: cartCount > 0 ? "pulse 2s infinite" : "none",
+                    },
+                    "@keyframes pulse": {
+                      "0%": { transform: "scale(1)" },
+                      "50%": { transform: "scale(1.2)" },
+                      "100%": { transform: "scale(1)" },
+                    }
+                  }}
+                >
                   <ShoppingCartOutlinedIcon />
                 </Badge>
               </IconButton>
@@ -243,7 +262,7 @@ export default function Navbar() {
                 display: { xs: "none", md: "inline-flex" },
               }}
             >
-              โปรไฟล์
+              {isAuthenticated ? "โปรไฟล์" : "เข้าสู่ระบบ"}
             </Button>
 
             <IconButton
@@ -348,6 +367,8 @@ const AdminDropdown = ({ anchor, onClose }: any) => (
     open={Boolean(anchor)}
     onClose={onClose}
     TransitionComponent={Fade}
+    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+    transformOrigin={{ vertical: "top", horizontal: "right" }}
     PaperProps={{
       sx: {
         mt: 1.5,
@@ -381,6 +402,8 @@ const ProfileDropdown = ({ anchor, onClose, token, onLogout }: any) => (
     anchorEl={anchor}
     open={Boolean(anchor)}
     onClose={onClose}
+    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+    transformOrigin={{ vertical: "top", horizontal: "right" }}
     PaperProps={{ sx: { mt: 1.5, minWidth: 200, borderRadius: "16px", p: 1 } }}
   >
     <MenuItem
@@ -396,12 +419,16 @@ const ProfileDropdown = ({ anchor, onClose, token, onLogout }: any) => (
     </MenuItem>
     <Divider sx={{ my: 1 }} />
     <MenuItem
-      component={RouterLink}
-      to={token ? "#" : "/login"}
       onClick={() => {
         onClose();
-        if (token) onLogout();
+        if (token) {
+           onLogout();
+        } else {
+           // นำทางไป login ถ้าไม่มี token
+        }
       }}
+      component={token ? "li" : RouterLink}
+      to={token ? undefined : "/login"}
       sx={{
         borderRadius: "10px",
         color: token ? "error.main" : "primary.main",
@@ -526,13 +553,15 @@ const MobileNavigation = ({
             onClick={toggle}
             sx={{ borderRadius: "12px", textTransform: "none" }}
           >
-            โหมด: {mode}
+            โหมด: {mode === "light" ? "สว่าง" : mode === "dark" ? "มืด" : "ระบบ"}
           </Button>
           <Button
             fullWidth
             variant="contained"
             color={token ? "error" : "primary"}
             onClick={onLogout}
+            component={token ? "button" : RouterLink}
+            to={token ? undefined : "/login"}
             startIcon={token ? <LogoutIcon /> : <LoginIcon />}
             sx={{ borderRadius: "12px" }}
           >

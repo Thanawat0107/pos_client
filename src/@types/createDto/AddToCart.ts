@@ -1,4 +1,4 @@
-export interface AddToCartDto {
+export interface AddToCart {
   // --- product info ---
   menuItemId: number;
   quantity: number;
