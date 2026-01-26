@@ -170,7 +170,7 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
               </Stack>
               <Stack direction="row" justifyContent="space-between">
                 <Typography variant="body2" color="error">ส่วนลด</Typography>
-                <Typography variant="body2" color="error">-฿{order.discount.toLocaleString()}</Typography>
+                <Typography variant="body2" color="error">-฿{order.discount?.toLocaleString()}</Typography>
               </Stack>
               <Divider />
               <Stack direction="row" justifyContent="space-between">

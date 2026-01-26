@@ -13,6 +13,8 @@ import ManageRecipeList from "../components/pages/adminManage/recipe/ManageRecip
 import ManageManualList from "../components/pages/adminManage/manual/ManageManualList";
 import ManageContentList from "../components/pages/adminManage/content/ManageContentList";
 import MenuDetails from "../components/pages/menu/MenuDetails";
+import Checkout from "../pages/Checkout";
+import OrderSuccess from "../pages/OrderSuccess";
 
 export default function Routers() {
   return (
@@ -23,7 +25,8 @@ export default function Routers() {
       <Route path="/cart" element={<Cart />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      {/* <Route path="/checkout" element={<Checkout />} /> */}
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/order-success/:id" element={<OrderSuccess />} />
       <Route path="/manage-menuItem" element={<ManageMenuItem />} />
       <Route path="/manage-manual" element={<ManageManualList />} />
       <Route path="/manage-menuItemOption" element={<ManageMenuItemOptionList />} />
