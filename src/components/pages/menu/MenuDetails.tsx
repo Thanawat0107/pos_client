@@ -116,7 +116,7 @@ export default function MenuDetails() {
         cartToken,
         menuItemId: menu.id,
         quantity: quantity,
-        menuItemOptionIds: selectedOptionIds, // เช็คชื่อ Field กับ DTO Backend ให้ตรงกัน
+        optionIds: selectedOptionIds, // เช็คชื่อ Field กับ DTO Backend ให้ตรงกัน
         note: note.trim() || undefined,
       }).unwrap();
 

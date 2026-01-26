@@ -82,7 +82,7 @@ export default function Cart() {
       await updateCartItem({
         cartItemId,
         quantity: qty,
-        note: note,
+        note: note || undefined,
         cartToken,
       }).unwrap(); 
       // .unwrap() ช่วยให้เรา catch error ได้จริง
