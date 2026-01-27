@@ -29,6 +29,8 @@ import ShoppingBagRoundedIcon from "@mui/icons-material/ShoppingBagRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import { useGetMenuItemByIdQuery } from "../../../services/menuItemApi";
 import { useAddtoCartMutation } from "../../../services/shoppingCartApi";
+import { useAppSelector } from "../../../hooks/useAppHookState";
+import type { AddToCart } from "../../../@types/createDto/AddToCart";
 
 export default function MenuDetails() {
   const { id } = useParams<{ id: string }>();
@@ -36,26 +38,20 @@ export default function MenuDetails() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
+  // 1. ดึงข้อมูล User จาก Global State (สมมติว่าชื่อ auth slice)
+  const { userId } = useAppSelector((state) => state.auth);
+
   // --- API Hooks ---
-  const {
-    data: menu,
-    isLoading,
-    error,
-  } = useGetMenuItemByIdQuery(Number(id), {
+  const { data: menu, isLoading, error } = useGetMenuItemByIdQuery(Number(id), {
     skip: !id,
   });
 
-  // ✅ 2. เรียกใช้ Mutation สำหรับเพิ่มลงตะกร้า
   const [addToCart, { isLoading: isAdding }] = useAddtoCartMutation();
 
   // --- Local State ---
   const [quantity, setQuantity] = useState(1);
-  const [selectedOptions, setSelectedOptions] = useState<
-    Record<number, number[]>
-  >({});
-  const [note, setNote] = useState(""); // ✅ State สำหรับ Note เพิ่มเติม
-
-  // State สำหรับ Feedback (Snackbar)
+  const [selectedOptions, setSelectedOptions] = useState<Record<number, number[]>>({});
+  const [note, setNote] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
   // --- Logic ---
@@ -101,29 +97,37 @@ export default function MenuDetails() {
     });
   }, [menu, selectedOptions]);
 
-  // ✅ 3. Handler: เพิ่มลงตะกร้า
   const handleAddToCart = async () => {
     if (!menu || !isFormValid) return;
 
-    const cartToken = localStorage.getItem("cartToken") || ""; // ถ้าไม่มีส่ง string ว่างหรือ null (ตาม Backend)
+    // ดึงค่าที่มีอยู่ในปัจจุบัน
+    const cartToken = localStorage.getItem("cartToken") || undefined;
+    const user = userId?.toString();
 
-    // แปลง selectedOptions จาก Object { groupId: [id1, id2] } เป็น Array [id1, id2, ...]
+    // แปลง selectedOptions เป็น Flat Array
     const selectedOptionIds = Object.values(selectedOptions).flat();
 
-    try {
-      // เรียก Mutation
-      await addToCart({
-        cartToken,
-        menuItemId: menu.id,
-        quantity: quantity,
-        optionIds: selectedOptionIds, // เช็คชื่อ Field กับ DTO Backend ให้ตรงกัน
-        note: note.trim() || undefined,
-      }).unwrap();
+    // เตรียม Payload ให้ตรงตาม interface AddToCart
+    const payload: AddToCart = {
+      menuItemId: menu.id,
+      quantity: quantity,
+      optionIds: selectedOptionIds.length > 0 ? selectedOptionIds : undefined,
+      note: note.trim() || undefined,
+      userId: user,     // ส่ง userId จาก state
+      cartToken: cartToken, // ส่ง cartToken จาก localStorage
+    };
 
-      // สำเร็จ
+    try {
+      // เรียก Mutation และรับ Response กลับมา
+      const result = await addToCart(payload).unwrap();
+
+      // ✅ สำคัญ: ถ้าเป็นการเพิ่มของชิ้นแรกและ Backend สร้าง cartToken ให้ใหม่
+      // ต้องเก็บลง localStorage เพื่อใช้ใน Request ถัดไป
+      if (result.cartToken && !cartToken) {
+        localStorage.setItem("cartToken", result.cartToken);
+      }
+
       setShowSuccess(true);
-      // Optional: Reset ค่า หรือ Navigate กลับ
-      // navigate(-1);
     } catch (err) {
       console.error("Failed to add to cart:", err);
       alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");

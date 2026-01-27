@@ -20,7 +20,7 @@ export const contentApi = createApi({
 
       const guestToken = localStorage.getItem("guestToken");
       if (guestToken) headers.set("X-Guest-Token", guestToken);
-      
+
       return headers;
     },
   }),
@@ -42,7 +42,10 @@ export const contentApi = createApi({
       providesTags: ["Content"],
 
       // --- ส่วนของ SignalR Real-time Update ---
-      async onCacheEntryAdded(arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+      async onCacheEntryAdded(
+        arg,
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
+      ) {
         try {
           // รอให้ข้อมูลรอบแรกโหลดจาก API สำเร็จก่อน
           await cacheDataLoaded;
@@ -59,7 +62,9 @@ export const contentApi = createApi({
           // 2. ดักฟังเหตุการณ์: ข้อมูล Content ถูกแก้ไข หรือ โควตาถูกคืน (PromotionAvailable)
           const handleUpdate = (updatedContent: Content) => {
             updateCachedData((draft) => {
-              const index = draft.result.findIndex((c) => c.id === updatedContent.id);
+              const index = draft.result.findIndex(
+                (c) => c.id === updatedContent.id,
+              );
               if (index !== -1) {
                 draft.result[index] = updatedContent;
               }
@@ -77,14 +82,17 @@ export const contentApi = createApi({
           });
 
           // 4. ดักฟังเหตุการณ์: อัปเดตยอดการใช้งานโปรโมชั่น (PromotionUsageUpdated)
-          signalRService.on("PromotionUsageUpdated", (data: { id: number; current: number }) => {
-            updateCachedData((draft) => {
-              const content = draft.result.find((c) => c.id === data.id);
-              if (content) {
-                content.currentUsageCount = data.current; // อัปเดตเฉพาะเลขโควตา
-              }
-            });
-          });
+          signalRService.on(
+            "PromotionUsageUpdated",
+            (data: { id: number; current: number }) => {
+              updateCachedData((draft) => {
+                const content = draft.result.find((c) => c.id === data.id);
+                if (content) {
+                  content.currentUsageCount = data.current; // อัปเดตเฉพาะเลขโควตา
+                }
+              });
+            },
+          );
 
           // 5. ดักฟังเหตุการณ์: โปรโมชั่นสิทธิ์เต็ม (ContentSoldOut)
           signalRService.on("ContentSoldOut", (soldOutId: number) => {
@@ -94,7 +102,6 @@ export const contentApi = createApi({
               draft.result = draft.result.filter((c) => c.id !== soldOutId);
             });
           });
-
         } catch {
           // ถ้าเกิดข้อผิดพลาดในการโหลด Cache ไม่ต้องทำอะไร
         }
@@ -126,7 +133,10 @@ export const contentApi = createApi({
       invalidatesTags: ["Content"],
     }),
 
-    updateContent: builder.mutation<Content, { id: number; data: UpdateContent }>({
+    updateContent: builder.mutation<
+      Content,
+      { id: number; data: UpdateContent }
+    >({
       query: ({ id, data }) => ({
         url: `contents/update/${id}`,
         method: "PUT",
@@ -142,18 +152,23 @@ export const contentApi = createApi({
         method: "DELETE",
       }),
       transformResponse: (response: ApiResponse<unknown>) => {
-        if (!response.isSuccess) throw new Error(response.message || "Delete failed");
+        if (!response.isSuccess)
+          throw new Error(response.message || "Delete failed");
         return;
       },
       invalidatesTags: ["Content"],
     }),
 
-    verifyPromoCode: builder.mutation<Content, string>({
+    verifyPromo: builder.query<ApiResponse<Content>, string>({
       query: (code) => ({
-        url: `contents/verify-promo/${code}`,
+        url: `contents/verify-promo/${code}`, // path ให้ตรงกับ Controller (ระวัง s ที่ contents ด้วยนะครับ)
         method: "GET",
+        // RTK Query จะส่ง X-Guest-Token ให้อัตโนมัติถ้าคุณตั้งค่าใน baseQuery
+        // หรือจะส่งเฉพาะกิจที่นี่ก็ได้
+        headers: {
+          "X-Guest-Token": localStorage.getItem("cartToken") || "",
+        },
       }),
-      transformResponse: unwrapResult<Content>,
     }),
   }),
 });
@@ -164,7 +179,6 @@ export const {
   useCreateContentMutation,
   useUpdateContentMutation,
   useDeleteContentMutation,
-  useVerifyPromoCodeMutation,
+  useVerifyPromoQuery,     // แบบเรียกใช้ทันที
+  useLazyVerifyPromoQuery, // ✅ เพิ่มตัวนี้สำหรับปุ่ม "ใช้โค้ด"
 } = contentApi;
-
-export default contentApi;

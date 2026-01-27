@@ -1,145 +1,95 @@
-import {
-  Box,
-  Card,
-  CardContent,
-  IconButton,
-  Stack,
-  Typography,
-  Divider,
-  Tooltip,
-  useMediaQuery,
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import AddIcon from "@mui/icons-material/Add";
-import RemoveIcon from "@mui/icons-material/Remove";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import type { CartItemDto } from "../../../@types/dto/CartItemDto";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Box, Card, IconButton, Stack, Typography, alpha } from "@mui/material";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import { useAppDispatch } from "../../../hooks/useAppHookState";
+import { updateItemLocal, removeItemLocal } from "../../../stores/slices/shoppingSlice";
+import { useUpdateCartItemMutation, useRemoveCartItemMutation } from "../../../services/shoppingCartApi";
 
-type Props = {
-  item: CartItemDto;
-  onQtyChange: (id: number, qty: number, note?: string | null) => void;
-  onRemove: (id: number) => void;
-  currency?: string;
-};
+export default function CartItem({ item }: { item: any }) {
+  const dispatch = useAppDispatch();
+  const cartToken = localStorage.getItem("cartToken");
+  const [updateCart] = useUpdateCartItemMutation();
+  const [removeCart] = useRemoveCartItemMutation();
 
-export default function CartItem({
-  item,
-  onQtyChange,
-  onRemove,
-  currency = "THB",
-}: Props) {
-  const theme = useTheme();
-  const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
-
-  // ราคาที่ Frontend คำนวณเบื้องต้น (แต่จริงๆ Redux Store คำนวณมาให้แล้วในยอดรวม)
-  const sub = item.price * item.quantity;
-
-  const dec = () => {
-    if (item.quantity > 1) {
-      onQtyChange(item.id, item.quantity - 1, item.note);
-    } else {
-      onRemove(item.id);
-    }
+  const handleQty = (newQty: number) => {
+    if (newQty < 1) return;
+    dispatch(updateItemLocal({ id: item.id, qty: newQty }));
+    if (cartToken) updateCart({ cartItemId: item.id, quantity: newQty, cartToken });
   };
 
-  const inc = () => {
-    // ตรงนี้อาจจะเช็ค Max Stock ได้ถ้ามีข้อมูล
-    onQtyChange(item.id, item.quantity + 1, item.note);
+  const handleRemove = () => {
+    dispatch(removeItemLocal(item.id));
+    if (cartToken) removeCart({ id: item.id, cartToken });
   };
-
-  const money = (n: number) =>
-    n.toLocaleString(undefined, { style: "currency", currency });
-
-  const optionsText = item.options
-    ?.map((o) => `${o.optionGroupName}: ${o.optionValueName}`)
-    .join(" • ");
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        borderRadius: 2,
-        p: { xs: 1, sm: 2 },
-        position: "relative",
-        transition: "opacity 0.2s",
-        // เราเอา loading overlay ออกเพื่อให้ดูลื่นไหล
-      }}
-    >
-      <Stack direction="row" spacing={{ xs: 1.25, sm: 2 }}>
-        {/* Image */}
+    <Card sx={{ 
+      p: 2, borderRadius: 4, border: '1px solid #E0E0E0', 
+      boxShadow: 'none', transition: '0.3s',
+      '&:hover': { boxShadow: '0 8px 24px rgba(0,0,0,0.08)', borderColor: 'transparent' }
+    }}>
+      <Stack direction="row" spacing={3}>
+        {/* Large Product Image */}
         <Box
           component="img"
-          src={item.menuItemImage || "https://via.placeholder.com/96x96.png?text=No+Image"}
-          alt={item.menuItemName}
-          sx={{
-            width: { xs: 72, sm: 96 },
-            height: { xs: 72, sm: 96 },
+          src={item.menuItemImage || "https://via.placeholder.com/150"}
+          sx={{ 
+            width: { xs: 100, sm: 140 }, 
+            height: { xs: 100, sm: 140 }, 
+            borderRadius: 3, 
             objectFit: "cover",
-            borderRadius: 2,
-            bgcolor: "grey.100",
-            flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
           }}
         />
 
-        <CardContent sx={{ p: 0, flexGrow: 1, minWidth: 0 }}>
-          <Stack
-            direction="row"
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            justifyContent="space-between"
-            spacing={1}
-          >
-            <Stack spacing={0.5} minWidth={0}>
-              <Typography fontWeight={700} variant={isSmUp ? "body1" : "body2"} noWrap={!isSmUp}>
+        {/* Content Info */}
+        <Stack flex={1} justifyContent="space-between">
+          <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.2, mb: 0.5 }}>
                 {item.menuItemName}
               </Typography>
-              {optionsText && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
-                  {optionsText}
-                </Typography>
-              )}
-              {item.note && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
-                  Note: {item.note}
-                </Typography>
-              )}
+              <Typography variant="h6" fontWeight={900} color="primary">
+                ฿{(item.price * item.quantity).toLocaleString()}
+              </Typography>
             </Stack>
-            <Typography fontWeight={800} variant={isSmUp ? "body1" : "body2"}>
-              {money(sub)}
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {item.options?.map((o: any) => (
+                <span key={o.id} style={{ background: '#F0F2F5', padding: '2px 8px', borderRadius: '4px' }}>
+                  {o.optionValueName}
+                </span>
+              ))}
             </Typography>
-          </Stack>
+            
+            {item.note && (
+              <Typography variant="caption" sx={{ color: 'orange', fontWeight: 600, mt: 1, display: 'block' }}>
+                📝 หมายเหตุ: {item.note}
+              </Typography>
+            )}
+          </Box>
 
-          <Divider sx={{ my: { xs: 1, sm: 1.25 } }} />
-
-          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-            <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 1.25 }}>
-              <IconButton
-                onClick={dec}
-                size="small"
-                sx={{ border: "1px solid", borderColor: "divider" }}
-              >
-                <RemoveIcon fontSize="small" />
+          {/* Action Bar */}
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
+            <Stack direction="row" alignItems="center" sx={{ bgcolor: '#F8F9FA', borderRadius: 3, p: 0.5 }}>
+              <IconButton size="small" onClick={() => handleQty(item.quantity - 1)} disabled={item.quantity <= 1}>
+                <RemoveRoundedIcon fontSize="small" />
               </IconButton>
-
-              <Typography textAlign="center" fontWeight={800} sx={{ minWidth: 32 }}>
+              <Typography sx={{ mx: 2, minWidth: 20, textAlign: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
                 {item.quantity}
               </Typography>
-
-              <IconButton
-                onClick={inc}
-                size="small"
-                sx={{ border: "1px solid", borderColor: "divider" }}
-              >
-                <AddIcon fontSize="small" />
+              <IconButton size="small" onClick={() => handleQty(item.quantity + 1)}>
+                <AddRoundedIcon fontSize="small" />
               </IconButton>
             </Stack>
 
-            <Tooltip title="ลบออกจากตะกร้า">
-              <IconButton color="error" onClick={() => onRemove(item.id)}>
-                <DeleteOutlineIcon />
-              </IconButton>
-            </Tooltip>
+            <IconButton color="error" onClick={handleRemove} sx={{ bgcolor: alpha('#FF4842', 0.1) }}>
+              <DeleteOutlineRoundedIcon />
+            </IconButton>
           </Stack>
-        </CardContent>
+        </Stack>
       </Stack>
     </Card>
   );

@@ -7,10 +7,11 @@ import menuItemApi from "../services/menuItemApi";
 import { menuItemOptionApi } from "../services/menuItemOptionApi";
 import { recipesApi } from "../services/recipesApi";
 import manualApi from "../services/manualApi";
-import contentApi from "../services/contentApi";
 import shoppingCartApi from "../services/shoppingCartApi";
 import shoppingSlice from "./slices/shoppingSlice";
 import { orderApi } from "../services/orderApi";
+import { contentApi } from "../services/contentApi";
+
 export const store = configureStore({
   reducer: {
     auth: authSlice,
