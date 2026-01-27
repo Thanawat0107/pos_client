@@ -15,7 +15,7 @@ export interface OrderHeader {
   // ส่วนลดและโปรโมชั่น
   appliedPromoCode?: string;
   subTotal: number;
-  discount: number;
+  orderTotal: number; // เพิ่ม field นี้
   total: number;
 
   // วันเวลาสำหรับการติดตามสถานะ (Tracking)

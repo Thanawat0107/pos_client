@@ -5,15 +5,15 @@ export interface UpdateOrderDetails {
 
   // สถานะรายจานสำหรับครัว
   kitchenStatus?: string; // WAITING, COOKING, DONE, CANCELLED
-  isReady: boolean; // ติ๊กเมื่อจานนี้เสร็จพร้อมส่ง
+  isReady?: boolean; // ติ๊กเมื่อจานนี้เสร็จพร้อมส่ง
 
   // จัดการกรณีของหมด/ยกเลิก
-  isCancelled: boolean;
-  isRefunded: boolean; // ยืนยันว่าคืนเงินรายการนี้แล้ว
+  isCancelled?: boolean;
+  isRefunded?: boolean; // ยืนยันว่าคืนเงินรายการนี้แล้ว
 
   // หมายเหตุเพิ่มเติม (เช่น พ่อครัวอาจโน้ตกลับไปหาลูกค้า)
   note?: string;
-  quantity: number;
+  quantity?: number;
 
-  orderDetailOptions: UpdateOrderDetailsOption[];
+  orderDetailOptions?: UpdateOrderDetailsOption[];
 }

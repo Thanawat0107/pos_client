@@ -1,7 +1,7 @@
 export interface UpdateOrderDetailsOption {
-  // Snapshot fields
-  optionGroupName: string;
-  optionValueName: string;
-  extraPrice: number;
-  quantity: number;
+  // Snapshot fields - ทั้งหมด optional
+  optionGroupName?: string;
+  optionValueName?: string;
+  extraPrice?: number;
+  quantity?: number;
 }

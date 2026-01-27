@@ -14,7 +14,7 @@ export interface UpdateOrder {
   // การเลื่อนสถานะออเดอร์ (Preparing -> Ready -> Completed)
   orderStatus?: string;
 
-  discount: number;
+  discount?: number;
 
-  orderDetails: UpdateOrderDetails[];
+  orderDetails?: UpdateOrderDetails[];
 }

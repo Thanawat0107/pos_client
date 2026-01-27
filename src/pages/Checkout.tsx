@@ -1,66 +1,76 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import {
-  Box, Container, Grid, Typography, TextField, Card, Stack,
-  Button, Divider, RadioGroup, FormControlLabel, Radio,
-  InputAdornment, Paper, CircularProgress, Alert, Snackbar
+  Box,
+  Container,
+  Grid,
+  Typography,
+  TextField,
+  Card,
+  Stack,
+  Button,
+  Divider,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  InputAdornment,
+  Paper,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import PaymentIcon from "@mui/icons-material/Payment";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks/useAppHookState";
 import { useConfirmCartMutation } from "../services/orderApi";
 import { clearLocalCart } from "../stores/slices/shoppingSlice";
 import { useLazyVerifyPromoQuery } from "../services/contentApi";
+import type { CreateOrder } from "../@types/createDto/CreateOrder";
 
 export default function Checkout() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { cartItems, totalAmount } = useAppSelector((state) => state.shoppingCart);
 
-  // --- State สำหรับข้อมูลการสั่งซื้อ ---
+  const { cartItems, totalAmount } = useAppSelector(
+    (state) => state.shoppingCart,
+  );
+
   const [customer, setCustomer] = useState({ name: "", phone: "", note: "" });
   const [errors, setErrors] = useState({ name: false, phone: false });
   const [promoCode, setPromoCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
-  
-  // --- State สำหรับส่วนลดและการส่งข้อมูล ---
   const [appliedDiscount, setAppliedDiscount] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [promoMessage, setPromoMessage] = useState({ text: "", type: "" as "success" | "error" | "" });
 
-  // API Hooks
-const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
+  const [triggerVerify, { isFetching: isVerifying }] =
+    useLazyVerifyPromoQuery();
   const [confirmCart, { isLoading: isConfirming }] = useConfirmCartMutation();
 
-  // 🚩 ป้องกันการเข้าหน้า Checkout ถ้าตะกร้าว่าง (ยกเว้นกำลังกดสั่งซื้อ)
   useEffect(() => {
-    if (cartItems.length === 0 && !isSubmitting) {
+    if (cartItems.length === 0 && !isConfirming) {
       navigate("/");
     }
-  }, [cartItems, navigate, isSubmitting]);
+  }, [cartItems, navigate, isConfirming]);
 
-  // ฟังก์ชันเช็กรหัสส่วนลด
+  const [promoMessage, setPromoMessage] = useState({
+    text: "",
+    type: "" as "success" | "error" | "",
+  });
+
+  // 2. ปรับ handleApplyPromo ให้เซ็ต Message ด้วย
   const handleApplyPromo = async () => {
-    if (!promoCode.trim()) return;
-    
+    const trimmedCode = promoCode.trim();
+    if (!trimmedCode) return;
     try {
-      // 🚩 เรียกใช้ triggerVerify แล้วสกัดข้อมูล (unwrap)
-      const response = await triggerVerify(promoCode.trim()).unwrap();
-      
-      // ดึงค่าจาก ApiResponse<Content> -> .result
+      const response = await triggerVerify(trimmedCode).unwrap();
       const discount = response.result?.discountValue || 0;
-      
       setAppliedDiscount(discount);
-      alert("ใช้รหัสส่วนลดสำเร็จ!");
+      setPromoMessage({ text: "ใช้รหัสส่วนลดสำเร็จ!", type: "success" });
     } catch (err: any) {
-      // จัดการ Error ตามรูปแบบ ApiResponse ของคุณ
       const errorMsg = err.data?.message || "รหัสส่วนลดไม่ถูกต้อง";
-      alert(errorMsg);
+      setPromoMessage({ text: errorMsg, type: "error" });
       setAppliedDiscount(0);
     }
   };
@@ -80,34 +90,47 @@ const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
     const token = localStorage.getItem("cartToken");
     if (!token) return navigate("/");
 
-    setIsSubmitting(true);
-
-    const payload = {
+    const payload: CreateOrder = {
+      channel: "PickUp",
+      customerPhone: customer.phone.trim(),
+      customerName: customer.name.trim(),
+      customerNote: customer.note.trim(),
       cartToken: token,
       guestToken: token,
-      customerName: customer.name.trim(),
-      customerPhone: customer.phone.trim(),
-      customerNote: customer.note.trim(),
-      promoCode: appliedDiscount > 0 ? promoCode.trim() : "", // ส่งโค้ดไปถ้าเช็คผ่านแล้ว
-      paymentMethod: paymentMethod,
+      promoCode: appliedDiscount > 0 ? promoCode.trim() : undefined,
+      estimatedPickUpTime: new Date().toISOString(),
+      orderDetails: cartItems.map((item) => ({
+        menuItemId: item.menuItemId,
+        menuItemName: item.menuItemName,
+        unitPrice: item.price,
+        quantity: item.quantity,
+        note: item.note || null,
+        orderDetailOptions: (item.options || []).map((opt: any) => ({
+          menuOptionDetailId: opt.id,
+          optionGroupName: opt.groupName,
+          optionValueName: opt.valueName,
+          extraPrice: opt.extraPrice,
+          quantity: opt.quantity ?? 1,
+        })),
+      })),
     };
 
     try {
       const result = await confirmCart(payload).unwrap();
+
       if (result.id) {
-        // เคลียร์ข้อมูลและไปหน้าสำเร็จ
         dispatch(clearLocalCart());
         localStorage.removeItem("cartToken");
         navigate(`/order-success/${result.id}`, { replace: true });
       }
     } catch (err: any) {
-      setIsSubmitting(false);
       console.error("Checkout Error:", err);
       alert(err.data?.message || "การสั่งซื้อล้มเหลว กรุณาลองใหม่อีกครั้ง");
     }
   };
 
-  const finalTotal = totalAmount - appliedDiscount;
+  // คำนวณยอดสุทธิ (แสดงผลใน UI)
+  const finalTotal = Math.max(0, totalAmount - appliedDiscount);
 
   return (
     <Box sx={{ bgcolor: "#f8f9fa", minHeight: "100vh", py: { xs: 2, md: 5 } }}>
@@ -121,7 +144,7 @@ const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
         </Button>
 
         <Grid container spacing={4}>
-          {/* ฝั่งซ้าย: ฟอร์มข้อมูลลูกค้า */}
+          {/* ฝั่งซ้าย: ฟอร์มข้อมูลลูกค้า (คงเดิม) */}
           <Grid size={{ xs: 12, md: 7 }}>
             <Stack spacing={3}>
               <Paper sx={{ p: 3, borderRadius: 3 }}>
@@ -248,7 +271,8 @@ const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
               </Paper>
             </Stack>
           </Grid>
-          {/* ฝั่งขวา: สรุปยอดสั่งซื้อ */}
+
+          {/* ฝั่งขวา: สรุปยอดสั่งซื้อ (ปรับปรุงส่วนรายการอาหาร) */}
           <Grid size={{ xs: 12, md: 5 }}>
             <Card
               sx={{
@@ -265,33 +289,69 @@ const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
 
               <Stack
                 spacing={2}
-                sx={{ my: 3, maxHeight: "35vh", overflowY: "auto" }}
+                sx={{ my: 3, maxHeight: "45vh", overflowY: "auto", pr: 1 }}
               >
                 {cartItems.map((item) => (
-                  <Stack
-                    key={item.id}
-                    direction="row"
-                    justifyContent="space-between"
-                  >
-                    <Typography variant="body2" sx={{ flex: 1 }}>
-                      <Box
-                        component="span"
-                        fontWeight={800}
-                        color="primary.main"
-                      >
-                        {item.quantity}x
-                      </Box>{" "}
-                      {item.menuItemName}
-                    </Typography>
-                    <Typography variant="body2" fontWeight={700}>
-                      ฿{(item.price * item.quantity).toLocaleString()}
-                    </Typography>
-                  </Stack>
+                  <Box key={item.id}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                    >
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          <Box
+                            component="span"
+                            fontWeight={800}
+                            color="primary.main"
+                            sx={{ mr: 1 }}
+                          >
+                            {item.quantity}x
+                          </Box>
+                          {/* 🚩 แก้ไขให้ตรงกับที่ส่งไป Backend */}
+                          {item.menuItemName}
+                        </Typography>
+
+                        {/* แสดง Options */}
+                        {item.options && item.options.length > 0 && (
+                          <Stack sx={{ ml: 4, mt: 0.5 }}>
+                            {item.options.map((opt: any, index: number) => (
+                              <Typography
+                                key={index}
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                • {opt.optionValueName}
+                                {opt.extraPrice > 0 && (
+                                  <Box component="span" sx={{ ml: 1 }}>
+                                    (+฿{opt.extraPrice.toLocaleString()})
+                                  </Box>
+                                )}
+                              </Typography>
+                            ))}
+                          </Stack>
+                        )}
+                      </Box>
+
+                      <Typography variant="body2" fontWeight={700}>
+                        ฿
+                        {(
+                          (item.price + (item.price || 0)) *
+                          item.quantity
+                        ).toLocaleString()}
+                      </Typography>
+                    </Stack>
+                  </Box>
                 ))}
               </Stack>
 
               <Divider sx={{ mb: 2.5 }} />
 
+              {/* ส่วน PromoCode (คงเดิม) */}
               <TextField
                 fullWidth
                 size="small"
@@ -299,9 +359,11 @@ const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
                 value={promoCode}
                 onChange={(e) => {
                   setPromoCode(e.target.value);
-                  if (appliedDiscount > 0) setAppliedDiscount(0); // ล้างส่วนลดถ้าแก้โค้ดใหม่
+                  if (appliedDiscount > 0) setAppliedDiscount(0);
                 }}
-                error={promoMessage.type === "error"}
+                error={
+                  promoMessage.text !== "" && promoMessage.type === "error"
+                }
                 helperText={promoMessage.text}
                 FormHelperTextProps={{
                   sx: {
@@ -337,12 +399,14 @@ const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
                     ฿{totalAmount.toLocaleString()}
                   </Typography>
                 </Stack>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography color="text.secondary">ส่วนลด</Typography>
-                  <Typography fontWeight={700} color="error">
-                    - ฿{appliedDiscount.toLocaleString()}
-                  </Typography>
-                </Stack>
+                {appliedDiscount > 0 && (
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography color="text.secondary">ส่วนลด</Typography>
+                    <Typography fontWeight={700} color="error">
+                      - ฿{appliedDiscount.toLocaleString()}
+                    </Typography>
+                  </Stack>
+                )}
                 <Divider />
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="h6" fontWeight={800}>
@@ -364,7 +428,8 @@ const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
                 size="large"
                 sx={{ borderRadius: 3, py: 2, fontWeight: 800 }}
                 onClick={handleConfirmOrder}
-                disabled={isConfirming || isSubmitting}
+                // ตัด isSubmitting ออกตามที่คุณแจ้งว่าไม่มี
+                disabled={isConfirming}
               >
                 {isConfirming ? (
                   <CircularProgress size={26} color="inherit" />

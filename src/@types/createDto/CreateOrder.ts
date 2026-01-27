@@ -12,6 +12,7 @@ export interface CreateOrder {
   // ข้อมูลระบุตัวตน (เพื่อเช็คสิทธิ์ส่วนลด 1 คน/ครั้ง)
   userId?: string; // สำหรับสมาชิก
   guestToken?: string; // สำหรับ Guest (รหัสสุ่มจาก Browser)
+  cartToken: string; // ⭐ เพิ่มตัวนี้เข้ามา
 
   // ระบบส่วนลด
   promoCode?: string; // ลูกค้ากรอกรหัสตรงนี้
