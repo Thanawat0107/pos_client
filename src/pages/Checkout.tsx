@@ -44,6 +44,11 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [appliedDiscount, setAppliedDiscount] = useState(0);
 
+  const [promoMessage, setPromoMessage] = useState({
+    text: "",
+    type: "" as "success" | "error" | "",
+  });
+
   const [triggerVerify, { isFetching: isVerifying }] =
     useLazyVerifyPromoQuery();
   const [confirmCart, { isLoading: isConfirming }] = useConfirmCartMutation();
@@ -54,17 +59,12 @@ export default function Checkout() {
     }
   }, [cartItems, navigate, isConfirming]);
 
-  const [promoMessage, setPromoMessage] = useState({
-    text: "",
-    type: "" as "success" | "error" | "",
-  });
-
-  // 2. ปรับ handleApplyPromo ให้เซ็ต Message ด้วย
   const handleApplyPromo = async () => {
     const trimmedCode = promoCode.trim();
     if (!trimmedCode) return;
     try {
       const response = await triggerVerify(trimmedCode).unwrap();
+      // สมมติ response.result มี discountValue
       const discount = response.result?.discountValue || 0;
       setAppliedDiscount(discount);
       setPromoMessage({ text: "ใช้รหัสส่วนลดสำเร็จ!", type: "success" });
@@ -77,59 +77,67 @@ export default function Checkout() {
 
   const validateForm = () => {
     const newErrors = {
-      name: !customer.name.trim(),
+      name: !customer.name.trim(), // ถ้า name เป็น optional ลบบรรทัดนี้ได้
       phone: !customer.phone.trim() || customer.phone.length < 10,
     };
     setErrors(newErrors);
-    return !newErrors.name && !newErrors.phone;
+    // ปรับเงื่อนไขตาม Business Logic (เช่น ถ้าชื่อไม่บังคับ ก็เอา newErrors.name ออก)
+    return !newErrors.phone;
   };
 
   const handleConfirmOrder = async () => {
     if (!validateForm()) return;
 
     const token = localStorage.getItem("cartToken");
-    if (!token) return navigate("/");
+    if (!token) {
+      alert("ไม่พบข้อมูลตะกร้าสินค้า");
+      return navigate("/");
+    }
 
+    // สร้าง Payload แบบเบา (Lightweight) ตรงกับ CreateOrderDto
     const payload: CreateOrder = {
-      channel: "PickUp",
+      channel: "PickUp", // Backend น่าจะชอบ PascalCase มากกว่า camelCase
+
+      // ข้อมูลลูกค้า
       customerPhone: customer.phone.trim(),
-      customerName: customer.name.trim(),
-      customerNote: customer.note.trim(),
+      customerName: customer.name.trim() || undefined, // ส่ง undefined ดีกว่าส่ง string ว่าง
+      customerNote: customer.note.trim() || undefined,
+
+      // Tokens
       cartToken: token,
-      guestToken: token,
+      guestToken: token, // ใช้ token เดียวกันระบุตัวตน (Guest)
+
+      // Promo (ส่งไปเฉพาะตอนที่มีการ Apply ผ่านแล้วเท่านั้น)
       promoCode: appliedDiscount > 0 ? promoCode.trim() : undefined,
+
+      // เวลา
       estimatedPickUpTime: new Date().toISOString(),
-      orderDetails: cartItems.map((item) => ({
-        menuItemId: item.menuItemId,
-        menuItemName: item.menuItemName,
-        unitPrice: item.price,
-        quantity: item.quantity,
-        note: item.note || null,
-        orderDetailOptions: (item.options || []).map((opt: any) => ({
-          menuOptionDetailId: opt.id,
-          optionGroupName: opt.groupName,
-          optionValueName: opt.valueName,
-          extraPrice: opt.extraPrice,
-          quantity: opt.quantity ?? 1,
-        })),
-      })),
     };
 
     try {
       const result = await confirmCart(payload).unwrap();
 
-      if (result.id) {
+      if (result) {
+        // ปกติ unwrap จะ throw error ถ้าไม่สำเร็จ result ที่ได้คือ success data
         dispatch(clearLocalCart());
         localStorage.removeItem("cartToken");
+        // ส่ง userId หรือ orderId ไปหน้า success
         navigate(`/order-success/${result.id}`, { replace: true });
       }
     } catch (err: any) {
       console.error("Checkout Error:", err);
-      alert(err.data?.message || "การสั่งซื้อล้มเหลว กรุณาลองใหม่อีกครั้ง");
+
+      // จัดการ Error Case พิเศษ
+      if (err.data?.message?.includes("สิทธิ์การใช้งานโปรโมชั่นนี้เต็มแล้ว")) {
+        alert("ขออภัย โค้ดส่วนลดหมดอายุพอดี กรุณาลองใหม่อีกครั้ง");
+        setAppliedDiscount(0); // Reset ส่วนลด
+        setPromoMessage({ text: "โค้ดหมดอายุ/เต็มแล้ว", type: "error" });
+      } else {
+        alert(err.data?.message || "การสั่งซื้อล้มเหลว กรุณาลองใหม่อีกครั้ง");
+      }
     }
   };
 
-  // คำนวณยอดสุทธิ (แสดงผลใน UI)
   const finalTotal = Math.max(0, totalAmount - appliedDiscount);
 
   return (

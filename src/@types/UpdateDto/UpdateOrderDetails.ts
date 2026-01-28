@@ -1,19 +1,20 @@
 import type { UpdateOrderDetailsOption } from "./UpdateOrderDetailOption";
 
 export interface UpdateOrderDetails {
-  id: number;
+  id: number;          // ⭐ จำเป็น: เพื่อบอกว่าจะแก้จานไหน
 
-  // สถานะรายจานสำหรับครัว
-  kitchenStatus?: string; // WAITING, COOKING, DONE, CANCELLED
-  isReady?: boolean; // ติ๊กเมื่อจานนี้เสร็จพร้อมส่ง
-
-  // จัดการกรณีของหมด/ยกเลิก
+  // กลุ่มสถานะ (ส่งเฉพาะตัวที่จะเปลี่ยน)
+  kitchenStatus?: string; // 'WAITING' | 'COOKING' | 'DONE' | 'CANCELLED'
+  isReady?: boolean;
+  
+  // กลุ่มยกเลิก/คืนเงิน
   isCancelled?: boolean;
-  isRefunded?: boolean; // ยืนยันว่าคืนเงินรายการนี้แล้ว
+  isRefunded?: boolean;
 
-  // หมายเหตุเพิ่มเติม (เช่น พ่อครัวอาจโน้ตกลับไปหาลูกค้า)
+  // กลุ่มข้อมูลทั่วไป
   note?: string;
   quantity?: number;
 
-  orderDetailOptions?: UpdateOrderDetailsOption[];
+  // ถ้าจะแก้ Option ย่อย ให้ส่ง List นี้มาด้วย
+  orderDetailOptions?: UpdateOrderDetailsOption[]; 
 }

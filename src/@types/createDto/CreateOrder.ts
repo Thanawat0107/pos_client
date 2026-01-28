@@ -1,24 +1,16 @@
-import type { CreateOrderDetails } from "./CreateOrderDetails";
-
 export interface CreateOrder {
-  // เปลี่ยนจาก OrderType เป็นระบุ Channel ไปเลย (เช่น PickUp)
-  channel: string;
+  channel: string;             // เช่น 'PickUp'
 
-  // ข้อมูลติดต่อลูกค้า (สำคัญมากสำหรับ PickUp)
   customerPhone: string;
   customerName?: string;
   customerNote?: string;
 
-  // ข้อมูลระบุตัวตน (เพื่อเช็คสิทธิ์ส่วนลด 1 คน/ครั้ง)
-  userId?: string; // สำหรับสมาชิก
-  guestToken?: string; // สำหรับ Guest (รหัสสุ่มจาก Browser)
-  cartToken: string; // ⭐ เพิ่มตัวนี้เข้ามา
+  userId?: string;
+  guestToken?: string;
+  cartToken: string;           // ⭐ สำคัญมาก
 
-  // ระบบส่วนลด
-  promoCode?: string; // ลูกค้ากรอกรหัสตรงนี้
+  promoCode?: string;
 
-  // การนัดหมาย
-  estimatedPickUpTime?: string;
-
-  orderDetails: CreateOrderDetails[];
+  // DateTime? -> string (ISO 8601 Format) | undefined
+  estimatedPickUpTime?: string; 
 }

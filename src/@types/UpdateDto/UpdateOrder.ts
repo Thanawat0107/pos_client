@@ -1,20 +1,18 @@
 import type { UpdateOrderDetails } from "./UpdateOrderDetails";
 
 export interface UpdateOrder {
-  id: number;
+  id: number;          // ⭐ จำเป็น: PK ของ OrderHeader
 
-  // ข้อมูลติดต่อลูกค้าที่อาจต้องแก้ไข
+  // ข้อมูลลูกค้า
   customerName?: string;
   customerPhone?: string;
   customerNote?: string;
 
-  // การจัดการเวลา (แอดมินอาจเลื่อนเวลานัดรับตามความหนาแน่นของครัว)
-  estimatedPickUpTime?: string;
+  // การจัดการ
+  estimatedPickUpTime?: string; // ISO String ("2024-05-20T10:00:00Z")
+  orderStatus?: string;         // 'PendingPayment' | 'Preparing' | ...
+  discount?: number;            // แก้ส่วนลดท้ายบิล
 
-  // การเลื่อนสถานะออเดอร์ (Preparing -> Ready -> Completed)
-  orderStatus?: string;
-
-  discount?: number;
-
+  // รายการสินค้าที่จะแก้ไข (ส่งมาเฉพาะรายการที่เปลี่ยนก็ได้)
   orderDetails?: UpdateOrderDetails[];
 }
