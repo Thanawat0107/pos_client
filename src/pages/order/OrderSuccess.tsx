@@ -10,7 +10,7 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 import HomeIcon from "@mui/icons-material/Home";
 import PrintIcon from "@mui/icons-material/Print";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGetOrderByIdQuery } from "../services/orderApi";
+import { useGetOrderByIdQuery } from "../../services/orderApi";
 
 // Helper สำหรับกำหนดสีและข้อความตามสถานะ
 const getStatusDisplay = (status: string) => {

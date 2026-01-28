@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useGetMenuItemsQuery } from "../../services/menuItemApi";
 import { useGetContentsQuery } from "../../services/contentApi";
 import { ContentType } from "../../@types/Enum";
@@ -7,8 +7,6 @@ import type { MenuItemDto } from "../../@types/dto/MenuItem";
 import type { Content } from "../../@types/dto/Content";
 
 export const useHomeData = () => {
-  const [cat, setCat] = useState<string>("pizza");
-
   // Fetch Data
   const { data: menuData, isLoading: menuLoading, isError: menuError } = useGetMenuItemsQuery({
     pageNumber: 1,
@@ -45,8 +43,6 @@ export const useHomeData = () => {
   }, [contents]);
 
   return {
-    cat,
-    setCat,
     menuItems,
     banners,
     promotions,

@@ -22,10 +22,21 @@ const calculateTotals = (items: CartItemDto[]) => {
   let amount = 0;
   let count = 0;
 
-  items.forEach((item) => {
-    // Backend: (UnitPrice + ExtraPrice) * Quantity
-    // Frontend: item.price คือ (UnitPrice + ExtraPrice) ที่ Backend ส่งมาให้แล้ว
-    amount += item.price * item.quantity;
+ items.forEach((item) => {
+    // 1. ราคาฐาน (Base Price)
+    const basePrice = item.price || 0;
+
+    // 2. ราคา Options (ถ้ามี)
+    const optionsPrice = item.options?.reduce((sum, opt) => {
+        const qty = opt.extraPrice || 1;
+        return sum + ((opt.extraPrice || 0) * qty);
+    }, 0) || 0;
+
+    // 3. รวมยอด: (ฐาน + ตัวเลือก) * จำนวนจาน
+    // หมายเหตุ: ถ้ามั่นใจว่า Backend ส่ง item.price มาเป็นราคารวมแล้ว ให้ใช้แบบเดิมได้ครับ 
+    // แต่แบบนี้จะ Safe กว่าในกรณีที่ข้อมูลมีการเปลี่ยนแปลง
+    amount += (basePrice + optionsPrice) * item.quantity;
+    
     count += item.quantity;
   });
 

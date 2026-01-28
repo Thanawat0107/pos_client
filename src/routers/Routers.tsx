@@ -13,28 +13,36 @@ import ManageRecipeList from "../components/pages/adminManage/recipe/ManageRecip
 import ManageManualList from "../components/pages/adminManage/manual/ManageManualList";
 import ManageContentList from "../components/pages/adminManage/content/ManageContentList";
 import MenuDetails from "../components/pages/menu/MenuDetails";
-import Checkout from "../pages/Checkout";
-import OrderSuccess from "../pages/OrderSuccess";
+import Checkout from "../pages/order/Checkout";
+import OrderSuccess from "../pages/order/OrderSuccess";
+import ActiveOrderFloating from "../pages/order/ActiveOrderFloating";
 
 export default function Routers() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/menuItem" element={<MenuItem />} />
-      <Route path="/menu/:id" element={<MenuDetails />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/order-success/:id" element={<OrderSuccess />} />
-      <Route path="/manage-menuItem" element={<ManageMenuItem />} />
-      <Route path="/manage-manual" element={<ManageManualList />} />
-      <Route path="/manage-menuItemOption" element={<ManageMenuItemOptionList />} />
-      <Route path="/manage-recipe" element={<ManageRecipeList />} />
-      <Route path="/manage-content" element={<ManageContentList />} />
-      <Route path="/manage-category" element={<ManageCategory />} />
-      <Route path="/manage-order" element={<ManageOrder />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  )
+    <>
+      {/* ใส่ไว้ตรงนี้! เพื่อให้ลอยอยู่เหนือทุกหน้า */}
+      <ActiveOrderFloating />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/menuItem" element={<MenuItem />} />
+        <Route path="/menu/:id" element={<MenuDetails />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-success/:id" element={<OrderSuccess />} />
+        <Route path="/manage-menuItem" element={<ManageMenuItem />} />
+        <Route path="/manage-manual" element={<ManageManualList />} />
+        <Route
+          path="/manage-menuItemOption"
+          element={<ManageMenuItemOptionList />}
+        />
+        <Route path="/manage-recipe" element={<ManageRecipeList />} />
+        <Route path="/manage-content" element={<ManageContentList />} />
+        <Route path="/manage-category" element={<ManageCategory />} />
+        <Route path="/manage-order" element={<ManageOrder />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
 }

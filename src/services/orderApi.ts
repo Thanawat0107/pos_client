@@ -86,6 +86,15 @@ export const orderApi = createApi({
       providesTags: (_result, _error, id) => [{ type: "Order", id }],
     }),
 
+    // ⭐ 1. เพิ่ม Get History (สำหรับลูกค้าดูประวัติ)
+    getOrderHistory: builder.query<OrderHeader[], { userId?: string; guestToken?: string }>({
+      query: (params) => ({
+        url: "orders/history",
+        params, // ส่ง userId หรือ guestToken ไปเป็น Query String
+      }),
+      providesTags: ["Order"],
+    }),
+
     // 3. กดยืนยันออเดอร์จากตะกร้า (Customer)
     confirmCart: builder.mutation<OrderHeader, CreateOrder>({
       query: (body) => ({
@@ -122,7 +131,7 @@ export const orderApi = createApi({
       query: ({ detailId, status }) => ({
         url: `orders/details/${detailId}/status`,
         method: "PATCH",
-        body: JSON.stringify(status),
+        body: JSON.stringify(status), // Backend รับ [FromBody] string status
         headers: { "Content-Type": "application/json" },
       }),
       invalidatesTags: ["Order"],
@@ -154,6 +163,15 @@ export const orderApi = createApi({
       }),
       invalidatesTags: (_res, _err, { id }) => [{ type: "Order", id }, "Order"],
     }),
+
+    // ⭐ 2. เพิ่ม Delete Order (สำหรับ Admin ลบออเดอร์)
+    deleteOrder: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `orders/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Order"],
+    }),
   }),
 });
 
@@ -167,4 +185,6 @@ export const {
   useCancelOrderMutation,
   useGetOrderByPickUpCodeQuery,
   useConfirmPaymentMutation, // เพิ่มตัวนี้
+  useGetOrderHistoryQuery, // เพิ่มตัวนี้
+  useDeleteOrderMutation, // เพิ่มตัวนี้
 } = orderApi;

@@ -16,19 +16,19 @@ import {
   InputAdornment,
   Paper,
   CircularProgress,
-  Alert,
 } from "@mui/material";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import PaymentIcon from "@mui/icons-material/Payment";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "../hooks/useAppHookState";
-import { useConfirmCartMutation } from "../services/orderApi";
-import { clearLocalCart } from "../stores/slices/shoppingSlice";
-import { useLazyVerifyPromoQuery } from "../services/contentApi";
-import type { CreateOrder } from "../@types/createDto/CreateOrder";
+import { useAppDispatch, useAppSelector } from "../../hooks/useAppHookState";
+import { useLazyVerifyPromoQuery } from "../../services/contentApi";
+import { useConfirmCartMutation } from "../../services/orderApi";
+import type { CreateOrder } from "../../@types/createDto/CreateOrder";
+import { clearLocalCart } from "../../stores/slices/shoppingSlice";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -44,6 +44,12 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [appliedDiscount, setAppliedDiscount] = useState(0);
 
+  // --- ⭐ 1. เพิ่ม State สำหรับจัดการเวลารับ ---
+  // 'asap' = รับทันที, 'scheduled' = ระบุเวลา
+  const [pickupType, setPickupType] = useState<"asap" | "scheduled">("asap");
+  // เก็บค่าเวลาที่เลือก (Format: YYYY-MM-DDTHH:mm สำหรับ input type="datetime-local")
+  const [scheduledTime, setScheduledTime] = useState("");
+
   const [promoMessage, setPromoMessage] = useState({
     text: "",
     type: "" as "success" | "error" | "",
@@ -53,11 +59,21 @@ export default function Checkout() {
     useLazyVerifyPromoQuery();
   const [confirmCart, { isLoading: isConfirming }] = useConfirmCartMutation();
 
+  const [isOrderPlaced, setIsOrderPlaced] = useState(false);
+
   useEffect(() => {
-    if (cartItems.length === 0 && !isConfirming) {
+    // ถ้าตะกร้าว่าง และ ไม่ได้กำลังโหลด และ "ยังสั่งไม่เสร็จ" -> ให้กลับหน้าแรก
+    if (!isOrderPlaced && cartItems.length === 0 && !isConfirming) {
       navigate("/");
     }
-  }, [cartItems, navigate, isConfirming]);
+  }, [cartItems, navigate, isConfirming, isOrderPlaced]); // อย่าลืมใส่ dependency
+
+  // --- ⭐ ฟังก์ชันช่วยคำนวณราคา (แก้ไขใหม่) ---
+  const calculateItemTotal = (item: any) => {
+    // เนื่องจาก Backend ส่ง item.price ที่รวมค่า Option มาให้แล้ว
+    // สูตรที่ถูกต้องคือ: ราคาต่อหน่วย * จำนวน
+    return (item.price || 0) * item.quantity;
+  };
 
   const handleApplyPromo = async () => {
     const trimmedCode = promoCode.trim();
@@ -81,7 +97,22 @@ export default function Checkout() {
       phone: !customer.phone.trim() || customer.phone.length < 10,
     };
     setErrors(newErrors);
-    // ปรับเงื่อนไขตาม Business Logic (เช่น ถ้าชื่อไม่บังคับ ก็เอา newErrors.name ออก)
+
+    if (pickupType === "scheduled") {
+      if (!scheduledTime) {
+        alert("กรุณาระบุเวลาที่ต้องการรับสินค้า");
+        return false;
+      }
+
+      // ⭐ เพิ่ม: เช็กว่าเวลาที่เลือก ต้องมากกว่าเวลาปัจจุบัน
+      const selectedDate = new Date(scheduledTime);
+      const now = new Date();
+      if (selectedDate < now) {
+        alert("ไม่สามารถเลือกเวลาย้อนหลังได้");
+        return false;
+      }
+    }
+
     return !newErrors.phone;
   };
 
@@ -94,24 +125,26 @@ export default function Checkout() {
       return navigate("/");
     }
 
+    // ⭐ คำนวณเวลา PickUp ที่จะส่งไป Backend
+    let finalPickUpTime = new Date().toISOString(); // Default = Now (ASAP)
+    if (pickupType === "scheduled" && scheduledTime) {
+      // แปลงจาก input string เป็น ISO String
+      finalPickUpTime = new Date(scheduledTime).toISOString();
+    }
     // สร้าง Payload แบบเบา (Lightweight) ตรงกับ CreateOrderDto
     const payload: CreateOrder = {
-      channel: "PickUp", // Backend น่าจะชอบ PascalCase มากกว่า camelCase
-
+      channel: "pickUp", // Backend น่าจะชอบ PascalCase มากกว่า camelCase
       // ข้อมูลลูกค้า
       customerPhone: customer.phone.trim(),
       customerName: customer.name.trim() || undefined, // ส่ง undefined ดีกว่าส่ง string ว่าง
       customerNote: customer.note.trim() || undefined,
-
       // Tokens
       cartToken: token,
       guestToken: token, // ใช้ token เดียวกันระบุตัวตน (Guest)
-
       // Promo (ส่งไปเฉพาะตอนที่มีการ Apply ผ่านแล้วเท่านั้น)
       promoCode: appliedDiscount > 0 ? promoCode.trim() : undefined,
-
       // เวลา
-      estimatedPickUpTime: new Date().toISOString(),
+      estimatedPickUpTime: finalPickUpTime,
     };
 
     try {
@@ -119,9 +152,11 @@ export default function Checkout() {
 
       if (result) {
         // ปกติ unwrap จะ throw error ถ้าไม่สำเร็จ result ที่ได้คือ success data
+        setIsOrderPlaced(true);
         dispatch(clearLocalCart());
         localStorage.removeItem("cartToken");
-        // ส่ง userId หรือ orderId ไปหน้า success
+        // ⭐ [เพิ่มใหม่] บันทึก ID ออเดอร์ล่าสุดไว้
+        localStorage.setItem("activeOrderId", result.id.toString());
         navigate(`/order-success/${result.id}`, { replace: true });
       }
     } catch (err: any) {
@@ -140,6 +175,15 @@ export default function Checkout() {
 
   const finalTotal = Math.max(0, totalAmount - appliedDiscount);
 
+  // Helper สำหรับทำ Min Date ของ input type="datetime-local" (ป้องกันเลือกเวลาในอดีต)
+  // ใน getMinDateTime
+  const getMinDateTime = () => {
+    const now = new Date();
+    // ⭐ บวกเพิ่ม 20 นาที (เผื่อเวลาเตรียมของ)
+    now.setMinutes(now.getMinutes() + 20 - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+
   return (
     <Box sx={{ bgcolor: "#f8f9fa", minHeight: "100vh", py: { xs: 2, md: 5 } }}>
       <Container maxWidth="lg">
@@ -152,7 +196,7 @@ export default function Checkout() {
         </Button>
 
         <Grid container spacing={4}>
-          {/* ฝั่งซ้าย: ฟอร์มข้อมูลลูกค้า (คงเดิม) */}
+          {/* ฝั่งซ้าย: ฟอร์มข้อมูลลูกค้า */}
           <Grid size={{ xs: 12, md: 7 }}>
             <Stack spacing={3}>
               <Paper sx={{ p: 3, borderRadius: 3 }}>
@@ -210,6 +254,7 @@ export default function Checkout() {
                 </Grid>
               </Paper>
 
+              {/* การรับสินค้า */}
               <Paper sx={{ p: 3, borderRadius: 3 }}>
                 <Typography
                   variant="h6"
@@ -219,12 +264,101 @@ export default function Checkout() {
                 >
                   <StorefrontIcon color="primary" /> การรับสินค้า
                 </Typography>
-                <Alert severity="info" sx={{ borderRadius: 2 }}>
-                  <Typography variant="subtitle2" fontWeight={800}>
-                    รับที่หน้าร้าน (Pick up)
-                  </Typography>
-                  มารับที่เคาน์เตอร์เมื่อสถานะเป็น "พร้อมรับ"
-                </Alert>
+                <RadioGroup
+                  value={pickupType}
+                  onChange={(e) =>
+                    setPickupType(e.target.value as "asap" | "scheduled")
+                  }
+                >
+                  <FormControlLabel
+                    value="asap"
+                    control={<Radio />}
+                    label={
+                      <Box sx={{ ml: 1 }}>
+                        <Typography fontWeight={700}>
+                          รับทันที / รอรับหน้าร้าน
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ทางร้านจะจัดเตรียมสินค้าให้เร็วที่สุด (ประมาณ 15-20
+                          นาที)
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{
+                      mb: 1,
+                      p: 1,
+                      border:
+                        pickupType === "asap"
+                          ? "2px solid #1976d2"
+                          : "1px solid #eee",
+                      borderRadius: 2,
+                      width: "100%",
+                      ml: 0,
+                      transition: "0.2s",
+                    }}
+                  />
+                  <FormControlLabel
+                    value="scheduled"
+                    control={<Radio />}
+                    label={
+                      <Box sx={{ ml: 1, width: "100%" }}>
+                        <Typography fontWeight={700}>
+                          ระบุเวลารับ (ล่วงหน้า)
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          เลือกเวลาที่สะดวกเข้ามารับสินค้า
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{
+                      p: 1,
+                      border:
+                        pickupType === "scheduled"
+                          ? "2px solid #1976d2"
+                          : "1px solid #eee",
+                      borderRadius: 2,
+                      width: "100%",
+                      ml: 0,
+                      transition: "0.2s",
+                    }}
+                  />
+                </RadioGroup>
+                {pickupType === "scheduled" && (
+                  <Box
+                    sx={{
+                      mt: 2,
+                      ml: 1,
+                      p: 2,
+                      bgcolor: "#f0f4ff",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      gutterBottom
+                      fontWeight={600}
+                      color="primary"
+                    >
+                      <AccessTimeIcon
+                        sx={{
+                          fontSize: 16,
+                          verticalAlign: "text-bottom",
+                          mr: 0.5,
+                        }}
+                      />{" "}
+                      เลือกวันและเวลาที่ต้องการรับ:
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      type="datetime-local"
+                      variant="outlined"
+                      value={scheduledTime}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      inputProps={{ min: getMinDateTime() }}
+                      sx={{ bgcolor: "white" }}
+                    />
+                  </Box>
+                )}
               </Paper>
 
               <Paper sx={{ p: 3, borderRadius: 3 }}>
@@ -280,7 +414,7 @@ export default function Checkout() {
             </Stack>
           </Grid>
 
-          {/* ฝั่งขวา: สรุปยอดสั่งซื้อ (ปรับปรุงส่วนรายการอาหาร) */}
+          {/* ฝั่งขวา: สรุปยอดสั่งซื้อ */}
           <Grid size={{ xs: 12, md: 5 }}>
             <Card
               sx={{
@@ -300,66 +434,118 @@ export default function Checkout() {
                 sx={{ my: 3, maxHeight: "45vh", overflowY: "auto", pr: 1 }}
               >
                 {cartItems.map((item) => (
-                  <Box key={item.id}>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="flex-start"
-                    >
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={600}>
-                          <Box
-                            component="span"
-                            fontWeight={800}
-                            color="primary.main"
-                            sx={{ mr: 1 }}
+                  <Box
+                    key={item.id}
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                      mb: 2,
+                      pb: 2,
+                      borderBottom: "1px dashed #eee",
+                      "&:last-child": { borderBottom: "none", mb: 0, pb: 0 },
+                    }}
+                  >
+                    {/* รูปภาพเมนู */}
+                    <Box
+                      component="img"
+                      src={
+                        item.menuItemImage ||
+                        "https://placehold.co/100x100?text=No+Image"
+                      }
+                      alt={item.menuItemName}
+                      sx={{
+                        width: 70,
+                        height: 70,
+                        borderRadius: 2,
+                        objectFit: "cover",
+                        bgcolor: "#f0f0f0",
+                      }}
+                    />
+
+                    {/* รายละเอียด */}
+                    <Box sx={{ flex: 1 }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                      >
+                        <Box>
+                          <Typography
+                            variant="subtitle1"
+                            fontWeight={700}
+                            lineHeight={1.3}
+                            sx={{ mb: 0.5 }}
                           >
-                            {item.quantity}x
-                          </Box>
-                          {/* 🚩 แก้ไขให้ตรงกับที่ส่งไป Backend */}
-                          {item.menuItemName}
-                        </Typography>
+                            <Box
+                              component="span"
+                              sx={{
+                                color: "primary.main",
+                                mr: 1,
+                                bgcolor: "#e3f2fd",
+                                px: 0.8,
+                                py: 0.2,
+                                borderRadius: 1,
+                                fontSize: "0.85em",
+                              }}
+                            >
+                              {item.quantity}x
+                            </Box>
+                            {item.menuItemName}
+                          </Typography>
 
-                        {/* แสดง Options */}
-                        {item.options && item.options.length > 0 && (
-                          <Stack sx={{ ml: 4, mt: 0.5 }}>
-                            {item.options.map((opt: any, index: number) => (
-                              <Typography
-                                key={index}
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                }}
-                              >
-                                • {opt.optionValueName}
-                                {opt.extraPrice > 0 && (
-                                  <Box component="span" sx={{ ml: 1 }}>
-                                    (+฿{opt.extraPrice.toLocaleString()})
-                                  </Box>
-                                )}
-                              </Typography>
-                            ))}
-                          </Stack>
-                        )}
-                      </Box>
+                          {/* Options */}
+                          {item.options && item.options.length > 0 && (
+                            <Stack spacing={0.5}>
+                              {item.options.map((opt: any, index: number) => (
+                                <Typography
+                                  key={index}
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ display: "block", lineHeight: 1.2 }}
+                                >
+                                  • {opt.optionValueName}{" "}
+                                  {opt.extraPrice > 0 &&
+                                    `(+฿${opt.extraPrice.toLocaleString()})`}
+                                </Typography>
+                              ))}
+                            </Stack>
+                          )}
+                          {item.note && (
+                            <Typography
+                              variant="caption"
+                              color="error"
+                              sx={{ display: "block", mt: 0.5 }}
+                            >
+                              * {item.note}
+                            </Typography>
+                          )}
+                        </Box>
 
-                      <Typography variant="body2" fontWeight={700}>
-                        ฿
-                        {(
-                          (item.price + (item.price || 0)) *
-                          item.quantity
-                        ).toLocaleString()}
-                      </Typography>
-                    </Stack>
+                        {/* ราคารวมของรายการนี้ */}
+                        <Stack alignItems="flex-end">
+                          <Typography variant="body2" fontWeight={700}>
+                            {/* ⭐ เรียกใช้ Function คำนวณราคาที่ถูกต้อง */}฿
+                            {calculateItemTotal(item).toLocaleString()}
+                          </Typography>
+
+                          {/* ราคาต่อหน่วย */}
+                          {item.quantity > 1 && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              (฿{item.price.toLocaleString()} / ชิ้น)
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Stack>
+                    </Box>
                   </Box>
                 ))}
               </Stack>
 
               <Divider sx={{ mb: 2.5 }} />
 
-              {/* ส่วน PromoCode (คงเดิม) */}
               <TextField
                 fullWidth
                 size="small"
@@ -373,15 +559,6 @@ export default function Checkout() {
                   promoMessage.text !== "" && promoMessage.type === "error"
                 }
                 helperText={promoMessage.text}
-                FormHelperTextProps={{
-                  sx: {
-                    color:
-                      promoMessage.type === "success"
-                        ? "success.main"
-                        : "error.main",
-                  },
-                }}
-                sx={{ mb: 3 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -398,6 +575,7 @@ export default function Checkout() {
                     </Button>
                   ),
                 }}
+                sx={{ mb: 3 }}
               />
 
               <Stack spacing={1.5} sx={{ mb: 4 }}>
@@ -436,7 +614,6 @@ export default function Checkout() {
                 size="large"
                 sx={{ borderRadius: 3, py: 2, fontWeight: 800 }}
                 onClick={handleConfirmOrder}
-                // ตัด isSubmitting ออกตามที่คุณแจ้งว่าไม่มี
                 disabled={isConfirming}
               >
                 {isConfirming ? (

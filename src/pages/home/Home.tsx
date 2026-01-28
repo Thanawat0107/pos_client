@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Fade } from "@mui/material";
+import { Box, Fade } from "@mui/material";
 import Carousel from "../../components/layouts/Carousel";
 import { useHomeData } from "./useHomeData";
 import HomeHeader from "../../components/pages/home/HomeHeader";
