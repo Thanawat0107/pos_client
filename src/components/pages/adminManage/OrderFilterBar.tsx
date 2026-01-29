@@ -10,21 +10,17 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
-
-// ✅ ปรับสถานะให้ตรงกับที่ใช้ใน OrderHeader DTO และ Drawer Logic
-export type OrderStatus = "PendingPayment" | "Paid" | "Preparing" | "Ready" | "Completed" | "Cancelled";
-export type PayStatus = "UNPAID" | "PAID" | "REFUNDED";
-export type Channel = "PickUp" | "DineIn" | "Delivery"; // ปรับให้ตรงกับ DTO
+import { Sd } from "../../../helpers/SD";
 
 type Props = {
   q: string;
-  status: "all" | OrderStatus;
-  pay: "all" | PayStatus;
-  channel: "all" | Channel;
+  status: string;
+  pay: string;
+  channel: string;
   onSearch: (val: string) => void;
-  onStatusChange: (val: "all" | any) => void; // ใช้ any เพื่อความยืดหยุ่นในการ Filter
-  onPayChange: (val: "all" | any) => void;
-  onChannelChange: (val: "all" | any) => void;
+  onStatusChange: (val: string) => void;
+  onPayChange: (val: string) => void;
+  onChannelChange: (val: string) => void;
 };
 
 export default function OrderFilterBar({
@@ -34,11 +30,23 @@ export default function OrderFilterBar({
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
+  // สไตล์สำหรับ Input ให้ดูขาวสะอาดและมีขอบมนๆ
+  const inputStyle = {
+    bgcolor: 'white',
+    borderRadius: 2,
+    '& .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#e0e0e0', // ขอบสีจางๆ
+    },
+    '&:hover .MuiOutlinedInput-notchedOutline': {
+        borderColor: '#bdbdbd',
+    },
+  };
+
   return (
     <Stack
       direction={isMdUp ? "row" : "column"}
-      spacing={1.25}
-      sx={{ mb: 2, width: "100%" }}
+      spacing={2}
+      sx={{ mb: 0, width: "100%" }}
     >
       {/* 1. ค้นหาทั่วไป */}
       <TextField
@@ -50,59 +58,58 @@ export default function OrderFilterBar({
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon fontSize="small" />
+              <SearchIcon fontSize="small" sx={{ color: 'text.disabled' }} />
             </InputAdornment>
           ),
         }}
-        sx={{ "& input": { fontSize: 14 } }}
+        sx={{ 
+            ...inputStyle,
+            flexGrow: 1 // ให้ช่องค้นหายืดกินพื้นที่ที่เหลือ
+        }}
       />
 
-      {/* 2. กรองสถานะออเดอร์ */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
+      {/* 2. กรองสถานะออเดอร์ (ใช้ค่าจาก Sd) */}
+      <FormControl sx={{ minWidth: isMdUp ? 200 : "100%" }} size="small">
         <Select
-          size="small"
           value={status}
           onChange={(e) => onStatusChange(e.target.value)}
           displayEmpty
-          sx={{ fontSize: 14 }}
+          sx={inputStyle}
         >
-          <MenuItem value="all">ทุกสถานะออเดอร์</MenuItem>
-          <MenuItem value="PendingPayment">รอชำระเงิน</MenuItem>
-          <MenuItem value="Paid">จ่ายแล้ว/รอเตรียม</MenuItem>
-          <MenuItem value="Preparing">กำลังปรุง</MenuItem>
-          <MenuItem value="Ready">พร้อมรับอาหาร</MenuItem>
-          <MenuItem value="Completed">สำเร็จ</MenuItem>
-          <MenuItem value="Cancelled">ยกเลิก</MenuItem>
+          <MenuItem value="all">สถานะ: ทั้งหมด</MenuItem>
+          <MenuItem value={Sd.Status_PendingPayment}>รอชำระเงิน</MenuItem>
+          <MenuItem value={Sd.Status_Paid}>รอคิว/จ่ายแล้ว</MenuItem>
+          <MenuItem value={Sd.Status_Preparing}>กำลังปรุง</MenuItem>
+          <MenuItem value={Sd.Status_Ready}>พร้อมรับ</MenuItem>
+          <MenuItem value={Sd.Status_Completed}>สำเร็จ</MenuItem>
+          <MenuItem value={Sd.Status_Cancelled}>ยกเลิก</MenuItem>
         </Select>
       </FormControl>
 
-      {/* 3. กรองสถานะการชำระ (ถ้ามีฟิลด์นี้แยกใน DTO) */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 150 : "100%" }}>
+      {/* 3. กรองสถานะการชำระ */}
+      <FormControl sx={{ minWidth: isMdUp ? 180 : "100%" }} size="small">
         <Select
-          size="small"
           value={pay}
           onChange={(e) => onPayChange(e.target.value)}
           displayEmpty
-          sx={{ fontSize: 14 }}
+          sx={inputStyle}
         >
-          <MenuItem value="all">การชำระทั้งหมด</MenuItem>
+          <MenuItem value="all">การชำระ: ทั้งหมด</MenuItem>
           <MenuItem value="UNPAID">ยังไม่จ่าย</MenuItem>
           <MenuItem value="PAID">จ่ายแล้ว</MenuItem>
-          <MenuItem value="REFUNDED">คืนเงิน</MenuItem>
         </Select>
       </FormControl>
 
       {/* 4. กรองช่องทาง */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 150 : "100%" }}>
+      <FormControl sx={{ minWidth: isMdUp ? 180 : "100%" }} size="small">
         <Select
-          size="small"
           value={channel}
           onChange={(e) => onChannelChange(e.target.value)}
           displayEmpty
-          sx={{ fontSize: 14 }}
+          sx={inputStyle}
         >
-          <MenuItem value="all">ทุกช่องทาง</MenuItem>
-          <MenuItem value="PickUp">รับที่ร้าน (PickUp)</MenuItem>
+          <MenuItem value="all">ช่องทาง: ทั้งหมด</MenuItem>
+          <MenuItem value="PickUp">รับที่ร้าน</MenuItem>
           <MenuItem value="DineIn">ทานที่ร้าน</MenuItem>
           <MenuItem value="Delivery">เดลิเวอรี่</MenuItem>
         </Select>

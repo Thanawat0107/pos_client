@@ -12,188 +12,197 @@ import {
   TableCell,
   TableBody,
   TableContainer,
-  Paper,
   CircularProgress,
   Alert,
+  Card,
+  CardContent,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
 // --- Components ---
 import ManageOrderItem from "./ManageOrderItem";
-import OrderDetailDrawer from "./OrderDetailDrawer"; // นำเข้า Drawer ที่เราสร้าง
+import OrderDetailDrawer from "./OrderDetailDrawer";
 import OrderFilterBar from "../OrderFilterBar";
 
-// --- API & Types ---
+// --- API & Types & SD ---
 import { useGetOrderAllQuery } from "../../../../services/orderApi";
-import type { OrderHeader } from "../../../../@types/dto/OrderHeader";
+// ✅ 1. นำเข้า Sd เพื่อใช้เปรียบเทียบค่า
+import { Sd } from "../../../../helpers/SD"; 
 
 export default function ManageOrderList() {
-  // 1. State สำหรับการกรองข้อมูล
-  // ✅ เพิ่ม State ให้ครบตาม FilterBar
+  // State Filter
   const [filters, setFilters] = useState({
     q: "",
     status: "all",
     pay: "all",
     channel: "all",
   });
-  // 2. State สำหรับการเลือกออเดอร์เพื่อดูรายละเอียด (ใช้เปิด/ปิด Drawer)
-  const [selectedOrder, setSelectedOrder] = useState<OrderHeader | null>(null);
+  
+  // ✅ ใช้ State เก็บแค่ ID (ถูกต้องแล้ว)
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
-  // 3. ดึงข้อมูลจาก API (ดึงมา 1000 รายการเพื่อทำ Client-side Filtering ตามตัวอย่างเดิม)
-  const { data, isLoading, isError, refetch } = useGetOrderAllQuery({
+  // API Call
+  const { data, isLoading, isError, refetch, isFetching } = useGetOrderAllQuery({
     pageNumber: 1,
-    pageSize: 1000,
+    pageSize: 1000, 
   });
 
-  // เข้าถึง array ข้อมูลผ่าน data.results
   const rows = data?.results ?? [];
 
-  // 4. Logic การกรองและจัดเรียงข้อมูล (Client-side)
-  // ✅ ปรับลอจิกการกรอง (useMemo)
+  // ✅ คำนวณ selectedOrder สดๆ (ถูกต้องแล้ว)
+  const selectedOrder = useMemo(() => {
+    if (!selectedOrderId) return null;
+    return rows.find(r => r.id === selectedOrderId) || null;
+  }, [rows, selectedOrderId]);
+
+  // Filter Logic (Client Side)
   const filteredRows = useMemo(() => {
     return rows.filter(r => {
       const searchLower = filters.q.toLowerCase();
       
+      // 1. Search Text
       const matchesQ = !filters.q || 
         r.orderCode.toLowerCase().includes(searchLower) ||
         (r.customerName && r.customerName.toLowerCase().includes(searchLower)) ||
         r.customerPhone.includes(filters.q);
 
+      // 2. Status
       const matchesStatus = filters.status === "all" || r.orderStatus === filters.status;
       
-      // หมายเหตุ: ถ้าใน OrderHeader ไม่มีฟิลด์ payStatus ให้กรองจาก orderStatus แทนได้
+      // 3. Channel
       const matchesChannel = filters.channel === "all" || r.channel === filters.channel;
 
-      return matchesQ && matchesStatus && matchesChannel;
+      // 4. Pay Status (✅ ปรับมาใช้ Sd เพื่อความชัวร์)
+      const matchesPay = filters.pay === "all" || 
+         (filters.pay === "UNPAID" && r.orderStatus === Sd.Status_PendingPayment) ||
+         (filters.pay === "PAID" && r.orderStatus !== Sd.Status_PendingPayment && r.orderStatus !== Sd.Status_Cancelled);
+
+      return matchesQ && matchesStatus && matchesChannel && matchesPay;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [rows, filters]);
 
-  // --- UI Handling ---
-  if (isLoading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
+  // --- UI ---
   if (isError) {
-    return (
-      <Container sx={{ mt: 4 }}>
-        <Alert severity="error">
-          ไม่สามารถโหลดข้อมูลออเดอร์ได้ กรุณาลองใหม่อีกครั้ง
-        </Alert>
-      </Container>
-    );
+    return <Container sx={{ mt: 4 }}><Alert severity="error">โหลดข้อมูลไม่สำเร็จ</Alert></Container>;
   }
 
   return (
-    <Box sx={{ py: { xs: 2, md: 4 } }}>
+    <Box sx={{ py: 3, bgcolor: "#f4f6f8", minHeight: "100vh" }}>
       <Container maxWidth="xl">
-        {/* Header Section */}
+        {/* Header */}
         <Stack
           direction={{ xs: "column", sm: "row" }}
           justifyContent="space-between"
-          alignItems={{ xs: "flex-start", sm: "center" }}
+          alignItems="center"
           spacing={2}
           mb={3}
         >
-          <Typography variant="h5" fontWeight={800}>
-            จัดการรายการคำสั่งซื้อ
-          </Typography>
+          <Box>
+            <Typography variant="h5" fontWeight={800} sx={{ color: "#2b3445" }}>
+              จัดการรายการคำสั่งซื้อ
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              รายการออเดอร์ทั้งหมดในระบบ
+            </Typography>
+          </Box>
+          
+          {/* ✅ ปรับปุ่มรีเฟรชให้สวยเหมือนในรูป (ขอบแดง ตัวหนังสือแดง) */}
           <Button
-            startIcon={<RefreshIcon />}
+            startIcon={isFetching ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
             onClick={() => refetch()}
             variant="outlined"
-            disabled={isLoading}
+            // ลบ color="error" ออก แล้ว custom เองเพื่อให้สีตรงเป๊ะ
+            disabled={isFetching}
+            sx={{ 
+                borderRadius: 2, 
+                textTransform: "none", 
+                fontWeight: 700,
+                borderColor: '#ef5350', // แดงอ่อนๆ หน่อย
+                color: '#d32f2f',       // แดงเข้ม
+                '&:hover': {
+                    borderColor: '#d32f2f',
+                    bgcolor: '#ffebee'
+                }
+            }}
           >
             รีเฟรชข้อมูล
           </Button>
         </Stack>
 
-        {/* Filter Bar */}
-        <OrderFilterBar 
-          q={filters.q}
-          status={filters.status as any}
-          pay={filters.pay as any}
-          channel={filters.channel as any}
-          onSearch={(v) => setFilters(prev => ({ ...prev, q: v }))}
-          onStatusChange={(v) => setFilters(prev => ({ ...prev, status: v }))}
-          onPayChange={(v) => setFilters(prev => ({ ...prev, pay: v }))}
-          onChannelChange={(v) => setFilters(prev => ({ ...prev, channel: v }))}
-        />
-
-        {/* ข้อมูลสรุปจำนวนรายการ */}
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          พบทั้งหมด {filteredRows.length} รายการ
-        </Typography>
-
-        {/* Table Section */}
-        <TableContainer
-          component={Paper}
-          variant="outlined"
-          sx={{ borderRadius: 2, overflow: "hidden" }}
+        {/* Content Card */}
+        <Card
+          elevation={0}
+          sx={{ borderRadius: 3, border: "1px solid #e0e0e0", mb: 4 }}
         >
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow sx={{ bgcolor: "grey.50" }}>
-                <TableCell
-                  align="center"
-                  sx={{ fontWeight: "bold", width: 60 }}
-                >
-                  #
-                </TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>
-                  เลขออเดอร์ / รหัสรับ
-                </TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>ลูกค้า</TableCell>
-                <TableCell align="right" sx={{ fontWeight: "bold" }}>
-                  ยอดรวมสุทธิ
-                </TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>สถานะออเดอร์</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>
-                  เวลาที่สั่งซื้อ
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: "bold" }}>
-                  จัดการ
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredRows.map((row, i) => (
-                <ManageOrderItem
-                  key={row.id}
-                  row={row}
-                  index={i + 1}
-                  // ✅ เมื่อกดปุ่มใน Item ให้เซ็ต State เพื่อเปิด Drawer
-                  onView={(data) => setSelectedOrder(data)}
-                />
-              ))}
+          <CardContent sx={{ p: 3 }}>
+            
+            <Box sx={{ mb: 3 }}>
+              <OrderFilterBar
+                q={filters.q}
+                status={filters.status}
+                pay={filters.pay}
+                channel={filters.channel}
+                onSearch={(v) => setFilters((prev) => ({ ...prev, q: v }))}
+                onStatusChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
+                onPayChange={(v) => setFilters((prev) => ({ ...prev, pay: v }))}
+                onChannelChange={(v) => setFilters((prev) => ({ ...prev, channel: v }))}
+              />
+            </Box>
 
-              {filteredRows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                    <Typography color="text.secondary">
-                      ไม่พบรายการคำสั่งซื้อ
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={2}
+            >
+              <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
+                พบข้อมูล <Box component="span" sx={{ color: "primary.main" }}>{filteredRows.length}</Box> รายการ
+              </Typography>
+            </Stack>
+
+            {/* Table */}
+            <TableContainer sx={{ border: "1px solid #f0f0f0", borderRadius: 2 }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    {/* ✅ Header Style สวยๆ */}
+                    <TableCell align="center" sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381", width: 60 }}>#</TableCell>
+                    <TableCell sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381" }}>เลขออเดอร์ / รหัสรับ</TableCell>
+                    <TableCell sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381" }}>ลูกค้า</TableCell>
+                    <TableCell align="right" sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381" }}>ยอดรวมสุทธิ</TableCell>
+                    <TableCell sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381", pl: 3 }}>สถานะ</TableCell>
+                    <TableCell sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381" }}>เวลาสั่งซื้อ</TableCell>
+                    <TableCell align="right" sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381" }}>จัดการ</TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={7} align="center" sx={{ py: 10 }}><CircularProgress /></TableCell></TableRow>
+                  ) : filteredRows.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} align="center" sx={{ py: 8 }}><Typography color="text.secondary">ไม่พบรายการ</Typography></TableCell></TableRow>
+                  ) : (
+                    filteredRows.map((row, i) => (
+                      <ManageOrderItem
+                        key={row.id}
+                        row={row}
+                        index={i + 1}
+                        onView={(data) => setSelectedOrderId(data.id)}
+                      />
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
       </Container>
 
-      {/* --- Side Drawer สำหรับแสดงรายละเอียด Full Option --- */}
+      {/* Drawer */}
       <OrderDetailDrawer
         open={Boolean(selectedOrder)}
         order={selectedOrder}
-        onClose={() => setSelectedOrder(null)}
+        onClose={() => setSelectedOrderId(null)}
       />
     </Box>
   );

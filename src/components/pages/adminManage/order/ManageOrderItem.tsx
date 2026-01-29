@@ -1,37 +1,48 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  TableRow,
-  TableCell,
-  Typography,
-  Stack,
-  Chip,
-  IconButton,
-  Tooltip,
-  Box,
+  TableRow, TableCell, Typography, Stack, Chip, IconButton, Tooltip, Box, Button, CircularProgress, Fade
 } from "@mui/material";
+
+// Icons
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import PhoneIcon from "@mui/icons-material/Phone";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ShoppingBasketOutlinedIcon from "@mui/icons-material/ShoppingBasketOutlined";
-import type { OrderHeader } from "../../../../@types/dto/OrderHeader";
+// Action Icons
+import PaidIcon from '@mui/icons-material/Paid';
+import SoupKitchenIcon from '@mui/icons-material/SoupKitchen';
+import RoomServiceIcon from '@mui/icons-material/RoomService';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-// ✅ Helper สำหรับจัดการสีและชื่อสถานะให้เป็นภาษาไทย/เข้าใจง่าย
-const getStatusConfig = (status: string): { color: any; label: string; variant: "filled" | "outlined" } => {
+import type { OrderHeader } from "../../../../@types/dto/OrderHeader";
+import { useUpdateOrderStatusMutation } from "../../../../services/orderApi";
+import { Sd } from "../../../../helpers/SD"; 
+
+// Helper Config สำหรับ "ปุ่ม Action ถัดไป"
+const getNextActionConfig = (currentStatus: string) => {
+  switch (currentStatus) {
+    case Sd.Status_PendingPayment:
+      return { label: "ยืนยันชำระเงิน", nextStatus: Sd.Status_Paid, color: "warning" as const, icon: <PaidIcon /> };
+    case Sd.Status_Paid:
+      return { label: "ส่งเข้าครัว", nextStatus: Sd.Status_Preparing, color: "primary" as const, icon: <SoupKitchenIcon /> };
+    case Sd.Status_Preparing:
+      return { label: "ปรุงเสร็จแล้ว", nextStatus: Sd.Status_Ready, color: "success" as const, icon: <RoomServiceIcon /> };
+    case Sd.Status_Ready:
+      return { label: "จบงาน/รับของ", nextStatus: Sd.Status_Completed, color: "info" as const, icon: <CheckCircleIcon /> };
+    default: return null;
+  }
+};
+
+// Helper Config สำหรับ Label สถานะปัจจุบัน
+const getStatusDisplay = (status: string) => {
   switch (status) {
-    case "PendingPayment":
-      return { color: "warning", label: "รอชำระเงิน", variant: "outlined" };
-    case "Paid":
-      return { color: "info", label: "จ่ายแล้ว", variant: "filled" };
-    case "Preparing":
-      return { color: "primary", label: "กำลังเตรียม", variant: "filled" };
-    case "Ready":
-      return { color: "success", label: "พร้อมรับ", variant: "filled" };
-    case "Completed":
-      return { color: "default", label: "สำเร็จ", variant: "outlined" };
-    case "Cancelled":
-      return { color: "error", label: "ยกเลิก", variant: "filled" };
-    default:
-      return { color: "default", label: status, variant: "outlined" };
+    case Sd.Status_PendingPayment: return { label: "รอชำระ", color: "warning" as const, variant: "outlined" as const };
+    case Sd.Status_Paid:           return { label: "รอคิว", color: "info" as const, variant: "filled" as const };
+    case Sd.Status_Preparing:      return { label: "กำลังปรุง", color: "primary" as const, variant: "filled" as const };
+    case Sd.Status_Ready:          return { label: "พร้อมเสิร์ฟ", color: "success" as const, variant: "filled" as const };
+    case Sd.Status_Completed:      return { label: "สำเร็จ", color: "default" as const, variant: "outlined" as const };
+    case Sd.Status_Cancelled:      return { label: "ยกเลิก", color: "error" as const, variant: "filled" as const };
+    default:                       return { label: status, color: "default" as const, variant: "outlined" as const };
   }
 };
 
@@ -42,45 +53,69 @@ type Props = {
 };
 
 export default function ManageOrderItem({ row, index, onView }: Props) {
-  const statusCfg = getStatusConfig(row.orderStatus);
-
-  // คำนวณจำนวนชิ้นสินค้าทั้งหมดในออเดอร์นี้
+  const statusInfo = getStatusDisplay(row.orderStatus);
+  const actionInfo = getNextActionConfig(row.orderStatus);
   const totalItems = row.orderDetails.reduce((acc, item) => acc + item.quantity, 0);
 
+  const [updateStatus, { isLoading }] = useUpdateOrderStatusMutation();
+
+  const handleActionClick = async (e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    if (!actionInfo) return;
+    try {
+      await updateStatus({ id: row.id, newStatus: actionInfo.nextStatus }).unwrap();
+    } catch (err) { console.error("Update failed", err); }
+  };
+
   return (
-    <TableRow hover sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+    <TableRow 
+      hover 
+      onClick={() => onView(row)}
+      sx={{ 
+        cursor: "pointer",
+        "&:last-child td, &:last-child th": { border: 0 },
+        transition: "0.2s",
+        "&:hover": { bgcolor: "action.hover" } 
+      }}
+    >
       {/* 1. ลำดับ */}
       <TableCell align="center" sx={{ width: 50 }}>
-        <Typography variant="body2" fontWeight={600} color="text.secondary">
-          {index}
-        </Typography>
+        <Typography variant="body2" color="text.secondary" fontWeight={600}>{index}</Typography>
       </TableCell>
 
-      {/* 2. เลขออเดอร์ และ รหัสรับอาหาร */}
+      {/* 2. Order Code */}
       <TableCell sx={{ minWidth: 140 }}>
         <Stack spacing={0.5}>
-          <Typography variant="subtitle2" fontWeight={800} color="primary.dark">
+          <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#D32F2F', fontFamily: 'monospace', letterSpacing: 0.5 }}>
             {row.orderCode}
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Chip
-              label={row.pickUpCode || "---"}
-              size="small"
-              color="primary"
-              sx={{ fontWeight: 900, borderRadius: "4px", fontSize: "0.75rem" }}
+            {/* Chip รหัส Pickup สีส้มทึบ */}
+            <Chip 
+              label={row.pickUpCode || "-"} 
+              size="small" 
+              sx={{ 
+                fontWeight: 900, 
+                borderRadius: '6px', 
+                height: 24, 
+                fontSize: "0.75rem",
+                bgcolor: '#FF5722', 
+                color: 'white', 
+                '& .MuiChip-label': { px: 1 } 
+              }} 
             />
-            <Typography variant="caption" color="text.secondary" fontWeight={500}>
+            <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase' }}>
               {row.channel}
             </Typography>
           </Stack>
         </Stack>
       </TableCell>
 
-      {/* 3. ข้อมูลลูกค้า */}
-      <TableCell sx={{ minWidth: 180 }}>
-        <Stack spacing={0.3}>
+      {/* 3. Customer */}
+      <TableCell sx={{ minWidth: 160 }}>
+        <Stack spacing={0.5}>
           <Typography variant="body2" fontWeight={700}>
-            {row.customerName || "Walk-in Customer"}
+            {row.customerName || "ลูกค้าทั่วไป"}
           </Typography>
           <Stack direction="row" spacing={0.5} alignItems="center">
             <PhoneIcon sx={{ fontSize: 14, color: "text.disabled" }} />
@@ -91,69 +126,81 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
         </Stack>
       </TableCell>
 
-      {/* 4. ยอดรวม และ จำนวนสินค้า */}
-      <TableCell align="right" sx={{ minWidth: 120 }}>
-        <Stack spacing={0.3} alignItems="flex-end">
+      {/* 4. Total */}
+      <TableCell align="right" sx={{ minWidth: 100 }}>
+        <Stack alignItems="flex-end">
           <Typography variant="body2" fontWeight={800}>
             ฿{row.total.toLocaleString()}
           </Typography>
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <ShoppingBasketOutlinedIcon sx={{ fontSize: 13, color: "text.disabled" }} />
-            <Typography variant="caption" color="text.secondary">
-              {totalItems} รายการ
-            </Typography>
-          </Stack>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <ShoppingBasketOutlinedIcon sx={{ fontSize: 12 }} /> {totalItems} รายการ
+          </Typography>
         </Stack>
       </TableCell>
 
-      {/* 5. สถานะออเดอร์ */}
-      <TableCell sx={{ minWidth: 120 }}>
-        <Chip
-          label={statusCfg.label}
-          color={statusCfg.color}
-          variant={statusCfg.variant}
-          size="small"
-          sx={{ fontWeight: "bold", width: "90px" }}
+      {/* 5. Status Chip */}
+      <TableCell sx={{ minWidth: 100 }}>
+        <Chip 
+          label={statusInfo.label} 
+          color={statusInfo.color} 
+          variant={statusInfo.variant} 
+          size="small" 
+          sx={{ fontWeight: 700, minWidth: 80 }}
         />
       </TableCell>
 
-      {/* 6. เวลาที่สั่งซื้อ */}
+      {/* 6. Time */}
       <TableCell sx={{ minWidth: 100 }}>
         <Stack direction="row" spacing={1} alignItems="center">
           <AccessTimeIcon fontSize="inherit" sx={{ color: "text.disabled" }} />
           <Box>
             <Typography variant="caption" display="block" fontWeight={600}>
-              {new Date(row.createdAt).toLocaleTimeString("th-TH", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })} น.
+              {new Date(row.createdAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.
             </Typography>
             <Typography variant="caption" color="text.disabled" sx={{ fontSize: "10px" }}>
-              {new Date(row.createdAt).toLocaleDateString("th-TH", {
-                day: "numeric",
-                month: "short",
-              })}
+              {new Date(row.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}
             </Typography>
           </Box>
         </Stack>
       </TableCell>
 
-      {/* 7. ปุ่มจัดการ */}
-      <TableCell align="right" sx={{ width: 80 }}>
-        <Tooltip title="ดูรายละเอียดออเดอร์" arrow>
-          <IconButton
-            onClick={() => onView(row)}
-            size="small"
-            sx={{
-              bgcolor: "primary.lighter",
-              color: "primary.main",
-              "&:hover": { bgcolor: "primary.main", color: "white" },
-              transition: "0.2s",
-            }}
-          >
-            <VisibilityOutlinedIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+      {/* 7. Action Buttons */}
+      <TableCell align="right" sx={{ width: 180 }}>
+        <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+          
+          {actionInfo && (
+            <Fade in={true}>
+              <Button
+                variant="contained"
+                color={actionInfo.color}
+                size="small"
+                startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : actionInfo.icon}
+                onClick={handleActionClick}
+                disabled={isLoading}
+                sx={{ 
+                  borderRadius: 2, 
+                  textTransform: 'none', 
+                  fontWeight: 700,
+                  boxShadow: 2,
+                  minWidth: 110
+                }}
+              >
+                {actionInfo.label}
+              </Button>
+            </Fade>
+          )}
+
+          <Tooltip title="ดูรายละเอียด">
+            <IconButton 
+              size="small" 
+              onClick={(e) => { e.stopPropagation(); onView(row); }}
+              sx={{ color: 'text.secondary' }}
+            >
+              <VisibilityOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+        </Stack>
       </TableCell>
     </TableRow>
   );

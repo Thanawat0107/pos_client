@@ -26,6 +26,7 @@ import { setCredentials } from '../../../stores/slices/authSlice';
 import { loginValidate } from '../../../helpers/validationSchema';
 import { jwtDecode } from 'jwt-decode';
 import { storage } from '../../../helpers/storageHelper';
+import { signalRService } from '../../../services/signalrService';
 
 interface DecodedToken extends RegisterResponse {
   role: SD_Roles;
@@ -55,14 +56,21 @@ export default function Login() {
         const result = await login(values).unwrap();
         const decoded = jwtDecode(result.token) as DecodedToken;
 
-        // rememberMe storage
+        // --- 1. จัดการ Storage ---
         if (rememberMe) {
           await storage.set("token", result.token);
         } else {
-          await storage.remove("token");
+          // ⚠️ สำคัญ: ถึงไม่ Remember Me ก็ต้องใส่ Token ลง LocalStorage ชั่วคราว
+          // เพราะ SignalRService ของเราอ่านจาก localStorage.getItem("token")
+          // ไม่อย่างนั้น SignalR จะต่อแบบ Anonymous (Admin จะกดปุ่มไม่ได้)
+          localStorage.setItem("token", result.token);
+
+          // หรือถ้าใช้ storage wrapper ของคุณก็อาจจะเป็น:
+          // await storage.set("token", result.token);
+          // แต่ตั้ง expiration เป็น session แทน (แล้วแต่ lib ที่ใช้)
         }
 
-        // save user info to redux
+        // --- 2. Redux State ---
         dispatch(
           setCredentials({
             userId: decoded.userId,
@@ -71,12 +79,15 @@ export default function Login() {
             phoneNumber: decoded.phoneNumber,
             role: decoded.role,
             token: result.token,
-          })
+          }),
         );
+
+        // --- ⭐ 3. สั่ง Reconnect SignalR ---
+        // ขั้นตอนนี้จะปิด connection เก่า (ถ้ามี) และต่อใหม่พร้อมแนบ Token ที่เพิ่งได้มา
+        await signalRService.reconnect();
 
         setApiError("");
         navigate(from, { replace: true });
-
       } catch (err: any) {
         console.log("Login Failed:", err);
         setApiError(err?.data?.message || "เข้าสู่ระบบไม่สำเร็จ");
