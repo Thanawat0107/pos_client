@@ -98,60 +98,87 @@ export const orderApi = createApi({
     getOrderById: builder.query<OrderHeader, number>({
       query: (id) => `orders/${id}`,
       
+      // 🔥 Streaming Update Logic (ทำงานตลอดเวลาที่ Component ยังเปิดอยู่)
       async onCacheEntryAdded(
         id,
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
       ) {
         try {
+          // 1. รอให้ข้อมูลเริ่มต้น (HTTP) โหลดเสร็จก่อน
           await cacheDataLoaded;
 
-          // ✅ 1. ฟังสถานะออเดอร์หลัก (รับ OrderHeader object เดียว)
+          // -----------------------------------------------------------
+          // 📡 Handler 1: เมื่อสถานะออเดอร์เปลี่ยน (เช่น "กำลังปรุง" -> "เสร็จแล้ว")
+          // -----------------------------------------------------------
           const handleHeaderUpdate = (updatedOrder: OrderHeader) => {
+            // เช็คความชัวร์: อัปเดตเฉพาะถ้า ID ตรงกัน
             if (updatedOrder.id !== id) return;
-            console.log("🔄 Order Header Updated:", updatedOrder.orderStatus);
+
+            console.log("🔔 [SignalR] Header Updated:", updatedOrder.orderStatus);
 
             updateCachedData((draft) => {
-              Object.assign(draft, updatedOrder);
-              if (updatedOrder.orderDetails?.length > 0) {
-                draft.orderDetails = updatedOrder.orderDetails;
-              }
+              // อัปเดตข้อมูลระดับ Header (Status, Total, PickupCode, etc.)
+              draft.orderStatus = updatedOrder.orderStatus;
+              draft.pickUpCode = updatedOrder.pickUpCode;
+              draft.updatedAt = updatedOrder.updatedAt;
+              
+              // (Optional) ถ้า Backend ส่งข้อมูลมาทั้งก้อน จะใช้ Object.assign ก็ได้
+              // Object.assign(draft, updatedOrder); 
             });
           };
 
-          // ⭐ 2. ฟังสถานะรายจาน (รับ 3 arguments แยกกัน!)
+          // -----------------------------------------------------------
+          // 📡 Handler 2: เมื่อสถานะรายการย่อยเปลี่ยน (เช่น "ข้าวมันไก่" -> "เสร็จแล้ว")
+          // -----------------------------------------------------------
           const handleDetailUpdate = (
             orderId: number,
             detailId: number,
             kitchenStatus: string
           ) => {
+            // เช็คความชัวร์: ต้องเป็นออเดอร์นี้เท่านั้น
             if (orderId !== id) return;
-            console.log("🍳 Detail Updated:", { detailId, kitchenStatus });
+
+            console.log("🔔 [SignalR] Detail Updated:", { detailId, kitchenStatus });
 
             updateCachedData((draft) => {
-              const detail = draft.orderDetails.find((d) => d.id === detailId);
-              if (detail) {
-                detail.kitchenStatus = kitchenStatus;
-                if (kitchenStatus === "DONE") {
-                  detail.isReady = true;
+              // ค้นหารายการอาหารตัวนั้นใน Array
+              const detailItem = draft.orderDetails.find((d) => d.id === detailId);
+              
+              if (detailItem) {
+                // อัปเดตสถานะครัว
+                detailItem.kitchenStatus = kitchenStatus;
+
+                // Logic เสริม: ถ้าสถานะเป็น DONE ให้ติ๊ก isReady เป็น true (ถ้ามี field นี้)
+                if (kitchenStatus === "DONE" || kitchenStatus === "Ready") {
+                  detailItem.isReady = true;
                 }
               }
             });
           };
 
-          // --- Subscribe ---
+          // -----------------------------------------------------------
+          // 🔌 Subscribe: เริ่มดักฟัง Event จาก SignalR
+          // -----------------------------------------------------------
+          // หมายเหตุ: ชื่อ Event ("OrderStatusUpdated", "OrderDetailUpdated") 
+          // ต้องตรงกับที่ Backend C# ส่งมาเป๊ะๆ (Case-sensitive)
           signalRService.on("OrderStatusUpdated", handleHeaderUpdate);
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
 
+          // -----------------------------------------------------------
+          // 🛑 Cleanup: รอจนกว่า user จะปิดหน้าเว็บ หรือเปลี่ยนหน้า
+          // -----------------------------------------------------------
           await cacheEntryRemoved;
-          
-          // --- Unsubscribe ---
+
+          // เลิกฟัง Event เพื่อคืน Memory
           signalRService.off("OrderStatusUpdated");
           signalRService.off("OrderDetailUpdated");
 
         } catch (err) {
-          console.error("❌ SignalR Tracking Error:", err);
+          console.error("❌ [SignalR] Error in getOrderById stream:", err);
         }
       },
+      
+      // Tag สำหรับการ Invalidate ทั่วไป (เช่น กดปุ่มยกเลิกออเดอร์เอง)
       providesTags: (_result, _error, id) => [{ type: "Order", id }],
     }),
 

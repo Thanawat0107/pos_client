@@ -1,23 +1,18 @@
  import {
   TableRow, TableCell, Typography, Stack, Chip, IconButton, Tooltip, Box, Button, CircularProgress, Fade
 } from "@mui/material";
-
-// Icons
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import PhoneIcon from "@mui/icons-material/Phone";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ShoppingBasketOutlinedIcon from "@mui/icons-material/ShoppingBasketOutlined";
-// Action Icons
 import PaidIcon from '@mui/icons-material/Paid';
 import SoupKitchenIcon from '@mui/icons-material/SoupKitchen';
 import RoomServiceIcon from '@mui/icons-material/RoomService';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-
 import type { OrderHeader } from "../../../../@types/dto/OrderHeader";
 import { useUpdateOrderStatusMutation } from "../../../../services/orderApi";
 import { Sd } from "../../../../helpers/SD"; 
 
-// Helper Config สำหรับ "ปุ่ม Action ถัดไป"
 const getNextActionConfig = (currentStatus: string) => {
   switch (currentStatus) {
     case Sd.Status_PendingPayment:
@@ -48,7 +43,7 @@ const getStatusDisplay = (status: string) => {
 type Props = {
   row: OrderHeader;
   index: number;
-  onView: (row: OrderHeader) => void;
+  onView: () => void; // ✅ เปลี่ยนจาก (row: OrderHeader) => void เป็น () => void
 };
 
 export default function ManageOrderItem({ row, index, onView }: Props) {
@@ -67,43 +62,58 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
   };
 
   return (
-    <TableRow 
-      hover 
-      onClick={() => onView(row)}
-      sx={{ 
+    <TableRow
+      hover
+      onClick={onView} // ✅ เรียกตรงๆ ไม่ต้องส่ง row
+      sx={{
         cursor: "pointer",
         "&:last-child td, &:last-child th": { border: 0 },
         transition: "0.2s",
-        "&:hover": { bgcolor: "action.hover" } 
+        "&:hover": { bgcolor: "action.hover" },
       }}
     >
       {/* 1. ลำดับ */}
       <TableCell align="center" sx={{ width: 50 }}>
-        <Typography variant="body2" color="text.secondary" fontWeight={600}>{index}</Typography>
+        <Typography variant="body2" color="text.secondary" fontWeight={600}>
+          {index}
+        </Typography>
       </TableCell>
 
       {/* 2. Order Code */}
       <TableCell sx={{ minWidth: 140 }}>
         <Stack spacing={0.5}>
-          <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#D32F2F', fontFamily: 'monospace', letterSpacing: 0.5 }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight={800}
+            sx={{
+              color: "#D32F2F",
+              fontFamily: "monospace",
+              letterSpacing: 0.5,
+            }}
+          >
             {row.orderCode}
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">
             {/* Chip รหัส Pickup สีส้มทึบ */}
-            <Chip 
-              label={row.pickUpCode || "-"} 
-              size="small" 
-              sx={{ 
-                fontWeight: 900, 
-                borderRadius: '6px', 
-                height: 24, 
+            <Chip
+              label={row.pickUpCode || "-"}
+              size="small"
+              sx={{
+                fontWeight: 900,
+                borderRadius: "6px",
+                height: 24,
                 fontSize: "0.75rem",
-                bgcolor: '#FF5722', 
-                color: 'white', 
-                '& .MuiChip-label': { px: 1 } 
-              }} 
+                bgcolor: "#FF5722",
+                color: "white",
+                "& .MuiChip-label": { px: 1 },
+              }}
             />
-            <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase' }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              fontWeight={600}
+              sx={{ textTransform: "uppercase" }}
+            >
               {row.channel}
             </Typography>
           </Stack>
@@ -131,19 +141,24 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
           <Typography variant="body2" fontWeight={800}>
             ฿{row.total.toLocaleString()}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <ShoppingBasketOutlinedIcon sx={{ fontSize: 12 }} /> {totalItems} รายการ
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+          >
+            <ShoppingBasketOutlinedIcon sx={{ fontSize: 12 }} /> {totalItems}{" "}
+            รายการ
           </Typography>
         </Stack>
       </TableCell>
 
       {/* 5. Status Chip */}
       <TableCell sx={{ minWidth: 100 }}>
-        <Chip 
-          label={statusInfo.label} 
-          color={statusInfo.color} 
-          variant={statusInfo.variant} 
-          size="small" 
+        <Chip
+          label={statusInfo.label}
+          color={statusInfo.color}
+          variant={statusInfo.variant}
+          size="small"
           sx={{ fontWeight: 700, minWidth: 80 }}
         />
       </TableCell>
@@ -154,10 +169,21 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
           <AccessTimeIcon fontSize="inherit" sx={{ color: "text.disabled" }} />
           <Box>
             <Typography variant="caption" display="block" fontWeight={600}>
-              {new Date(row.createdAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.
+              {new Date(row.createdAt).toLocaleTimeString("th-TH", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}{" "}
+              น.
             </Typography>
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: "10px" }}>
-              {new Date(row.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}
+            <Typography
+              variant="caption"
+              color="text.disabled"
+              sx={{ fontSize: "10px" }}
+            >
+              {new Date(row.createdAt).toLocaleDateString("th-TH", {
+                day: "numeric",
+                month: "short",
+              })}
             </Typography>
           </Box>
         </Stack>
@@ -165,23 +191,33 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
 
       {/* 7. Action Buttons */}
       <TableCell align="right" sx={{ width: 180 }}>
-        <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
-          
+        <Stack
+          direction="row"
+          spacing={1}
+          justifyContent="flex-end"
+          alignItems="center"
+        >
           {actionInfo && (
             <Fade in={true}>
               <Button
                 variant="contained"
                 color={actionInfo.color}
                 size="small"
-                startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : actionInfo.icon}
+                startIcon={
+                  isLoading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    actionInfo.icon
+                  )
+                }
                 onClick={handleActionClick}
                 disabled={isLoading}
-                sx={{ 
-                  borderRadius: 2, 
-                  textTransform: 'none', 
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
                   fontWeight: 700,
                   boxShadow: 2,
-                  minWidth: 110
+                  minWidth: 110,
                 }}
               >
                 {actionInfo.label}
@@ -190,15 +226,17 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
           )}
 
           <Tooltip title="ดูรายละเอียด">
-            <IconButton 
-              size="small" 
-              onClick={(e) => { e.stopPropagation(); onView(row); }}
-              sx={{ color: 'text.secondary' }}
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView(); // ไม่ส่ง parameter
+              }}
+              sx={{ color: "text.secondary" }}
             >
               <VisibilityOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-
         </Stack>
       </TableCell>
     </TableRow>

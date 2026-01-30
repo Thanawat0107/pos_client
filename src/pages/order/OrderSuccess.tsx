@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -18,12 +18,14 @@ import {
   stepConnectorClasses,
   styled,
   Alert,
-  Collapse
+  Collapse,
+  keyframes,
+  Avatar,
+  Grid,
 } from "@mui/material";
 
 // Icons
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import HomeIcon from "@mui/icons-material/Home";
 import PrintIcon from "@mui/icons-material/Print";
@@ -33,31 +35,44 @@ import CelebrationIcon from "@mui/icons-material/Celebration";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import CallIcon from "@mui/icons-material/Call";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+import AccessTimeFilledIcon from "@mui/icons-material/AccessTimeFilled";
+import LocalDiningIcon from "@mui/icons-material/LocalDining";
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetOrderByIdQuery } from "../../services/orderApi";
+import { signalRService } from "../../services/signalrService";
+import { Sd } from "../../helpers/SD"; // ✅ Import Sd
 
-// ------------------- Custom Styles for Stepper -------------------
+// --- Animation ---
+const pulse = keyframes`
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(39, 174, 96, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
+`;
+
+const slideUp = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+// --- Custom Stepper Styling (Modern & Bold) ---
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
-  [`&.${stepConnectorClasses.alternativeLabel}`]: {
-    top: 22,
-  },
+  [`&.${stepConnectorClasses.alternativeLabel}`]: { top: 22 },
   [`&.${stepConnectorClasses.active}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage:
-        "linear-gradient( 95deg,rgb(242,113,33) 0%,rgb(233,64,87) 50%,rgb(138,35,135) 100%)",
+      backgroundImage: "linear-gradient( 95deg, #FF9800 0%, #FF5722 100%)", // Orange Gradient
     },
   },
   [`&.${stepConnectorClasses.completed}`]: {
     [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage:
-        "linear-gradient( 95deg,rgb(242,113,33) 0%,rgb(233,64,87) 50%,rgb(138,35,135) 100%)",
+      backgroundImage: "linear-gradient( 95deg, #4CAF50 0%, #2E7D32 100%)", // Green Gradient
     },
   },
   [`& .${stepConnectorClasses.line}`]: {
-    height: 3,
+    height: 4,
     border: 0,
     backgroundColor:
-      theme.palette.mode === "dark" ? theme.palette.grey[800] : "#eaeaf0",
+      theme.palette.mode === "dark" ? theme.palette.grey[800] : "#e0e0e0",
     borderRadius: 1,
   },
 }));
@@ -75,27 +90,25 @@ const ColorlibStepIconRoot = styled("div")<{
   borderRadius: "50%",
   justifyContent: "center",
   alignItems: "center",
+  transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)", // Bouncy effect
   ...(ownerState.active && {
-    backgroundImage:
-      "linear-gradient( 136deg, rgb(242,113,33) 0%, rgb(233,64,87) 50%, rgb(138,35,135) 100%)",
-    boxShadow: "0 4px 10px 0 rgba(0,0,0,.25)",
+    backgroundImage: "linear-gradient( 136deg, #FF9800 0%, #FF5722 100%)",
+    boxShadow: "0 4px 15px 0 rgba(255, 87, 34, 0.4)",
+    transform: "scale(1.2)",
   }),
   ...(ownerState.completed && {
-    backgroundImage:
-      "linear-gradient( 136deg, rgb(242,113,33) 0%, rgb(233,64,87) 50%, rgb(138,35,135) 100%)",
+    backgroundImage: "linear-gradient( 136deg, #4CAF50 0%, #2E7D32 100%)",
   }),
 }));
 
 function ColorlibStepIcon(props: any) {
   const { active, completed, className } = props;
-
   const icons: { [index: string]: React.ReactElement } = {
     1: <PendingActionsIcon />,
     2: <RestaurantIcon />,
     3: <NotificationsActiveIcon />,
     4: <CelebrationIcon />,
   };
-
   return (
     <ColorlibStepIconRoot
       ownerState={{ completed, active }}
@@ -106,53 +119,163 @@ function ColorlibStepIcon(props: any) {
   );
 }
 
-// ------------------- Helper Functions -------------------
+// --- Configuration ---
 const steps = ["รับออเดอร์", "กำลังปรุง", "พร้อมเสิร์ฟ", "เสร็จสิ้น"];
 
 const getStatusStep = (status: string) => {
   switch (status) {
-    case "PendingPayment":
-    case "Paid":
-      return 0; // รับออเดอร์
-    case "Preparing":
-      return 1; // กำลังปรุง
-    case "Ready":
-      return 2; // พร้อมเสิร์ฟ
-    case "Completed":
-      return 4; // เสร็จสิ้น (เต็มหลอด)
-    case "Cancelled":
+    case Sd.Status_PendingPayment:
+    case Sd.Status_Paid:
+      return 0;
+    case Sd.Status_Preparing:
+      return 1;
+    case Sd.Status_Ready:
+      return 2;
+    case Sd.Status_Completed:
+      return 4;
+    case Sd.Status_Cancelled:
       return -1;
     default:
       return 0;
   }
 };
 
+// 🎨 Config สีแบบเข้ม/ชัดเจน (Modern UI)
 const getStatusConfig = (status: string) => {
   switch (status) {
-    case "PendingPayment":
-      return { color: "warning", label: "รอชำระเงิน", bg: "#fff3e0" };
-    case "Preparing":
-      return { color: "secondary", label: "กำลังปรุงอาหาร", bg: "#f3e5f5" };
-    case "Ready":
-      return { color: "success", label: "อาหารเสร็จแล้ว!", bg: "#e8f5e9" };
-    case "Completed":
-      return { color: "info", label: "รับสินค้าแล้ว", bg: "#e3f2fd" };
-    case "Cancelled":
-      return { color: "error", label: "ยกเลิก", bg: "#ffebee" };
+    case Sd.Status_PendingPayment:
+      return {
+        color: "warning",
+        label: "รอชำระเงิน",
+        bg: "#FFF3E0",
+        text: "#E65100",
+        iconColor: "#FB8C00",
+      };
+    case Sd.Status_Paid:
+      return {
+        color: "info",
+        label: "รับออเดอร์แล้ว",
+        bg: "#E3F2FD",
+        text: "#0D47A1",
+        iconColor: "#1976D2",
+      };
+    case Sd.Status_Preparing:
+      return {
+        color: "secondary",
+        label: "กำลังปรุงอาหาร",
+        bg: "#F3E5F5",
+        text: "#4A148C",
+        iconColor: "#9C27B0",
+      };
+    case Sd.Status_Ready:
+      return {
+        color: "success",
+        label: "อาหารเสร็จแล้ว!",
+        bg: "#E8F5E9",
+        text: "#1B5E20",
+        iconColor: "#2E7D32",
+      }; // เขียวเข้ม
+    case Sd.Status_Completed:
+      return {
+        color: "primary",
+        label: "รับสินค้าแล้ว",
+        bg: "#E0F7FA",
+        text: "#006064",
+        iconColor: "#00BCD4",
+      };
+    case Sd.Status_Cancelled:
+      return {
+        color: "error",
+        label: "ยกเลิก",
+        bg: "#FFEBEE",
+        text: "#B71C1C",
+        iconColor: "#D32F2F",
+      };
     default:
-      return { color: "primary", label: "รับออเดอร์แล้ว", bg: "#e3f2fd" };
+      return {
+        color: "primary",
+        label: "รับออเดอร์แล้ว",
+        bg: "#E3F2FD",
+        text: "#0D47A1",
+        iconColor: "#1976D2",
+      };
   }
 };
 
-// ------------------- Main Component -------------------
+// 🍳 Config สีสถานะรายเมนู (Item Status)
+const getItemStatusConfig = (status: string) => {
+  switch (status) {
+    case Sd.KDS_Waiting:
+      return {
+        label: "รอคิว",
+        color: "default",
+        border: "#bdbdbd",
+        text: "#757575",
+      };
+    case Sd.KDS_Cooking:
+      return {
+        label: "กำลังทำ",
+        color: "warning",
+        border: "#FF9800",
+        text: "#EF6C00",
+      };
+    case Sd.KDS_Done:
+      return {
+        label: "เสร็จแล้ว",
+        color: "success",
+        border: "#4CAF50",
+        text: "#2E7D32",
+      }; // เขียวสวยๆ
+    case Sd.KDS_Cancelled:
+      return {
+        label: "ยกเลิก",
+        color: "error",
+        border: "#EF5350",
+        text: "#C62828",
+      };
+    default:
+      return {
+        label: "รอคิว",
+        color: "default",
+        border: "#bdbdbd",
+        text: "#757575",
+      };
+  }
+};
+
 export default function OrderSuccess() {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  // ดึงข้อมูล Real-time
+  const [prevStatus, setPrevStatus] = useState<string>("");
   const { data: order, isLoading, isError } = useGetOrderByIdQuery(Number(id));
 
-  // --- Loading State ---
+  // 1. SignalR Connection
+  useEffect(() => {
+    const start = async () => {
+      await signalRService.startConnection();
+      if (id) {
+        await signalRService.invoke("JoinOrderGroup", id);
+        console.log("🔗 Joined Group:", id);
+      }
+    };
+    start();
+  }, [id]);
+
+  // 2. Sound & Vibrate
+  useEffect(() => {
+    if (order?.orderStatus) {
+      if (
+        prevStatus !== Sd.Status_Ready &&
+        order.orderStatus === Sd.Status_Ready
+      ) {
+        const audio = new Audio("/assets/sounds/notification.mp3");
+        audio.play().catch((e) => console.log("Audio play blocked:", e));
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      }
+      setPrevStatus(order.orderStatus);
+    }
+  }, [order?.orderStatus, prevStatus]);
+
   if (isLoading)
     return (
       <Box
@@ -167,7 +290,6 @@ export default function OrderSuccess() {
       </Box>
     );
 
-  // --- Error State ---
   if (isError || !order)
     return (
       <Container maxWidth="sm" sx={{ mt: 8, textAlign: "center" }}>
@@ -188,187 +310,229 @@ export default function OrderSuccess() {
   const activeStep = getStatusStep(order.orderStatus);
 
   return (
-    <Box sx={{ bgcolor: "#f4f6f8", minHeight: "100vh", py: { xs: 3, md: 6 } }}>
+    <Box sx={{ bgcolor: "#F5F7FA", minHeight: "100vh", py: { xs: 3, md: 5 } }}>
       <Container maxWidth="sm">
-        <Stack spacing={3}>
-          {/* 1. Header & Cancelled Alert */}
-          {order.orderStatus === "Cancelled" && (
-            <Alert severity="error" variant="filled" sx={{ borderRadius: 2 }}>
-              <Typography fontWeight="bold">ออเดอร์นี้ถูกยกเลิก</Typography>
-              กรุณาติดต่อพนักงานหากเกิดข้อผิดพลาด
+        <Stack spacing={3} sx={{ animation: `${slideUp} 0.5s ease-out` }}>
+          {/* 1. Header Alert (Cancelled) */}
+          {order.orderStatus === Sd.Status_Cancelled && (
+            <Alert
+              severity="error"
+              variant="filled"
+              icon={<CallIcon fontSize="inherit" />}
+              sx={{ borderRadius: 3, fontWeight: 600 }}
+            >
+              ออเดอร์นี้ถูกยกเลิก - กรุณาติดต่อพนักงาน
             </Alert>
           )}
 
-          {/* 2. Main Status Card (Queue Card) */}
+          {/* 2. Main Status Card */}
           <Paper
-            elevation={3}
+            elevation={4}
             sx={{
               p: 4,
               textAlign: "center",
               borderRadius: 5,
-              position: "relative",
               overflow: "hidden",
+              position: "relative",
+              background: "#fff",
             }}
           >
-            {/* Top Color Bar */}
+            {/* Top Bar Color */}
             <Box
               sx={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 8,
-                bgcolor: `${statusConfig.color}.main`,
+                height: 10,
+                bgcolor: statusConfig.iconColor,
               }}
             />
 
-            <Box sx={{ mt: 2, mb: 2 }}>
-              {order.orderStatus === "Ready" ? (
-                <CheckCircleOutlineIcon
-                  sx={{ fontSize: 80, color: "success.main" }}
+            <Box sx={{ mt: 2, mb: 1 }}>
+              {order.orderStatus === Sd.Status_Ready ? (
+                <CheckCircleIcon
+                  sx={{
+                    fontSize: 90,
+                    color: "#2E7D32",
+                    animation: `${pulse} 1.5s infinite`,
+                  }}
                 />
               ) : (
                 <StorefrontIcon
-                  sx={{ fontSize: 60, color: `${statusConfig.color}.main` }}
+                  sx={{
+                    fontSize: 70,
+                    color: statusConfig.iconColor,
+                    opacity: 0.9,
+                  }}
                 />
               )}
             </Box>
 
-            <Typography variant="h4" fontWeight={800} gutterBottom>
-              {order.orderStatus === "Ready"
+            <Typography
+              variant="h4"
+              fontWeight={900}
+              color="text.primary"
+              gutterBottom
+            >
+              {order.orderStatus === Sd.Status_Ready
                 ? "อาหารเสร็จแล้ว!"
                 : "สั่งซื้อสำเร็จ"}
             </Typography>
-
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              {order.orderStatus === "Ready"
-                ? "กรุณาแสดงรหัสนี้เพื่อรับสินค้าที่เคาน์เตอร์"
-                : "ระบบได้รับออเดอร์ของคุณแล้ว"}
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              fontWeight={500}
+              sx={{ mb: 3 }}
+            >
+              {order.orderStatus === Sd.Status_Ready
+                ? "เชิญรับอาหารที่หน้าเคาน์เตอร์ได้เลยครับ"
+                : "เราได้รับออเดอร์ของคุณเรียบร้อยแล้ว"}
             </Typography>
 
-            {/* Queue Number Box */}
-            <Box
+            {/* Queue Number Badge */}
+            <Paper
+              elevation={0}
               sx={{
-                bgcolor: "#fff",
-                border: "3px dashed",
-                borderColor: `${statusConfig.color}.light`,
-                py: 3,
-                px: 2,
+                bgcolor: statusConfig.bg,
+                border: `2px dashed ${statusConfig.iconColor}`,
+                py: 2,
+                px: 3,
                 borderRadius: 4,
                 mb: 3,
                 mx: "auto",
-                maxWidth: 300,
-                boxShadow: "inset 0 0 20px rgba(0,0,0,0.02)",
+                maxWidth: 280,
+                transition: "all 0.3s ease",
               }}
             >
               <Typography
                 variant="overline"
-                color="text.secondary"
-                sx={{ letterSpacing: 2, fontWeight: 700 }}
+                color={statusConfig.text}
+                sx={{
+                  letterSpacing: 2,
+                  fontWeight: 800,
+                  display: "block",
+                  mb: -1,
+                }}
               >
                 คิวรับอาหาร
               </Typography>
               <Typography
-                variant="h1"
+                variant="h2"
                 fontWeight={900}
-                color={`${statusConfig.color}.main`}
-                sx={{ fontSize: { xs: "4rem", md: "5rem" }, lineHeight: 1 }}
+                color={statusConfig.text}
+                sx={{
+                  fontSize: { xs: "3.5rem", md: "4.5rem" },
+                  lineHeight: 1.2,
+                }}
               >
                 {order.pickUpCode || "-"}
               </Typography>
-            </Box>
+            </Paper>
 
             <Chip
               label={statusConfig.label}
-              color={statusConfig.color}
               sx={{
+                bgcolor: statusConfig.iconColor,
+                color: "#fff",
                 fontWeight: 800,
-                px: 2,
-                py: 2.5,
-                fontSize: "1rem",
-                borderRadius: 3,
+                px: 3,
+                py: 3,
+                fontSize: "1.1rem",
+                borderRadius: 50,
+                boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
               }}
             />
           </Paper>
 
-          {/* 3. Timeline Stepper (ซ่อนถ้ายกเลิก) */}
-          {order.orderStatus !== "Cancelled" && (
-            <Paper sx={{ p: 3, borderRadius: 4 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
-                สถานะการดำเนินการ
-              </Typography>
-              <Stepper
-                alternativeLabel
-                activeStep={activeStep}
-                connector={<ColorlibConnector />}
+          {/* 3. Timeline */}
+          {order.orderStatus !== Sd.Status_Cancelled && (
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 4,
+                boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+              }}
+            >
+              <Typography
+                variant="h6"
+                fontWeight={800}
+                gutterBottom
+                sx={{ display: "flex", alignItems: "center", gap: 1 }}
               >
-                {steps.map((label) => (
-                  <Step key={label}>
-                    <StepLabel StepIconComponent={ColorlibStepIcon}>
-                      <Typography
-                        variant="caption"
-                        fontWeight={700}
-                        sx={{ fontSize: "0.8rem" }}
-                      >
-                        {label}
-                      </Typography>
-                    </StepLabel>
-                  </Step>
-                ))}
-              </Stepper>
+                <AccessTimeFilledIcon color="action" /> สถานะออเดอร์
+              </Typography>
+              <Box sx={{ mt: 2 }}>
+                <Stepper
+                  alternativeLabel
+                  activeStep={activeStep}
+                  connector={<ColorlibConnector />}
+                >
+                  {steps.map((label) => (
+                    <Step key={label}>
+                      <StepLabel StepIconComponent={ColorlibStepIcon}>
+                        <Typography
+                          variant="caption"
+                          fontWeight={700}
+                          sx={{ fontSize: "0.85rem", color: "#455a64" }}
+                        >
+                          {label}
+                        </Typography>
+                      </StepLabel>
+                    </Step>
+                  ))}
+                </Stepper>
+              </Box>
 
-              {/* Estimated Time (Show when Preparing) */}
-              <Collapse in={order.orderStatus === "Preparing"}>
-                <Box
+              <Collapse in={order.orderStatus === Sd.Status_Preparing}>
+                <Alert
+                  severity="info"
+                  icon={<RestaurantIcon />}
                   sx={{
                     mt: 3,
-                    p: 2,
-                    bgcolor: "#fff3e0",
                     borderRadius: 3,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
+                    fontWeight: 600,
+                    bgcolor: "#E3F2FD",
+                    color: "#0D47A1",
                   }}
                 >
-                  <RestaurantIcon color="warning" />
-                  <Typography variant="body2" fontWeight={600} color="orange">
-                    กำลังปรุง... คาดว่าจะได้รับใน 10 - 15 นาที
-                  </Typography>
-                </Box>
+                  กำลังปรุง... อดใจรอสักครู่นะครับ (ประมาณ 10-15 นาที)
+                </Alert>
               </Collapse>
             </Paper>
           )}
 
-          {/* 4. Payment Alert (เฉพาะ PendingPayment) */}
-          {order.orderStatus === "PendingPayment" && (
+          {/* 4. Payment Alert */}
+          {order.orderStatus === Sd.Status_PendingPayment && (
             <Paper
-              elevation={0}
               sx={{
                 p: 3,
                 borderRadius: 4,
-                border: "1px solid #ff9800",
-                bgcolor: "#fff8e1",
+                borderLeft: "6px solid #FF9800",
+                bgcolor: "#FFF8E1",
               }}
             >
               <Stack direction="row" spacing={2} alignItems="center">
-                <QrCodeScannerIcon
-                  color="warning"
-                  sx={{ fontSize: 40, display: { xs: "none", sm: "block" } }}
-                />
+                <Box sx={{ p: 1.5, bgcolor: "#fff", borderRadius: "50%" }}>
+                  <QrCodeScannerIcon color="warning" sx={{ fontSize: 32 }} />
+                </Box>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle1" fontWeight={800}>
-                    ยังไม่ได้ชำระเงิน
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={800}
+                    color="#E65100"
+                  >
+                    รอชำระเงิน
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    กรุณาชำระเงินที่เคาน์เตอร์ หรือสแกนจ่ายเพื่อเริ่มทำอาหาร
+                  <Typography variant="body2" color="text.secondary">
+                    กรุณาสแกนจ่ายหรือชำระที่เคาน์เตอร์
                   </Typography>
                 </Box>
                 <Button
                   variant="contained"
                   color="warning"
-                  size="small"
-                  onClick={() => alert("เปิด Modal Scan QR Code")}
+                  sx={{ borderRadius: 2, fontWeight: 700, boxShadow: "none" }}
+                  onClick={() => alert("เปิด Modal Scan")}
                 >
                   สแกนจ่าย
                 </Button>
@@ -376,121 +540,230 @@ export default function OrderSuccess() {
             </Paper>
           )}
 
-          {/* 5. Order Details & Actions */}
-          <Paper sx={{ p: 3, borderRadius: 4 }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
+          {/* 5. Detailed Menu List */}
+          <Paper
+            sx={{
+              p: 0,
+              borderRadius: 4,
+              overflow: "hidden",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+            }}
+          >
+            <Box
+              sx={{ p: 2.5, bgcolor: "#fff", borderBottom: "1px solid #eee" }}
             >
-              <Typography
-                variant="subtitle1"
-                fontWeight={700}
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
               >
-                <ReceiptLongIcon fontSize="small" color="primary" /> รายการอาหาร
-              </Typography>
-              <IconButton size="small" onClick={() => window.print()}>
-                <PrintIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-
-            <Stack spacing={2} sx={{ mb: 2 }}>
-              {order.orderDetails?.map((item: any, index: number) => (
-                <Stack
-                  key={index}
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="flex-start"
+                <Typography
+                  variant="h6"
+                  fontWeight={800}
+                  sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                 >
-                  <Box>
-                    <Typography variant="body2" fontWeight={700}>
-                      {item.quantity}x {item.menuItemName}
-                    </Typography>
-                    {/* Show Options */}
-                    {item.orderDetailOptions?.length > 0 && (
-                      <Typography variant="caption" color="text.secondary">
-                        {item.orderDetailOptions
-                          .map((o: any) => o.optionValueName)
-                          .join(", ")}
-                      </Typography>
-                    )}
-                    {item.note && (
-                      <Typography variant="caption" color="error" display="block">
-                        * {item.note}
-                      </Typography>
+                  <LocalDiningIcon color="primary" /> รายการอาหาร
+                  <Chip
+                    label={`${order.orderDetails?.length || 0} รายการ`}
+                    size="small"
+                    sx={{ fontWeight: 700, bgcolor: "#f5f5f5" }}
+                  />
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => window.print()}
+                  sx={{ bgcolor: "#f5f5f5" }}
+                >
+                  <PrintIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Box>
+
+            <Stack spacing={0} sx={{ p: 2 }}>
+              {order.orderDetails?.map((item: any, index: number) => {
+                const itemStatus = getItemStatusConfig(item.kitchenStatus);
+                return (
+                  <Box key={index}>
+                    <Grid
+                      container
+                      spacing={2}
+                      alignItems="flex-start"
+                      sx={{ py: 2 }}
+                    >
+                      {/* Image / Avatar */}
+                      <Grid>
+                        <Avatar
+                          src={item.menuItemImage}
+                          variant="rounded"
+                          sx={{ width: 64, height: 64, bgcolor: "#f5f5f5" }}
+                        >
+                          <RestaurantIcon color="disabled" />
+                        </Avatar>
+                      </Grid>
+
+                      {/* Name & Options */}
+                      <Grid sx={{ flex: 1 }}>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight={800}
+                          lineHeight={1.2}
+                          gutterBottom
+                        >
+                          {item.quantity}x {item.menuItemName}
+                        </Typography>
+
+                        {item.orderDetailOptions?.length > 0 && (
+                          <Stack
+                            direction="row"
+                            flexWrap="wrap"
+                            gap={0.5}
+                            sx={{ mb: 1 }}
+                          >
+                            {item.orderDetailOptions.map(
+                              (o: any, i: number) => (
+                                <Typography
+                                  key={i}
+                                  variant="caption"
+                                  sx={{
+                                    color: "#616161",
+                                    bgcolor: "#f5f5f5",
+                                    px: 0.8,
+                                    py: 0.3,
+                                    borderRadius: 1,
+                                  }}
+                                >
+                                  {o.optionValueName}
+                                </Typography>
+                              ),
+                            )}
+                          </Stack>
+                        )}
+
+                        {/* Note */}
+                        {item.note && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "#D32F2F",
+                              display: "block",
+                              mt: 0.5,
+                              fontStyle: "italic",
+                            }}
+                          >
+                            Note: {item.note}
+                          </Typography>
+                        )}
+                      </Grid>
+
+                      {/* Price & Status */}
+                      <Grid sx={{ textAlign: "right", minWidth: 100 }}>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight={800}
+                          color="primary.main"
+                        >
+                          ฿{item.totalPrice.toLocaleString()}
+                        </Typography>
+
+                        {/* 🔥 แสดงสถานะรายเมนูตรงนี้ */}
+                        <Chip
+                          label={itemStatus.label}
+                          size="small"
+                          sx={{
+                            mt: 1,
+                            fontWeight: 700,
+                            bgcolor: "transparent",
+                            border: `1px solid ${itemStatus.border}`,
+                            color: itemStatus.text,
+                            height: 24,
+                            fontSize: "0.7rem",
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+
+                    {index < order.orderDetails.length - 1 && (
+                      <Divider sx={{ borderStyle: "dashed" }} />
                     )}
                   </Box>
-                  <Typography variant="body2" fontWeight={600}>
-                    ฿{item.totalPrice.toLocaleString()}
-                  </Typography>
-                </Stack>
-              ))}
+                );
+              })}
             </Stack>
 
-            <Divider sx={{ borderStyle: "dashed", mb: 2 }} />
-
-            <Stack direction="row" justifyContent="space-between" mb={3}>
-              <Typography variant="h6" fontWeight={800}>
-                ยอดรวมสุทธิ
-              </Typography>
-              <Typography
-                variant="h5"
-                fontWeight={900}
-                color="primary.main"
+            <Box
+              sx={{ p: 2.5, bgcolor: "#FAFAFA", borderTop: "2px dashed #eee" }}
+            >
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
               >
-                ฿{order.total.toLocaleString()}
-              </Typography>
-            </Stack>
-
-            {/* Action Buttons */}
-            <Stack spacing={2}>
-              {/* ปุ่มแจ้งปัญหา (แสดงเฉพาะตอนรอจ่าย หรือรอทำ) */}
-              {["PendingPayment", "Paid"].includes(order.orderStatus) && (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  color="error"
-                  startIcon={<CallIcon />}
-                  sx={{ borderRadius: 3, borderWidth: 2 }}
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  color="text.secondary"
                 >
-                  แจ้งปัญหา / ยกเลิกออเดอร์
-                </Button>
-              )}
+                  ยอดรวมสุทธิ
+                </Typography>
+                <Typography variant="h4" fontWeight={900} color="primary.main">
+                  ฿{order.total.toLocaleString()}
+                </Typography>
+              </Stack>
+            </Box>
+          </Paper>
 
+          {/* 6. Footer Buttons */}
+          <Stack spacing={2}>
+            {[Sd.Status_PendingPayment, Sd.Status_Paid].includes(
+              order.orderStatus,
+            ) && (
               <Button
                 fullWidth
-                variant="contained"
-                size="large"
-                startIcon={<HomeIcon />}
-                onClick={() => navigate("/")}
+                variant="outlined"
+                color="error"
+                startIcon={<CallIcon />}
                 sx={{
                   borderRadius: 3,
-                  py: 1.5,
-                  fontWeight: 800,
-                  fontSize: "1rem",
-                  boxShadow: 2,
+                  borderWidth: 2,
+                  py: 1.2,
+                  fontWeight: 700,
                 }}
               >
-                กลับหน้าหลัก / สั่งเพิ่ม
+                แจ้งปัญหา / ยกเลิกออเดอร์
               </Button>
-            </Stack>
-
-            <Typography
-              variant="caption"
-              display="block"
-              textAlign="center"
-              color="text.secondary"
-              sx={{ mt: 3 }}
+            )}
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              startIcon={<HomeIcon />}
+              onClick={() => navigate("/")}
+              sx={{
+                borderRadius: 3,
+                py: 1.8,
+                fontWeight: 800,
+                fontSize: "1rem",
+                background: "linear-gradient(45deg, #FF9800 30%, #FF5722 90%)",
+                boxShadow: "0 4px 12px rgba(255, 87, 34, 0.3)",
+              }}
             >
-              Order ID: #{order.id} •{" "}
-              {new Date(order.createdAt).toLocaleTimeString("th-TH", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </Typography>
-          </Paper>
+              กลับหน้าหลัก / สั่งเพิ่ม
+            </Button>
+          </Stack>
+
+          <Typography
+            variant="caption"
+            display="block"
+            textAlign="center"
+            color="text.secondary"
+            sx={{ mt: 2, opacity: 0.7 }}
+          >
+            Order ID: #{order.id} •{" "}
+            {new Date(order.createdAt).toLocaleTimeString("th-TH", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Typography>
         </Stack>
       </Container>
     </Box>

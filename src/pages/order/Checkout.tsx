@@ -47,7 +47,6 @@ export default function Checkout() {
   // --- ⭐ 1. เพิ่ม State สำหรับจัดการเวลารับ ---
   // 'asap' = รับทันที, 'scheduled' = ระบุเวลา
   const [pickupType, setPickupType] = useState<"asap" | "scheduled">("asap");
-  // เก็บค่าเวลาที่เลือก (Format: YYYY-MM-DDTHH:mm สำหรับ input type="datetime-local")
   const [scheduledTime, setScheduledTime] = useState("");
 
   const [promoMessage, setPromoMessage] = useState({

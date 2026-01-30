@@ -22,7 +22,6 @@ import OrderDetailDrawer from "./OrderDetailDrawer";
 import OrderFilterBar from "../OrderFilterBar";
 import { useGetOrderAllQuery } from "../../../../services/orderApi";
 import { Sd } from "../../../../helpers/SD"; 
-import type { OrderHeader } from "../../../../@types/dto/OrderHeader";
 
 export default function ManageOrderList() {
   // State Filter
@@ -33,8 +32,8 @@ export default function ManageOrderList() {
     channel: "all",
   });
   
-    // ✅ เปลี่ยนเป็นเก็บ Order object โดยตรง
-  const [selectedOrder, setSelectedOrder] = useState<OrderHeader | null>(null);
+  // ✅ เก็บ ID แทน object เพื่อหลีกเลี่ยง reference comparison issues
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   // API Call
   const { data, isLoading, isError, refetch, isFetching } = useGetOrderAllQuery(
@@ -46,12 +45,22 @@ export default function ManageOrderList() {
 
   const rows = data?.results ?? [];
 
+  // ✅ คำนวณ selectedOrder จาก ID (useMemo ป้องกัน re-render เกินจำเป็น)
+  const selectedOrder = useMemo(() => {
+    if (!selectedOrderId) return null;
+    return rows.find((r) => r.id === selectedOrderId) ?? null;
+  }, [selectedOrderId, rows]);
+
+  // ✅ Debug log เมื่อ Order เปลี่ยน (ไม่ทำให้เกิด infinite loop)
   useEffect(() => {
-    if (!selectedOrder) return;
-    const updatedOrder = rows.find((r) => r.id === selectedOrder.id);
-    console.log("🔄 Order updated:", updatedOrder?.orderStatus); // Debug
-    if (updatedOrder) setSelectedOrder(updatedOrder);
-  }, [rows, selectedOrder]);
+    if (selectedOrder) {
+      console.log("🔍 Selected Order State:", {
+        id: selectedOrder.id,
+        status: selectedOrder.orderStatus,
+        details: selectedOrder.orderDetails.length,
+      });
+    }
+  }, [selectedOrder]);
 
   // Filter Logic (Client Side)
   const filteredRows = useMemo(() => {
@@ -59,37 +68,28 @@ export default function ManageOrderList() {
       .filter((r) => {
         const searchLower = filters.q.toLowerCase();
 
-        // 1. Search Text
         const matchesQ =
           !filters.q ||
           r.orderCode.toLowerCase().includes(searchLower) ||
-          (r.customerName &&
-            r.customerName.toLowerCase().includes(searchLower)) ||
+          (r.customerName && r.customerName.toLowerCase().includes(searchLower)) ||
           r.customerPhone.includes(filters.q);
 
-        // 2. Status
         const matchesStatus =
           filters.status === "all" || r.orderStatus === filters.status;
 
-        // 3. Channel
         const matchesChannel =
           filters.channel === "all" || r.channel === filters.channel;
 
-        // 4. Pay Status (✅ ปรับมาใช้ Sd เพื่อความชัวร์)
         const matchesPay =
           filters.pay === "all" ||
-          (filters.pay === "UNPAID" &&
-            r.orderStatus === Sd.Status_PendingPayment) ||
+          (filters.pay === "UNPAID" && r.orderStatus === Sd.Status_PendingPayment) ||
           (filters.pay === "PAID" &&
             r.orderStatus !== Sd.Status_PendingPayment &&
             r.orderStatus !== Sd.Status_Cancelled);
 
         return matchesQ && matchesStatus && matchesChannel && matchesPay;
       })
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [rows, filters]);
 
   // --- UI ---
@@ -198,7 +198,7 @@ export default function ManageOrderList() {
                         key={row.id}
                         row={row}
                         index={i + 1}
-                        onView={(data) => setSelectedOrder(data)}
+                        onView={() => setSelectedOrderId(row.id)}
                       />
                     ))
                   )}
@@ -213,7 +213,7 @@ export default function ManageOrderList() {
       <OrderDetailDrawer
         open={Boolean(selectedOrder)}
         order={selectedOrder}
-        onClose={() => setSelectedOrder(null)}
+        onClose={() => setSelectedOrderId(null)}
       />
     </Box>
   );
