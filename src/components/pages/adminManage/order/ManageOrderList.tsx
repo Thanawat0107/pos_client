@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo } from "react";
+ import { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Container,
@@ -18,16 +17,12 @@ import {
   CardContent,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
-
-// --- Components ---
 import ManageOrderItem from "./ManageOrderItem";
 import OrderDetailDrawer from "./OrderDetailDrawer";
 import OrderFilterBar from "../OrderFilterBar";
-
-// --- API & Types & SD ---
 import { useGetOrderAllQuery } from "../../../../services/orderApi";
-// ✅ 1. นำเข้า Sd เพื่อใช้เปรียบเทียบค่า
 import { Sd } from "../../../../helpers/SD"; 
+import type { OrderHeader } from "../../../../@types/dto/OrderHeader";
 
 export default function ManageOrderList() {
   // State Filter
@@ -38,47 +33,63 @@ export default function ManageOrderList() {
     channel: "all",
   });
   
-  // ✅ ใช้ State เก็บแค่ ID (ถูกต้องแล้ว)
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+    // ✅ เปลี่ยนเป็นเก็บ Order object โดยตรง
+  const [selectedOrder, setSelectedOrder] = useState<OrderHeader | null>(null);
 
   // API Call
-  const { data, isLoading, isError, refetch, isFetching } = useGetOrderAllQuery({
-    pageNumber: 1,
-    pageSize: 1000, 
-  });
+  const { data, isLoading, isError, refetch, isFetching } = useGetOrderAllQuery(
+    {
+      pageNumber: 1,
+      pageSize: 10,
+    },
+  );
 
   const rows = data?.results ?? [];
 
-  // ✅ คำนวณ selectedOrder สดๆ (ถูกต้องแล้ว)
-  const selectedOrder = useMemo(() => {
-    if (!selectedOrderId) return null;
-    return rows.find(r => r.id === selectedOrderId) || null;
-  }, [rows, selectedOrderId]);
+  useEffect(() => {
+    if (!selectedOrder) return;
+    const updatedOrder = rows.find((r) => r.id === selectedOrder.id);
+    console.log("🔄 Order updated:", updatedOrder?.orderStatus); // Debug
+    if (updatedOrder) setSelectedOrder(updatedOrder);
+  }, [rows, selectedOrder]);
 
   // Filter Logic (Client Side)
   const filteredRows = useMemo(() => {
-    return rows.filter(r => {
-      const searchLower = filters.q.toLowerCase();
-      
-      // 1. Search Text
-      const matchesQ = !filters.q || 
-        r.orderCode.toLowerCase().includes(searchLower) ||
-        (r.customerName && r.customerName.toLowerCase().includes(searchLower)) ||
-        r.customerPhone.includes(filters.q);
+    return rows
+      .filter((r) => {
+        const searchLower = filters.q.toLowerCase();
 
-      // 2. Status
-      const matchesStatus = filters.status === "all" || r.orderStatus === filters.status;
-      
-      // 3. Channel
-      const matchesChannel = filters.channel === "all" || r.channel === filters.channel;
+        // 1. Search Text
+        const matchesQ =
+          !filters.q ||
+          r.orderCode.toLowerCase().includes(searchLower) ||
+          (r.customerName &&
+            r.customerName.toLowerCase().includes(searchLower)) ||
+          r.customerPhone.includes(filters.q);
 
-      // 4. Pay Status (✅ ปรับมาใช้ Sd เพื่อความชัวร์)
-      const matchesPay = filters.pay === "all" || 
-         (filters.pay === "UNPAID" && r.orderStatus === Sd.Status_PendingPayment) ||
-         (filters.pay === "PAID" && r.orderStatus !== Sd.Status_PendingPayment && r.orderStatus !== Sd.Status_Cancelled);
+        // 2. Status
+        const matchesStatus =
+          filters.status === "all" || r.orderStatus === filters.status;
 
-      return matchesQ && matchesStatus && matchesChannel && matchesPay;
-    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        // 3. Channel
+        const matchesChannel =
+          filters.channel === "all" || r.channel === filters.channel;
+
+        // 4. Pay Status (✅ ปรับมาใช้ Sd เพื่อความชัวร์)
+        const matchesPay =
+          filters.pay === "all" ||
+          (filters.pay === "UNPAID" &&
+            r.orderStatus === Sd.Status_PendingPayment) ||
+          (filters.pay === "PAID" &&
+            r.orderStatus !== Sd.Status_PendingPayment &&
+            r.orderStatus !== Sd.Status_Cancelled);
+
+        return matchesQ && matchesStatus && matchesChannel && matchesPay;
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
   }, [rows, filters]);
 
   // --- UI ---
@@ -187,7 +198,7 @@ export default function ManageOrderList() {
                         key={row.id}
                         row={row}
                         index={i + 1}
-                        onView={(data) => setSelectedOrderId(data.id)}
+                        onView={(data) => setSelectedOrder(data)}
                       />
                     ))
                   )}
@@ -202,7 +213,7 @@ export default function ManageOrderList() {
       <OrderDetailDrawer
         open={Boolean(selectedOrder)}
         order={selectedOrder}
-        onClose={() => setSelectedOrderId(null)}
+        onClose={() => setSelectedOrder(null)}
       />
     </Box>
   );

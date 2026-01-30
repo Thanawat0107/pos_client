@@ -31,6 +31,7 @@ import { signalRService } from '../../../services/signalrService';
 interface DecodedToken extends RegisterResponse {
   role: SD_Roles;
 }
+
 export default function Login() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();

@@ -12,31 +12,28 @@ function App() {
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.token);
 
-  // 1. โหลดข้อมูล Auth ครั้งแรกที่เปิดเว็บ
+  // 1. โหลดข้อมูล Auth (เหมือนเดิม)
   useEffect(() => {
     dispatch(loadAuth());
   }, [dispatch]);
 
-  // 2. จัดการ SignalR Lifecycle ตามการเปลี่ยนแปลงของ Token
+  // 2. จัดการ SignalR (แก้ตรงนี้!)
   useEffect(() => {
     const syncSignalR = async () => {
-      // หยุดตัวเก่าก่อนเสมอ
-      await signalRService.stopConnection();
+      // ❌ ลบ: ไม่ต้องสั่ง stop ก่อน เพราะใน startConnection ของ Service เราเขียนดักไว้แล้ว
+      // await signalRService.stopConnection(); 
 
-      // เริ่มตัวใหม่
-      signalRService.startConnection();
+      // ✅ สั่ง Start เลย (Service จะเช็คเองว่าต้อง Restart หรือไม่)
+      await signalRService.startConnection();
 
+      // ลงทะเบียน Listeners
       signalRService.on("NewOrderReceived", (newOrder) => {
-        // toast.success(`🔔 มีออเดอร์ใหม่! หมายเลข: ${newOrder.orderCode}`);
-        // สั่งให้โหลดข้อมูลออเดอร์ใหม่ในหน้า Dashboard
+        // toast.success(...)
         dispatch(orderApi.util.invalidateTags(["Order"]));
       });
 
-      // 🔔 ลงทะเบียน Listeners หลังจากเริ่ม Connection
       signalRService.on("CartUpdated", (updatedCart) => {
         const currentToken = localStorage.getItem("cartToken");
-
-        // 🚩 ถ้าไม่มี cartToken หรือเป็น Admin/Employee อาจไม่จำเป็นต้องอัปเดตตะกร้า
         if (!currentToken) return;
 
         dispatch(
@@ -44,39 +41,47 @@ function App() {
             "getCart",
             currentToken,
             (draft) => {
-              if (draft) {
-                Object.assign(draft, updatedCart);
-              }
-            },
-          ),
+              if (draft) Object.assign(draft, updatedCart);
+            }
+          )
         );
       });
+
       signalRService.on("CartCleared", () => {
         const currentToken = localStorage.getItem("cartToken");
+        if (!currentToken) return; // เพิ่มเช็คกัน Error
+        
         dispatch(
           shoppingCartApi.util.updateQueryData(
             "getCart",
             currentToken,
             (draft) => {
-              draft.cartItems = [];
-              draft.totalAmount = 0;
-              draft.totalItemsCount = 0;
-            },
-          ),
+              if (draft) {
+                  draft.cartItems = [];
+                  draft.totalAmount = 0;
+                  draft.totalItemsCount = 0;
+              }
+            }
+          )
         );
       });
     };
 
     syncSignalR();
 
-    // 🧹 Cleanup Function: สำคัญมาก!
+    // 🧹 Cleanup Function: แก้ไขสำคัญ!
     return () => {
-      console.log("Cleaning up SignalR...");
+      // ❌ ลบ: อย่าสั่ง stopConnection() ใน Cleanup
+      // เพราะถ้าแค่ Re-render หรือ Strict Mode ทำงาน มันจะไปตัดการเชื่อมต่อทิ้ง
+      // signalRService.stopConnection(); 
+
+      // ✅ ทำแค่ถอด Event Listener ออกก็พอ
+      console.log("Cleaning up SignalR listeners...");
+      signalRService.off("NewOrderReceived"); // อย่าลืมถอดอันนี้ด้วย
       signalRService.off("CartUpdated");
       signalRService.off("CartCleared");
-      signalRService.stopConnection();
     };
-  }, [token, dispatch]); // เมื่อ token เปลี่ยน จะรัน cleanup ตัวเก่า และเริ่ม sync ตัวใหม่
+  }, [token, dispatch]); 
 
   return (
     <>

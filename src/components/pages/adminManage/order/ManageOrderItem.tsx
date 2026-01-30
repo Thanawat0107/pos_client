@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import {
+ import {
   TableRow, TableCell, Typography, Stack, Chip, IconButton, Tooltip, Box, Button, CircularProgress, Fade
 } from "@mui/material";
 

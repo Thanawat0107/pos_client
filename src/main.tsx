@@ -11,11 +11,9 @@ import App from "./App";
 import AppProviders from "./AppProviders";
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <AppProviders>
-        <App />
-      </AppProviders>
-    </BrowserRouter>
-  </StrictMode>
+  <BrowserRouter>
+    <AppProviders>
+      <App />
+    </AppProviders>
+  </BrowserRouter>,
 );

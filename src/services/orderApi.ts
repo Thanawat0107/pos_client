@@ -1,5 +1,4 @@
-/* eslint-disable no-empty */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { baseUrlAPI } from "../helpers/SD";
 import type { OrderHeader } from "../@types/dto/OrderHeader";
@@ -24,8 +23,9 @@ export const orderApi = createApi({
         try {
           await cacheDataLoaded;
 
-          // 1. จัดการออเดอร์ใหม่
+          // ✅ 1. จัดการออเดอร์ใหม่ (รับ OrderHeader object เดียว)
           const handleNewOrder = (newOrder: OrderHeader) => {
+            console.log("🆕 NewOrderReceived:", newOrder.id);
             updateCachedData((draft) => {
               if (!draft.results.find((o) => o.id === newOrder.id)) {
                 draft.results.unshift(newOrder);
@@ -34,38 +34,31 @@ export const orderApi = createApi({
             });
           };
 
-          // 2. จัดการอัปเดตออเดอร์ (Header / Status หลัก)
+          // ✅ 2. จัดการอัปเดตออเดอร์ (รับ OrderHeader object เดียว)
           const handleUpdateOrder = (updatedOrder: OrderHeader) => {
+            console.log("🔄 OrderStatusUpdated:", updatedOrder.id, updatedOrder.orderStatus);
             updateCachedData((draft) => {
-              const index = draft.results.findIndex(
-                (o) => o.id === updatedOrder.id,
-              );
+              const index = draft.results.findIndex((o) => o.id === updatedOrder.id);
               if (index !== -1) {
                 draft.results[index] = updatedOrder;
               }
             });
           };
 
-          // ⭐ 3. (เพิ่มใหม่) จัดการอัปเดตสถานะ "รายจาน" (Kitchen Status)
-          const handleDetailUpdate = (payload: {
-            orderId: number;
-            detailId: number;
-            kitchenStatus: string;
-          }) => {
+          // ⭐ 3. จัดการอัปเดตสถานะรายจาน (รับ 3 arguments แยกกัน!)
+          const handleDetailUpdate = (
+            orderId: number,
+            detailId: number, 
+            kitchenStatus: string
+          ) => {
+            console.log("🍳 OrderDetailUpdated:", { orderId, detailId, kitchenStatus });
             updateCachedData((draft) => {
-              // หา Order แม่
-              const order = draft.results.find((o) => o.id === payload.orderId);
+              const order = draft.results.find((o) => o.id === orderId);
               if (order) {
-                // หาจานลูก
-                const detail = order.orderDetails.find(
-                  (d) => d.id === payload.detailId,
-                );
+                const detail = order.orderDetails.find((d) => d.id === detailId);
                 if (detail) {
-                  // อัปเดตสถานะทันที!
-                  detail.kitchenStatus = payload.kitchenStatus;
-
-                  // Optional: ถ้าสถานะเป็น DONE ให้ติ๊ก isReady เป็น true ด้วย (เพื่อให้ UI สีเขียวทำงาน)
-                  if (payload.kitchenStatus === "DONE") {
+                  detail.kitchenStatus = kitchenStatus;
+                  if (kitchenStatus === "DONE") {
                     detail.isReady = true;
                   }
                 }
@@ -77,21 +70,17 @@ export const orderApi = createApi({
           signalRService.on("NewOrderReceived", handleNewOrder);
           signalRService.on("UpdateEmployeeOrderList", handleUpdateOrder);
           signalRService.on("OrderStatusUpdated", handleUpdateOrder);
-
-          // ✅ อย่าลืมบรรทัดนี้!
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
 
           await cacheEntryRemoved;
 
           // --- Unsubscribe Events ---
-          signalRService.off("NewOrderReceived", handleNewOrder);
-          signalRService.off("UpdateEmployeeOrderList", handleUpdateOrder);
-          signalRService.off("OrderStatusUpdated", handleUpdateOrder);
-
-          // ✅ อย่าลืมเอาออกด้วย!
-          signalRService.off("OrderDetailUpdated", handleDetailUpdate);
+          signalRService.off("NewOrderReceived");
+          signalRService.off("UpdateEmployeeOrderList");
+          signalRService.off("OrderStatusUpdated");
+          signalRService.off("OrderDetailUpdated");
         } catch (err) {
-          console.error("SignalR Sync Error:", err);
+          console.error("❌ SignalR Sync Error:", err);
         }
       },
 
@@ -109,56 +98,58 @@ export const orderApi = createApi({
     getOrderById: builder.query<OrderHeader, number>({
       query: (id) => `orders/${id}`,
       
-      async onCacheEntryAdded(id, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+      async onCacheEntryAdded(
+        id,
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
+      ) {
         try {
           await cacheDataLoaded;
 
-          // 1. ✅ ฟังสถานะออเดอร์หลัก (เช่น Admin กด Ready)
+          // ✅ 1. ฟังสถานะออเดอร์หลัก (รับ OrderHeader object เดียว)
           const handleHeaderUpdate = (updatedOrder: OrderHeader) => {
-            // เช็คว่าเป็น ID เดียวกันไหม
-            if (updatedOrder.id !== id) return; 
+            if (updatedOrder.id !== id) return;
+            console.log("🔄 Order Header Updated:", updatedOrder.orderStatus);
 
             updateCachedData((draft) => {
-                // อัปเดตข้อมูลหลัก
-                Object.assign(draft, updatedOrder);
-                
-                // ถ้า Backend ส่งรายการลูกมาด้วย ให้ทับไปเลยเพื่อความชัวร์ (กรณี Admin แก้ไขเมนู)
-                if (updatedOrder.orderDetails && updatedOrder.orderDetails.length > 0) {
-                    draft.orderDetails = updatedOrder.orderDetails;
-                }
+              Object.assign(draft, updatedOrder);
+              if (updatedOrder.orderDetails?.length > 0) {
+                draft.orderDetails = updatedOrder.orderDetails;
+              }
             });
           };
 
-          // 2. ⭐ ฟังสถานะรายจาน (เช่น ครัวกด DONE) [จุดที่เพิ่มมา]
-          const handleDetailUpdate = (payload: { orderId: number; detailId: number; kitchenStatus: string }) => {
-             if (payload.orderId !== id) return;
+          // ⭐ 2. ฟังสถานะรายจาน (รับ 3 arguments แยกกัน!)
+          const handleDetailUpdate = (
+            orderId: number,
+            detailId: number,
+            kitchenStatus: string
+          ) => {
+            if (orderId !== id) return;
+            console.log("🍳 Detail Updated:", { detailId, kitchenStatus });
 
-             updateCachedData((draft) => {
-                // หาจานนั้นใน Cache แล้วเปลี่ยนสถานะ
-                const detail = draft.orderDetails.find(d => d.id === payload.detailId);
-                if (detail) {
-                   detail.kitchenStatus = payload.kitchenStatus;
-                   
-                   // อัปเดต isReady เพื่อให้ Frontend แสดงผลถูกต้อง (ถ้าจำเป็น)
-                   if (payload.kitchenStatus === 'DONE') {
-                       detail.isReady = true;
-                   }
+            updateCachedData((draft) => {
+              const detail = draft.orderDetails.find((d) => d.id === detailId);
+              if (detail) {
+                detail.kitchenStatus = kitchenStatus;
+                if (kitchenStatus === "DONE") {
+                  detail.isReady = true;
                 }
-             });
+              }
+            });
           };
 
-          // --- Subscribe (เปิดการรับฟัง) ---
+          // --- Subscribe ---
           signalRService.on("OrderStatusUpdated", handleHeaderUpdate);
-          signalRService.on("OrderDetailUpdated", handleDetailUpdate); // ✅ เพิ่มบรรทัดนี้
+          signalRService.on("OrderDetailUpdated", handleDetailUpdate);
 
           await cacheEntryRemoved;
           
-          // --- Unsubscribe (ปิดการรับฟังเมื่อออกจากหน้า) ---
-          signalRService.off("OrderStatusUpdated", handleHeaderUpdate);
-          signalRService.off("OrderDetailUpdated", handleDetailUpdate); // ✅ เพิ่มบรรทัดนี้
+          // --- Unsubscribe ---
+          signalRService.off("OrderStatusUpdated");
+          signalRService.off("OrderDetailUpdated");
 
         } catch (err) {
-            console.error("SignalR Tracking Error:", err);
+          console.error("❌ SignalR Tracking Error:", err);
         }
       },
       providesTags: (_result, _error, id) => [{ type: "Order", id }],
@@ -194,7 +185,7 @@ export const orderApi = createApi({
     }),
 
     // 5. อัปเดตสถานะออเดอร์ Workflow (Admin/Staff)
-    updateOrderStatus: builder.mutation<OrderHeader,{ id: number; newStatus: string }>({
+    updateOrderStatus: builder.mutation<OrderHeader, { id: number; newStatus: string }>({
       query: ({ id, newStatus }) => ({
         url: `orders/${id}/status`,
         method: "PUT",
@@ -205,7 +196,7 @@ export const orderApi = createApi({
     }),
 
     // 6. อัปเดตสถานะครัวรายรายการ (KDS)
-    updateKitchenStatus: builder.mutation<void,{ detailId: number; status: string }>({
+    updateKitchenStatus: builder.mutation<void, { detailId: number; status: string }>({
       query: ({ detailId, status }) => ({
         url: `orders/details/${detailId}/status`,
         method: "PATCH",
@@ -232,7 +223,7 @@ export const orderApi = createApi({
     }),
 
     // ⭐ 9. ยืนยันการชำระเงิน
-    confirmPayment: builder.mutation<OrderHeader,{ id: number; paymentMethod: string }>({
+    confirmPayment: builder.mutation<OrderHeader, { id: number; paymentMethod: string }>({
       query: ({ id, paymentMethod }) => ({
         url: `orders/${id}/confirm-payment`,
         method: "POST",
@@ -257,12 +248,12 @@ export const {
   useGetOrderAllQuery,
   useGetOrderByIdQuery,
   useConfirmCartMutation,
-  useUpdateOrderMutation, // เพิ่มตัวนี้
+  useUpdateOrderMutation,
   useUpdateOrderStatusMutation,
   useUpdateKitchenStatusMutation,
   useCancelOrderMutation,
   useGetOrderByPickUpCodeQuery,
-  useConfirmPaymentMutation, // เพิ่มตัวนี้
-  useGetOrderHistoryQuery, // เพิ่มตัวนี้
-  useDeleteOrderMutation, // เพิ่มตัวนี้
+  useConfirmPaymentMutation,
+  useGetOrderHistoryQuery,
+  useDeleteOrderMutation,
 } = orderApi;
