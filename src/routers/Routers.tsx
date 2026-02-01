@@ -16,6 +16,7 @@ import MenuDetails from "../components/pages/menu/MenuDetails";
 import Checkout from "../pages/order/Checkout";
 import OrderSuccess from "../pages/order/OrderSuccess";
 import ActiveOrderFloating from "../pages/order/ActiveOrderFloating";
+import MyOrders from "../pages/order/MyOrders";
 
 export default function Routers() {
   return (
@@ -31,6 +32,7 @@ export default function Routers() {
         <Route path="/register" element={<Register />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-success/:id" element={<OrderSuccess />} />
+        <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/manage-menuItem" element={<ManageMenuItem />} />
         <Route path="/manage-manual" element={<ManageManualList />} />
         <Route

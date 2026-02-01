@@ -34,15 +34,25 @@ export default function Checkout() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
+  // ✅ 2. แก้ตรงนี้: ดึงมาทั้ง "User Object" ไม่ใช่แค่ ID
+  // เพื่อให้เอาไปใช้ auto-fill ชื่อ/เบอร์ และเอา ID ไปใช้ได้ด้วย
+  const user = useAppSelector((state) => state.auth);
+
   const { cartItems, totalAmount } = useAppSelector(
     (state) => state.shoppingCart,
   );
 
-  const [customer, setCustomer] = useState({ name: "", phone: "", note: "" });
+// Auto-fill ข้อมูลจาก User (ถ้ามี)
+  const [customer, setCustomer] = useState({ 
+      name: user?.userName || "", 
+      phone: user?.phoneNumber || "", 
+      note: "" 
+  }); 
+  
   const [errors, setErrors] = useState({ name: false, phone: false });
   const [promoCode, setPromoCode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
 
   // --- ⭐ 1. เพิ่ม State สำหรับจัดการเวลารับ ---
   // 'asap' = รับทันที, 'scheduled' = ระบุเวลา
@@ -140,6 +150,7 @@ export default function Checkout() {
       // Tokens
       cartToken: token,
       guestToken: token, // ใช้ token เดียวกันระบุตัวตน (Guest)
+      userId: user?.userId || undefined, // สำหรับลูกค้าที่ล็อกอิน (ถ้ามี)
       // Promo (ส่งไปเฉพาะตอนที่มีการ Apply ผ่านแล้วเท่านั้น)
       promoCode: appliedDiscount > 0 ? promoCode.trim() : undefined,
       // เวลา
@@ -150,21 +161,25 @@ export default function Checkout() {
       const result = await confirmCart(payload).unwrap();
 
       if (result) {
-        // ปกติ unwrap จะ throw error ถ้าไม่สำเร็จ result ที่ได้คือ success data
         setIsOrderPlaced(true);
+        
         dispatch(clearLocalCart());
-        localStorage.removeItem("cartToken");
-        // ⭐ [เพิ่มใหม่] บันทึก ID ออเดอร์ล่าสุดไว้
+
+        // บันทึก ID ล่าสุดเผื่อใช้
         localStorage.setItem("activeOrderId", result.id.toString());
+
+        // Trigger Event ให้ Floating Bar อัปเดต
+        window.dispatchEvent(new Event("activeOrderUpdated"));
+        window.dispatchEvent(new Event("storage"));
+
+        // ไปหน้า Success
         navigate(`/order-success/${result.id}`, { replace: true });
       }
     } catch (err: any) {
       console.error("Checkout Error:", err);
-
-      // จัดการ Error Case พิเศษ
       if (err.data?.message?.includes("สิทธิ์การใช้งานโปรโมชั่นนี้เต็มแล้ว")) {
         alert("ขออภัย โค้ดส่วนลดหมดอายุพอดี กรุณาลองใหม่อีกครั้ง");
-        setAppliedDiscount(0); // Reset ส่วนลด
+        setAppliedDiscount(0);
         setPromoMessage({ text: "โค้ดหมดอายุ/เต็มแล้ว", type: "error" });
       } else {
         alert(err.data?.message || "การสั่งซื้อล้มเหลว กรุณาลองใหม่อีกครั้ง");

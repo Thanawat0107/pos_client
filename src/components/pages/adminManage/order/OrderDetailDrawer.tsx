@@ -1,12 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from "react";
 import type { StepIconProps } from "@mui/material";
 import {
   Drawer, Box, Stack, Typography, IconButton, Divider, Avatar, Button, TextField, Chip, Alert, Tooltip,
-  Stepper, Step, StepLabel, StepConnector, stepConnectorClasses, styled, Grid, Card, CardContent
+  Stepper, Step, StepLabel, StepConnector, stepConnectorClasses, styled, Grid, Card, CardContent,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+  Menu, MenuItem, ListItemIcon, ListItemText // ✅ เพิ่ม Components สำหรับ Menu
 } from "@mui/material";
 
-// Icons ทั่วไป
+// Icons
 import CloseIcon from "@mui/icons-material/Close";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import LocalPrintshopIcon from "@mui/icons-material/LocalPrintshop";
@@ -18,16 +21,18 @@ import SaveIcon from "@mui/icons-material/Save";
 import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
-
-// Icons สำหรับ Stepper ใหม่
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import PaidIcon from '@mui/icons-material/Paid';
 import SoupKitchenIcon from '@mui/icons-material/SoupKitchen';
 import RoomServiceIcon from '@mui/icons-material/RoomService';
 import FlagIcon from '@mui/icons-material/Flag';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'; // ✅ เพิ่ม Icon
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'; // ✅ เพิ่ม Icon
 
 // Types & API & Sd
 import type { OrderHeader } from "../../../../@types/dto/OrderHeader";
+import type { CancelRequest } from "../../../../@types/requests/cancelRequest";
 import {
   useUpdateOrderStatusMutation,
   useUpdateOrderMutation,
@@ -36,74 +41,28 @@ import {
 } from "../../../../services/orderApi";
 import { Sd } from "../../../../helpers/SD";
 
-// --- 🎨 Custom Styles (New Premium Design) ---
+// --- 🎨 Custom Styles ---
 const BRAND_COLOR = "#D32F2F"; 
 const BG_COLOR = "#f5f5f5";    
 
-// 1. Connector แบบไล่สี (Gradient)
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
-  [`&.${stepConnectorClasses.alternativeLabel}`]: {
-    top: 22,
-  },
-  [`&.${stepConnectorClasses.active}`]: {
-    [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage: `linear-gradient( 95deg, ${BRAND_COLOR} 0%, #ff8a80 50%, #e0e0e0 100%)`, // ไล่สีสวยๆ
-    },
-  },
-  [`&.${stepConnectorClasses.completed}`]: {
-    [`& .${stepConnectorClasses.line}`]: {
-      backgroundImage: `linear-gradient( 95deg, ${BRAND_COLOR} 0%, ${BRAND_COLOR} 100%)`, // สีเต็ม
-    },
-  },
-  [`& .${stepConnectorClasses.line}`]: {
-    height: 3,
-    border: 0,
-    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#eaeaf0',
-    borderRadius: 1,
-  },
+  [`&.${stepConnectorClasses.alternativeLabel}`]: { top: 22 },
+  [`&.${stepConnectorClasses.active}`]: { [`& .${stepConnectorClasses.line}`]: { backgroundImage: `linear-gradient( 95deg, ${BRAND_COLOR} 0%, #ff8a80 50%, #e0e0e0 100%)` } },
+  [`&.${stepConnectorClasses.completed}`]: { [`& .${stepConnectorClasses.line}`]: { backgroundImage: `linear-gradient( 95deg, ${BRAND_COLOR} 0%, ${BRAND_COLOR} 100%)` } },
+  [`& .${stepConnectorClasses.line}`]: { height: 3, border: 0, backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#eaeaf0', borderRadius: 1 },
 }));
 
-// 2. Step Icon Root (วงกลมพื้นหลัง)
-const ColorlibStepIconRoot = styled('div')<{
-  ownerState: { completed?: boolean; active?: boolean };
-}>(({ theme, ownerState }) => ({
+const ColorlibStepIconRoot = styled('div')<{ ownerState: { completed?: boolean; active?: boolean } }>(({ theme, ownerState }) => ({
   backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : '#ccc',
-  zIndex: 1,
-  color: '#fff',
-  width: 50, // วงใหญ่ขึ้น
-  height: 50,
-  display: 'flex',
-  borderRadius: '50%',
-  justifyContent: 'center',
-  alignItems: 'center',
-  transition: 'all 0.3s ease', // Animation นุ่มๆ
-  boxShadow: '0 4px 10px 0 rgba(0,0,0,.1)',
-
-  ...(ownerState.active && {
-    backgroundImage: `linear-gradient( 136deg, #ff5252 0%, ${BRAND_COLOR} 50%, #b71c1c 100%)`,
-    boxShadow: '0 4px 20px 0 rgba(211, 47, 47, 0.5)', // เงา Glow สีแดง
-    transform: 'scale(1.2)', // ขยายใหญ่ขึ้นเมื่อ Active
-  }),
-  ...(ownerState.completed && {
-    backgroundImage: `linear-gradient( 136deg, #ff5252 0%, ${BRAND_COLOR} 100%)`,
-  }),
+  zIndex: 1, color: '#fff', width: 50, height: 50, display: 'flex', borderRadius: '50%', justifyContent: 'center', alignItems: 'center',
+  transition: 'all 0.3s ease', boxShadow: '0 4px 10px 0 rgba(0,0,0,.1)',
+  ...(ownerState.active && { backgroundImage: `linear-gradient( 136deg, #ff5252 0%, ${BRAND_COLOR} 50%, #b71c1c 100%)`, boxShadow: '0 4px 20px 0 rgba(211, 47, 47, 0.5)', transform: 'scale(1.2)' }),
+  ...(ownerState.completed && { backgroundImage: `linear-gradient( 136deg, #ff5252 0%, ${BRAND_COLOR} 100%)` }),
 }));
 
-// 3. ฟังก์ชันเลือกไอคอนให้แต่ละ Step
 function ColorlibStepIcon(props: StepIconProps) {
-  const icons: { [index: string]: React.ReactElement } = {
-    1: <PaidIcon />,
-    2: <AssignmentIcon />,
-    3: <SoupKitchenIcon />,
-    4: <RoomServiceIcon />,
-    5: <FlagIcon />,
-  };
-
-  return (
-    <ColorlibStepIconRoot ownerState={{ completed: props.completed, active: props.active }}>
-      {icons[String(props.icon)]}
-    </ColorlibStepIconRoot>
-  );
+  const icons: { [index: string]: React.ReactElement } = { 1: <PaidIcon />, 2: <AssignmentIcon />, 3: <SoupKitchenIcon />, 4: <RoomServiceIcon />, 5: <FlagIcon /> };
+  return <ColorlibStepIconRoot ownerState={{ completed: props.completed, active: props.active }}>{icons[String(props.icon)]}</ColorlibStepIconRoot>;
 }
 
 type Props = {
@@ -113,17 +72,26 @@ type Props = {
 };
 
 export default function OrderDetailDrawer({ open, onClose, order }: Props) {
-  // ... (Hooks & States เหมือนเดิม) ...
+  // Hooks
   const [updateStatus, { isLoading: loadingStatus }] = useUpdateOrderStatusMutation();
   const [updateOrder, { isLoading: loadingUpdate }] = useUpdateOrderMutation();
   const [cancelOrder, { isLoading: loadingCancel }] = useCancelOrderMutation();
   const [updateKitchen, { isLoading: loadingKitchen }] = useUpdateKitchenStatusMutation();
   const isLoading = loadingStatus || loadingUpdate || loadingCancel || loadingKitchen;
 
+  // Local State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ customerName: "", customerPhone: "", note: "" });
-  const [isCancelling, setIsCancelling] = useState(false);
+  
+  // Cancel Dialog State
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [targetItemId, setTargetItemId] = useState<number | null>(null);
+  const [targetItemName, setTargetItemName] = useState("");
+
+  // ✅ Item Status Menu State (สำหรับเลือกสถานะรายจาน)
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
   useEffect(() => {
     if (order) {
@@ -133,14 +101,17 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
         note: order.customerNote || "",
       });
       setIsEditing(false);
-      setIsCancelling(false);
+      setCancelDialogOpen(false);
       setCancelReason("");
+      setTargetItemId(null);
+      setAnchorEl(null);
     }
   }, [order, open]);
 
   if (!order) return null;
 
-  // ... (Handlers เหมือนเดิม) ...
+  // --- Handlers ---
+
   const handleStatusChange = async (nextStatus: string) => {
     try { await updateStatus({ id: order.id, newStatus: nextStatus }).unwrap(); } 
     catch (err) { alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ"); }
@@ -148,29 +119,56 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
 
   const handleSaveEdit = async () => {
     try {
-      await updateOrder({
-        id: order.id,
-        customerName: editForm.customerName,
-        customerPhone: editForm.customerPhone,
-        customerNote: editForm.note,
-      }).unwrap();
+      await updateOrder({ id: order.id, customerName: editForm.customerName, customerPhone: editForm.customerPhone, customerNote: editForm.note }).unwrap();
       setIsEditing(false);
     } catch (err) { alert("บันทึกข้อมูลไม่สำเร็จ"); }
   };
 
+  // Cancel Handlers
+  const handleOpenCancelOrder = () => { setTargetItemId(null); setTargetItemName(""); setCancelReason(""); setCancelDialogOpen(true); };
+  const handleOpenCancelItem = (itemId: number, itemName: string) => { setTargetItemId(itemId); setTargetItemName(itemName); setCancelReason(""); setCancelDialogOpen(true); };
+
   const handleConfirmCancel = async () => {
     if (!cancelReason.trim()) return alert("กรุณาระบุเหตุผลการยกเลิก");
     try {
-      await cancelOrder({ id: order.id, request: { reason: cancelReason } }).unwrap();
-      setIsCancelling(false);
-      onClose();
-    } catch (err) { alert("ยกเลิกออเดอร์ไม่สำเร็จ"); }
+      const request: CancelRequest = { isAdmin: true, orderItemId: targetItemId ?? undefined };
+      await cancelOrder({ id: order.id, request }).unwrap();
+      setCancelDialogOpen(false);
+      if (!targetItemId) onClose();
+    } catch (err: any) { alert(err.data?.message || "ดำเนินการไม่สำเร็จ"); }
   };
 
-  const handleItemStatusToggle = async (detailId: number, currentStatus: string) => {
-    const newStatus = currentStatus === Sd.KDS_Done ? Sd.KDS_Waiting : Sd.KDS_Done;
-    try { await updateKitchen({ detailId, status: newStatus }).unwrap(); } 
-    catch (err) { console.error(err); }
+  // ✅ Menu Handlers (เปิด/ปิด เมนูสถานะ)
+  const handleOpenStatusMenu = (event: React.MouseEvent<HTMLElement>, itemId: number) => {
+      setAnchorEl(event.currentTarget);
+      setSelectedItemId(itemId);
+  };
+
+  const handleCloseStatusMenu = () => {
+      setAnchorEl(null);
+      setSelectedItemId(null);
+  };
+
+  const handleChangeItemStatus = async (newStatus: string) => {
+      if (selectedItemId) {
+          try {
+              await updateKitchen({ detailId: selectedItemId, status: newStatus }).unwrap();
+          } catch (err) {
+              console.error(err);
+          }
+      }
+      handleCloseStatusMenu();
+  };
+
+  // Helper: Get Color/Label for Item Status
+  const getItemStatusInfo = (status: string) => {
+      switch (status) {
+          case Sd.KDS_Waiting: return { label: "รอคิว", color: "inherit", icon: <HourglassEmptyIcon fontSize="small" />, bg: "#f5f5f5", text: "#757575" };
+          case Sd.KDS_Cooking: return { label: "กำลังปรุง", color: "warning", icon: <SoupKitchenIcon fontSize="small" />, bg: "#fff3e0", text: "#e65100" };
+          case Sd.KDS_Done: return { label: "เสร็จแล้ว", color: "success", icon: <CheckCircleIcon fontSize="small" />, bg: "#e8f5e9", text: "#2e7d32" };
+          case Sd.KDS_Cancelled: return { label: "ยกเลิก", color: "error", icon: <DeleteForeverIcon fontSize="small" />, bg: "#ffebee", text: "#c62828" };
+          default: return { label: "รอคิว", color: "inherit", icon: <HourglassEmptyIcon fontSize="small" />, bg: "#f5f5f5", text: "#757575" };
+      }
   };
 
   // Helper
@@ -181,10 +179,8 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
     return status === Sd.Status_Completed ? 5 : index;
   };
 
-  const stepsLabel = ['รอชำระ', 'รับออเดอร์', 'กำลังปรุง', 'พร้อมรับ', 'สำเร็จ'];
-  const currentStep = getActiveStep(order.orderStatus);
-
   return (
+    <>
     <Drawer
       anchor="right"
       open={open}
@@ -208,26 +204,18 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
 
       <Box sx={{ p: 3, flex: 1, overflowY: "auto" }}>
         <Stack spacing={3}>
-
-          {/* ✅ Timeline Stepper แบบใหม่ (Icon + Gradient) */}
+          {/* Timeline */}
           {order.orderStatus !== Sd.Status_Cancelled && (
             <Box sx={{ width: '100%', py: 2 }}>
-              <Stepper alternativeLabel activeStep={currentStep} connector={<ColorlibConnector />}>
-                {stepsLabel.map((label) => (
-                  <Step key={label}>
-                    {/* เรียกใช้ Component ไอคอนใหม่ตรงนี้ */}
-                    <StepLabel StepIconComponent={ColorlibStepIcon}>
-                        <Typography variant="caption" fontWeight={700} sx={{ mt: 1, display: 'block' }}>
-                            {label}
-                        </Typography>
-                    </StepLabel>
-                  </Step>
+              <Stepper alternativeLabel activeStep={getActiveStep(order.orderStatus)} connector={<ColorlibConnector />}>
+                {['รอชำระ', 'รับออเดอร์', 'กำลังปรุง', 'พร้อมรับ', 'สำเร็จ'].map((label) => (
+                  <Step key={label}><StepLabel StepIconComponent={ColorlibStepIcon}><Typography variant="caption" fontWeight={700} sx={{ mt: 1, display: 'block' }}>{label}</Typography></StepLabel></Step>
                 ))}
               </Stepper>
             </Box>
           )}
           
-          {/* 3. Action Board */}
+          {/* Action Board (Global Actions) */}
           {order.orderStatus !== Sd.Status_Cancelled && (
             <Card elevation={0} sx={{ borderRadius: 3, border: `1px solid ${BRAND_COLOR}40`, bgcolor: '#fffbfb' }}>
               <CardContent>
@@ -237,74 +225,34 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
                 </Stack>
                 <Grid container spacing={2}>
                   {order.orderStatus === Sd.Status_PendingPayment && (
-                     <Grid size={{ xs: 12 }}>
-                        <Button fullWidth variant="contained" color="warning" size="large" onClick={() => handleStatusChange(Sd.Status_Paid)} disabled={isLoading} sx={{ py: 1.5, borderRadius: 2 }}>
-                           ยืนยันการชำระเงิน (Confirm Payment)
-                        </Button>
-                     </Grid>
+                      <Grid size={{xs: 12}}><Button fullWidth variant="contained" color="warning" size="large" onClick={() => handleStatusChange(Sd.Status_Paid)} disabled={isLoading} sx={{ py: 1.5, borderRadius: 2 }}>ยืนยันการชำระเงิน (Confirm Payment)</Button></Grid>
                   )}
-                  {(order.orderStatus === Sd.Status_Paid) && (
-                    <Grid size={{ xs: 12 }}>
-                      <Button fullWidth variant="contained" size="large" onClick={() => handleStatusChange(Sd.Status_Preparing)} disabled={isLoading} startIcon={<PlayArrowIcon />} sx={{ bgcolor: '#1976d2', py: 1.5, borderRadius: 2 }}>
-                        ส่งเข้าครัว (Start Cooking)
-                      </Button>
-                    </Grid>
+                  {order.orderStatus === Sd.Status_Paid && (
+                    <Grid  size={{xs: 12}}><Button fullWidth variant="contained" size="large" onClick={() => handleStatusChange(Sd.Status_Preparing)} disabled={isLoading} startIcon={<PlayArrowIcon />} sx={{ bgcolor: '#1976d2', py: 1.5, borderRadius: 2 }}>ส่งเข้าครัว (Start Cooking)</Button></Grid>
                   )}
                   {order.orderStatus === Sd.Status_Preparing && (
-                    <Grid size={{ xs: 12 }}>
-                      <Button fullWidth variant="contained" color="success" size="large" onClick={() => handleStatusChange(Sd.Status_Ready)} disabled={isLoading} startIcon={<CheckCircleIcon />} sx={{ py: 1.5, borderRadius: 2 }}>
-                        ปรุงเสร็จแล้ว (Kitchen Done)
-                      </Button>
-                    </Grid>
+                    <Grid size={{xs: 12}}><Button fullWidth variant="contained" color="success" size="large" onClick={() => handleStatusChange(Sd.Status_Ready)} disabled={isLoading} startIcon={<CheckCircleIcon />} sx={{ py: 1.5, borderRadius: 2 }}>ปรุงเสร็จแล้ว (Kitchen Done)</Button></Grid>
                   )}
                   {order.orderStatus === Sd.Status_Ready && (
-                    <Grid size={{ xs: 12 }}>
-                      <Button fullWidth variant="contained" color="info" size="large" onClick={() => handleStatusChange(Sd.Status_Completed)} disabled={isLoading} startIcon={<TakeoutDiningIcon />} sx={{ py: 1.5, borderRadius: 2 }}>
-                        ส่งมอบเรียบร้อย (Complete)
-                      </Button>
-                    </Grid>
+                    <Grid size={{xs: 12}}><Button fullWidth variant="contained" color="info" size="large" onClick={() => handleStatusChange(Sd.Status_Completed)} disabled={isLoading} startIcon={<TakeoutDiningIcon />} sx={{ py: 1.5, borderRadius: 2 }}>ส่งมอบเรียบร้อย (Complete)</Button></Grid>
                   )}
-                  
-                  {/* Cancel Button */}
-                  {!isCancelling && ![Sd.Status_Completed, Sd.Status_Cancelled].includes(order.orderStatus) && (
-                     <Grid size={{ xs: 12 }}>
-                       <Button fullWidth size="small" color="error" variant="text" onClick={() => setIsCancelling(true)}>
-                          ยกเลิกออเดอร์นี้ (Cancel Order)
-                       </Button>
-                     </Grid>
+                  {![Sd.Status_Completed, Sd.Status_Cancelled].includes(order.orderStatus) && (
+                      <Grid size={{xs: 12}}><Button fullWidth size="small" color="error" variant="text" onClick={handleOpenCancelOrder}>ยกเลิกออเดอร์นี้ (Cancel Order)</Button></Grid>
                   )}
                 </Grid>
-                {isCancelling && (
-                  <Box sx={{ mt: 2, p: 2, bgcolor: "#ffebee", borderRadius: 2, border: '1px dashed #ef5350' }}>
-                    <Typography variant="subtitle2" color="error" fontWeight={700} gutterBottom>ระบุเหตุผลการยกเลิก</Typography>
-                    <TextField fullWidth size="small" placeholder="ระบุเหตุผล" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} sx={{ bgcolor: "white", mb: 1 }} />
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Button size="small" color="inherit" onClick={() => setIsCancelling(false)}>กลับ</Button>
-                      <Button size="small" variant="contained" color="error" onClick={handleConfirmCancel} disabled={isLoading}>ยืนยัน</Button>
-                    </Stack>
-                  </Box>
-                )}
               </CardContent>
             </Card>
           )}
 
-          {/* ... (Customer Info & Items List Code ส่วนที่เหลือ เหมือนเดิมเป๊ะ) ... */}
-          {/* สามารถ Copy ส่วน Grid Container ของ Customer Info และ Items List จากโค้ดเดิมมาวางต่อท้ายตรงนี้ได้เลยครับ */}
-          
+          {/* Customer Info */}
           <Grid container spacing={3}>
-            {/* 4. Customer Info Card */}
-            <Grid size={{ xs: 12 }}>
+            <Grid size={{xs: 12}}>
               <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0' }}>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Typography variant="subtitle1" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PersonIcon color="action" /> ข้อมูลลูกค้า
-                    </Typography>
-                    {!isEditing && order.orderStatus !== Sd.Status_Cancelled && (
-                      <IconButton size="small" onClick={() => setIsEditing(true)} sx={{ bgcolor: '#f5f5f5' }}><EditIcon fontSize="small" /></IconButton>
-                    )}
+                    <Typography variant="subtitle1" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><PersonIcon color="action" /> ข้อมูลลูกค้า</Typography>
+                    {!isEditing && order.orderStatus !== Sd.Status_Cancelled && ( <IconButton size="small" onClick={() => setIsEditing(true)} sx={{ bgcolor: '#f5f5f5' }}><EditIcon fontSize="small" /></IconButton> )}
                   </Stack>
-
                   {isEditing ? (
                     <Stack spacing={2}>
                       <TextField label="ชื่อลูกค้า" size="small" fullWidth value={editForm.customerName} onChange={(e) => setEditForm({...editForm, customerName: e.target.value})} />
@@ -317,99 +265,143 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
                     </Stack>
                   ) : (
                     <Stack spacing={1.5}>
-                      <Stack direction="row" spacing={2} alignItems="center">
-                         <Typography variant="body2" color="text.secondary" minWidth={60}>ชื่อ:</Typography>
-                         <Typography variant="body1" fontWeight={500}>{order.customerName || "Walk-in"}</Typography>
-                      </Stack>
+                      <Stack direction="row" spacing={2} alignItems="center"><Typography variant="body2" color="text.secondary" minWidth={60}>ชื่อ:</Typography><Typography variant="body1" fontWeight={500}>{order.customerName || "Walk-in"}</Typography></Stack>
                       <Divider variant="inset" component="div" />
-                      <Stack direction="row" spacing={2} alignItems="center">
-                         <Typography variant="body2" color="text.secondary" minWidth={60}>โทร:</Typography>
-                         <Stack direction="row" alignItems="center" gap={1}>
-                            <PhoneIcon fontSize="small" color="disabled" />
-                            <Typography variant="body1">{order.customerPhone || "-"}</Typography>
-                         </Stack>
-                      </Stack>
-                      {order.customerNote && (
-                          <Alert severity="warning" icon={false} sx={{ mt: 1, borderRadius: 2 }}>
-                             <strong>Note:</strong> {order.customerNote}
-                          </Alert>
-                      )}
+                      <Stack direction="row" spacing={2} alignItems="center"><Typography variant="body2" color="text.secondary" minWidth={60}>โทร:</Typography><Stack direction="row" alignItems="center" gap={1}><PhoneIcon fontSize="small" color="disabled" /><Typography variant="body1">{order.customerPhone || "-"}</Typography></Stack></Stack>
+                      {order.customerNote && (<Alert severity="warning" icon={false} sx={{ mt: 1, borderRadius: 2 }}><strong>Note:</strong> {order.customerNote}</Alert>)}
                     </Stack>
                   )}
                 </CardContent>
               </Card>
             </Grid>
 
-            {/* 5. Order Items & Summary */}
-            <Grid size={{ xs: 12 }}>
+            {/* ✅ Order Items (พร้อมปุ่มเปลี่ยนสถานะแบบ Menu) */}
+            <Grid size={{xs: 12}}>
               <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0' }}>
                 <CardContent sx={{ p: 0 }}>
                    <Box sx={{ p: 2, bgcolor: '#fafafa', borderBottom: '1px solid #eee' }}>
-                      <Typography variant="subtitle1" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <RestaurantMenuIcon color="action" /> รายการอาหาร ({order.orderDetails.length})
-                      </Typography>
+                      <Typography variant="subtitle1" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><RestaurantMenuIcon color="action" /> รายการอาหาร ({order.orderDetails.length})</Typography>
                    </Box>
-                   
                    <Box sx={{ p: 2 }}>
-                     {order.orderDetails.map((item) => (
-                        <Box key={item.id} sx={{ mb: 2, pb: 2, borderBottom: "1px dashed #eee", '&:last-child': { borderBottom: 0, pb: 0, mb: 0 } }}>
+                     {order.orderDetails.map((item) => {
+                        const statusInfo = getItemStatusInfo(item.kitchenStatus);
+                        return (
+                        <Box key={item.id} sx={{ mb: 2, pb: 2, borderBottom: "1px dashed #eee", '&:last-child': { borderBottom: 0, pb: 0, mb: 0 }, opacity: item.isCancelled ? 0.5 : 1 }}>
                            <Stack direction="row" spacing={2}>
-                              <Avatar variant="rounded" src={item.menuItemImage} sx={{ width: 64, height: 64, bgcolor: '#eee' }}>
-                                 <RestaurantMenuIcon color="disabled" />
-                              </Avatar>
+                              <Avatar variant="rounded" src={item.menuItemImage} sx={{ width: 64, height: 64, bgcolor: '#eee' }}><RestaurantMenuIcon color="disabled" /></Avatar>
                               <Box sx={{ flex: 1 }}>
                                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                                     <Box>
-                                       <Typography variant="body1" fontWeight={700} sx={{ color: '#333' }}>{item.menuItemName}</Typography>
+                                       <Typography variant="body1" fontWeight={700} sx={{ color: item.isCancelled ? 'error.main' : '#333', textDecoration: item.isCancelled ? 'line-through' : 'none' }}>
+                                           {item.menuItemName} {item.isCancelled && "(ยกเลิก)"}
+                                       </Typography>
                                        {item.orderDetailOptions.map((opt) => (
                                           <Typography key={opt.id} variant="caption" color="text.secondary" display="block">+ {opt.optionValueName}</Typography>
                                        ))}
                                     </Box>
                                     <Typography variant="body1" fontWeight={700}>฿{item.totalPrice.toLocaleString()}</Typography>
                                  </Stack>
-                                 <Stack direction="row" alignItems="center" spacing={1} mt={1}>
-                                    <Chip label={`${item.quantity} ชิ้น`} size="small" sx={{ borderRadius: 1, bgcolor: '#eceff1', fontWeight: 600 }} />
-                                    <Tooltip title={`กดเพื่อเปลี่ยนสถานะครัว (ปัจจุบัน: ${item.kitchenStatus})`}>
-                                        <Button 
-                                          size="small" 
-                                          variant={item.kitchenStatus === Sd.KDS_Done ? "contained" : "outlined"}
-                                          color={item.kitchenStatus === Sd.KDS_Done ? "success" : "inherit"}
-                                          onClick={() => handleItemStatusToggle(item.id, item.kitchenStatus)}
-                                          startIcon={<SoupKitchenIcon />}
-                                          sx={{ borderRadius: 4, textTransform: 'none', fontSize: '0.75rem', py: 0.2 }}
+                                 
+                                 {!item.isCancelled && (
+                                     <Stack direction="row" alignItems="center" spacing={1} mt={1}>
+                                        <Chip label={`${item.quantity} ชิ้น`} size="small" sx={{ borderRadius: 1, bgcolor: '#eceff1', fontWeight: 600 }} />
+                                        
+                                        {/* ✅ ปุ่มเปิด Menu เลือกสถานะ */}
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            onClick={(e) => handleOpenStatusMenu(e, item.id)}
+                                            endIcon={<KeyboardArrowDownIcon />}
+                                            sx={{ 
+                                                borderRadius: 4, 
+                                                textTransform: 'none', 
+                                                fontSize: '0.75rem', 
+                                                py: 0.2,
+                                                borderColor: statusInfo.bg,
+                                                bgcolor: statusInfo.bg,
+                                                color: statusInfo.text,
+                                                fontWeight: 700,
+                                                '&:hover': { bgcolor: statusInfo.bg, filter: 'brightness(0.95)' }
+                                            }}
                                         >
-                                           {item.kitchenStatus === Sd.KDS_Done ? "ทำเสร็จแล้ว" : "รอทำ/กำลังทำ"}
+                                            {statusInfo.label}
                                         </Button>
-                                    </Tooltip>
-                                 </Stack>
+
+                                        {/* ปุ่มยกเลิกรายจาน */}
+                                        {order.orderStatus !== Sd.Status_Completed && order.orderStatus !== Sd.Status_Cancelled && (
+                                            <Tooltip title="ยกเลิกเมนูนี้">
+                                                <IconButton 
+                                                    size="small" 
+                                                    color="error" 
+                                                    onClick={() => handleOpenCancelItem(item.id, item.menuItemName)}
+                                                    sx={{ border: '1px solid #ef5350', p: 0.5 }}
+                                                >
+                                                    <DeleteForeverIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                     </Stack>
+                                 )}
                               </Box>
                            </Stack>
                         </Box>
-                     ))}
+                        );
+                     })}
                    </Box>
-
                    <Box sx={{ p: 3, bgcolor: '#fffbfb', borderTop: '2px dashed #eee' }}>
                       <Stack spacing={1}>
-                         <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2" color="text.secondary">รวมค่าอาหาร</Typography>
-                            <Typography variant="body2" fontWeight={600}>฿{order.subTotal.toLocaleString()}</Typography>
-                         </Stack>
+                         <Stack direction="row" justifyContent="space-between"><Typography variant="body2" color="text.secondary">รวมค่าอาหาร</Typography><Typography variant="body2" fontWeight={600}>฿{order.subTotal.toLocaleString()}</Typography></Stack>
                          <Divider sx={{ my: 1 }} />
-                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Typography variant="h6" fontWeight={700} color="text.primary">ยอดสุทธิ</Typography>
-                            <Typography variant="h4" fontWeight={800} sx={{ color: BRAND_COLOR }}>
-                               ฿{order.total.toLocaleString()}
-                            </Typography>
-                         </Stack>
+                         <Stack direction="row" justifyContent="space-between" alignItems="center"><Typography variant="h6" fontWeight={700} color="text.primary">ยอดสุทธิ</Typography><Typography variant="h4" fontWeight={800} sx={{ color: BRAND_COLOR }}>฿{order.total.toLocaleString()}</Typography></Stack>
                       </Stack>
                    </Box>
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
-
         </Stack>
       </Box>
     </Drawer>
+
+    {/* ✅ Menu เลือกสถานะรายจาน */}
+    <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseStatusMenu}
+        PaperProps={{ sx: { borderRadius: 3, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" } }}
+    >
+        <MenuItem onClick={() => handleChangeItemStatus(Sd.KDS_Waiting)}>
+            <ListItemIcon><HourglassEmptyIcon fontSize="small" /></ListItemIcon>
+            <ListItemText primary="รอคิว (Waiting)" />
+        </MenuItem>
+        <MenuItem onClick={() => handleChangeItemStatus(Sd.KDS_Cooking)}>
+            <ListItemIcon sx={{ color: '#e65100' }}><SoupKitchenIcon fontSize="small" /></ListItemIcon>
+            <ListItemText primary="กำลังปรุง (Cooking)" sx={{ color: '#e65100' }} />
+        </MenuItem>
+        <MenuItem onClick={() => handleChangeItemStatus(Sd.KDS_Done)}>
+            <ListItemIcon sx={{ color: '#2e7d32' }}><CheckCircleIcon fontSize="small" /></ListItemIcon>
+            <ListItemText primary="เสร็จแล้ว (Done)" sx={{ color: '#2e7d32' }} />
+        </MenuItem>
+    </Menu>
+
+    {/* Dialog ยืนยันการยกเลิก */}
+    <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)}>
+        <DialogTitle sx={{ color: '#d32f2f', fontWeight: 700 }}>
+            {targetItemId ? `ยกเลิกเมนู "${targetItemName}"?` : "ยกเลิกออเดอร์ทั้งหมด?"}
+        </DialogTitle>
+        <DialogContent>
+            <DialogContentText sx={{ mb: 2 }}>
+                {targetItemId 
+                    ? "คุณต้องการยกเลิกรายการอาหารนี้ใช่หรือไม่? ยอดเงินจะถูกคำนวณใหม่" 
+                    : "การกระทำนี้ไม่สามารถย้อนกลับได้ กรุณาระบุเหตุผล (Optional)"}
+            </DialogContentText>
+            <TextField autoFocus margin="dense" label="เหตุผลการยกเลิก" fullWidth variant="outlined" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setCancelDialogOpen(false)} color="inherit">ปิด</Button>
+            <Button onClick={handleConfirmCancel} variant="contained" color="error" disabled={isLoading}>ยืนยันการยกเลิก</Button>
+        </DialogActions>
+    </Dialog>
+    </>
   );
 }

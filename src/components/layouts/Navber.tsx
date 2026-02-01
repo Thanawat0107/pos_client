@@ -55,6 +55,7 @@ import { useGetCartQuery } from "../../services/shoppingCartApi";
 const MAIN_NAV = [
   { text: "หน้าแรก", path: "/" },
   { text: "เมนูอาหาร", path: "/menuItem" },
+  { text: "ออเดอร์ของคุณ", path: "/my-orders" },
 ];
 
 const ADMIN_NAV = [
