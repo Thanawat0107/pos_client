@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as signalR from "@microsoft/signalr";
-import { baseUrl } from "../helpers/SD";
+import { baseUrl } from "../helpers/SD"; // ตรวจสอบ Path ให้ตรงกับโปรเจคคุณ
 import { jwtDecode } from "jwt-decode"; 
 
 class SignalRService {
   private connection: signalR.HubConnection | null = null;
-  private eventHandlers: { [eventName: string]: (...args: any[]) => void } = {};
-
-  // 🔥 2. เพิ่มตัวแปรนี้เพื่อใช้เป็น "กุญแจล็อค" (ป้องกัน Race Condition)
+  private eventHandlers: { [eventName: string]: Array<(...args: any[]) => void> } = {};
   private startPromise: Promise<void> | null = null;
+  public get connectionState(): signalR.HubConnectionState {
+    return this.connection?.state ?? signalR.HubConnectionState.Disconnected;
+  }
 
   async reconnect() {
     console.log("🔄 SignalR: Reconnecting...");
@@ -17,14 +18,12 @@ class SignalRService {
     await this.startConnection();
   }
 
-  // 🔥 3. ปรับ Logic startConnection ให้เช็ค Lock ก่อน
   async startConnection() {
-    // ถ้ามีใครกำลัง Start อยู่แล้ว ให้รอตัวนั้นเลย ไม่ต้องสร้างใหม่
+    // Lock logic (เหมือนเดิม)
     if (this.startPromise) {
       return this.startPromise;
     }
 
-    // ถ้าต่อติดแล้ว ก็จบ
     if (
       this.connection &&
       this.connection.state === signalR.HubConnectionState.Connected
@@ -32,23 +31,20 @@ class SignalRService {
       return;
     }
 
-    // เริ่มสร้าง Connection และเก็บ Promise ไว้ในตัวแปรล็อค
     this.startPromise = this._startInternal();
 
     try {
       await this.startPromise;
     } finally {
-      // เมื่อจบงาน (ไม่ว่าจะสำเร็จหรือล้มเหลว) ให้ปลดล็อค
       this.startPromise = null;
     }
   }
 
-  // 🔥 4. แยก Logic การเชื่อมต่อจริงมาไว้ที่นี่ (Internal function)
   private async _startInternal() {
     const cartToken = localStorage.getItem("cartToken") || "";
+    // ปรับ URL ตาม Logic เดิมของคุณ
     const hubUrl = `${baseUrl.replace(/\/api\/?$/, "")}/orderHub`;
 
-    // ถ้า connection เก่าค้างอยู่ ให้เคลียร์ก่อน
     if (this.connection && this.connection.state !== signalR.HubConnectionState.Disconnected) {
        await this.connection.stop();
     }
@@ -59,7 +55,6 @@ class SignalRService {
            const token = localStorage.getItem("token");
            if (!token) return "";
            
-           // 🔥 เช็คว่า Token หมดอายุหรือยัง? (ถ้าหมดแล้วส่งค่าว่างไปเลย กัน Error 401)
            try {
              const decoded: any = jwtDecode(token);
              const currentTime = Date.now() / 1000;
@@ -75,12 +70,14 @@ class SignalRService {
       .configureLogging(signalR.LogLevel.Warning)
       .build();
 
-    // Re-register Events
+    // 🔥 2. Re-register Events: วนลูปผูกทุก function ใน Array กลับเข้าไปใหม่
+    // (เพราะถ้า Connection สร้างใหม่ Event ที่ผูกไว้กับ object เก่าจะหายไป)
     Object.keys(this.eventHandlers).forEach((eventName) => {
-      if (this.connection) {
-        this.connection.off(eventName); // กันเหนียว ลบของเก่า
-        this.connection.on(eventName, this.eventHandlers[eventName]);
-      }
+      this.eventHandlers[eventName].forEach((callback) => {
+        if (this.connection) {
+             this.connection.on(eventName, callback);
+        }
+      });
     });
 
     try {
@@ -88,14 +85,11 @@ class SignalRService {
       console.log("✅ SignalR: Connected!");
     } catch (err: any) {
       console.error("❌ SignalR Start Error:", err);
-      // Retry logic (Recursive call ผ่าน startConnection หลัก)
       setTimeout(() => this.startConnection(), 5000);
     }
   }
 
-  // 🔥 5. ปรับ stopConnection ให้ "รอ" ถ้ากำลัง Start อยู่
   async stopConnection() {
-    // ถ้าระบบกำลัง Start อยู่ อย่าเพิ่งไปขัดขา รอให้เสร็จก่อน
     if (this.startPromise) {
         try { await this.startPromise; } catch { /* ignore error */ }
     }
@@ -112,24 +106,40 @@ class SignalRService {
     }
   }
 
-  // ... ส่วน on, off, invoke เหมือนเดิมครับ ...
+  // 🔥 3. ปรับปรุง ON: เพิ่มใส่ Array ไม่ทับของเดิม
   on(eventName: string, callback: (...args: any[]) => void) {
-    this.eventHandlers[eventName] = callback;
+    if (!this.eventHandlers[eventName]) {
+      this.eventHandlers[eventName] = [];
+    }
+    // เพิ่มเข้า List
+    this.eventHandlers[eventName].push(callback);
+
+    // บอก SignalR ให้เรียก callback นี้ด้วย
     if (this.connection) {
-      this.connection.off(eventName);
       this.connection.on(eventName, callback);
     }
   }
 
-  off(eventName: string) {
-    delete this.eventHandlers[eventName];
-    if (this.connection) {
+  // 🔥 4. ปรับปรุง OFF: ลบเฉพาะ callback ที่ส่งมา
+  off(eventName: string, callback?: (...args: any[]) => void) {
+    if (!this.connection) return;
+
+    if (callback) {
+      // 4.1 ลบออกจาก SignalR เฉพาะตัวนี้
+      this.connection.off(eventName, callback);
+      
+      // 4.2 ลบออกจาก List ภายในของเรา
+      if (this.eventHandlers[eventName]) {
+        this.eventHandlers[eventName] = this.eventHandlers[eventName].filter(cb => cb !== callback);
+      }
+    } else {
+      // ⚠️ ถ้าไม่ส่ง callback มา -> ลบหมด (Reset Event นั้น)
       this.connection.off(eventName);
+      delete this.eventHandlers[eventName];
     }
   }
 
   async invoke(methodName: string, ...args: any[]) {
-    // รอให้ Start เสร็จก่อนค่อย Invoke
     if (this.startPromise) await this.startPromise;
 
     if (this.connection?.state === signalR.HubConnectionState.Connected) {

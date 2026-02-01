@@ -1,59 +1,93 @@
-import { Box, Container, Typography, Card, CardContent, Chip, Button, Stack, CircularProgress } from "@mui/material";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useMemo } from "react";
+import { 
+  Box, Container, Typography, Card, CardContent, Chip, Button, Stack, CircularProgress 
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+
 import { useGetOrderHistoryQuery } from "../../services/orderApi";
 import { Sd } from "../../helpers/SD";
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { useAppSelector } from "../../hooks/useAppHookState";
-import { useEffect } from "react";
 
 export default function MyOrders() {
   const navigate = useNavigate();
-  const user = useAppSelector((state) => state.auth);
-  const userId = user?.userId || undefined; 
-  const guestToken = localStorage.getItem("cartToken") || "";
+  const userId = useAppSelector((state) => state.auth?.userId);
 
+  // -------------------------------------------------------------
+  // 1. Security Guard: ถ้าไม่ใช่สมาชิก ให้ดีดออกทันที
+  // -------------------------------------------------------------
   useEffect(() => {
-    console.log("🔍 [MyOrders] Checking Identity:", {
-      reduxUser: user,
-      resolvedUserId: userId,
-      storageToken: guestToken,
-    });
-  }, [user, userId, guestToken]);
+    if (!userId) {
+      // ถ้าไม่มี User ID ให้กลับไปหน้า Login หรือหน้าแรก
+      navigate("/login"); 
+    }
+  }, [userId, navigate]);
 
-  const {
-    data: orders = [],
-    isLoading,
-    isError,
-    error,
+  // -------------------------------------------------------------
+  // 2. ดึงข้อมูลสมาชิก (API Member)
+  //    * Real-time จะทำงานอัตโนมัติผ่าน onCacheEntryAdded ใน orderApi ที่เราทำไว้
+  // -------------------------------------------------------------
+  const { 
+    data: apiOrders = [], 
+    isLoading, 
+    // isError, refetch ก็ใช้ได้ถ้าต้องการปุ่ม Refresh
   } = useGetOrderHistoryQuery(
-    {
-      // ส่งไปเฉพาะที่มีค่า (ถ้า userId ไม่มี ให้ส่ง undefined/null)
-      userId: userId,
-      guestToken: guestToken,
-    },
-    {
-      // ถ้าไม่มีทั้งคู่ -> ไม่ต้องยิง (Skip)
-      skip: !userId && !guestToken,
-      // (Optional) ถ้าอยากให้ชัวร์ว่าข้อมูลสดใหม่เสมอ
-      refetchOnMountOrArgChange: true,
-    },
+    { userId }, 
+    { 
+      skip: !userId, // ถ้าไม่มี User ไม่ต้องยิง (กัน Error)
+      refetchOnMountOrArgChange: true 
+    }
   );
 
-  // Debug ผลลัพธ์ API
-  useEffect(() => {
-    if (isLoading) console.log("⏳ Loading Orders...");
-    if (orders.length > 0) console.log("✅ Orders Loaded:", orders);
-    if (orders.length === 0 && !isLoading)
-      console.log("⚠️ No Orders Found (Empty Array)");
-    if (isError) console.error("❌ API Error:", error);
-  }, [orders, isLoading, isError, error]);
+  // -------------------------------------------------------------
+  // 3. จัดเตรียมข้อมูล (Sorting & Mapping)
+  // -------------------------------------------------------------
+  const orders = useMemo(() => {
+    if (!apiOrders) return [];
+    
+    // Copy array เพื่อ Sort (ป้องกัน Mutation error)
+    return [...apiOrders]
+      .map(o => ({
+        ...o,
+        // Map field ให้ชัวร์ (เผื่อ Backend ส่งมาไม่ครบ)
+        orderStatus: o.orderStatus || o.orderStatus,
+        createdAt: o.createdAt || new Date().toISOString(),
+        total: o.total || o.orderTotal || 0,
+        orderDetails: o.orderDetails || []
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [apiOrders]);
 
-  if (isLoading)
+  // -------------------------------------------------------------
+  // Helper: สีของ Status Chip
+  // -------------------------------------------------------------
+  const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
+    switch (status) {
+      case Sd.Status_PendingPayment: return "warning";
+      case Sd.Status_Paid: return "info";
+      case Sd.Status_Preparing: return "secondary";
+      case Sd.Status_Ready: return "success";
+      case Sd.Status_Completed: return "default";
+      case Sd.Status_Cancelled: return "error";
+      default: return "default";
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------
+
+  // ถ้ากำลัง Redirect หรือไม่มี User ไม่ต้อง Render อะไร (ป้องกันหน้าจอกระพริบ)
+  if (!userId) return null;
+
+  if (isLoading) {
     return (
-      <Box p={4} display="flex" justifyContent="center">
+      <Box p={4} display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
         <CircularProgress />
       </Box>
     );
+  }
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", py: 4 }}>
@@ -62,12 +96,17 @@ export default function MyOrders() {
           รายการคำสั่งซื้อของฉัน
         </Typography>
 
-        {orders && orders.length > 0 ? (
+        {orders.length > 0 ? (
           <Stack spacing={2}>
             {orders.map((order) => (
               <Card
                 key={order.id}
-                sx={{ borderRadius: 3, cursor: "pointer" }}
+                sx={{ 
+                  borderRadius: 3, 
+                  cursor: "pointer", 
+                  transition: '0.2s', 
+                  '&:hover': { transform: 'scale(1.01)', boxShadow: 4 } 
+                }}
                 onClick={() => navigate(`/order-success/${order.id}`)}
               >
                 <CardContent
@@ -79,7 +118,8 @@ export default function MyOrders() {
                 >
                   <Box>
                     <Typography variant="h6" fontWeight={700}>
-                      #{order.pickUpCode || order.orderCode.slice(-5)}
+                      {/* แสดงเลข Order Code หรือ Pickup Code */}
+                      #{order.pickUpCode || (order.orderCode ? order.orderCode.slice(-5) : '...')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {new Date(order.createdAt).toLocaleString("th-TH")}
@@ -90,31 +130,39 @@ export default function MyOrders() {
                       color="primary"
                       mt={1}
                     >
-                      {order.orderDetails.length} รายการ • ฿
-                      {order.total.toLocaleString()}
+                      {order.orderDetails?.length || 0} รายการ • ฿
+                      {order.total?.toLocaleString() || "0"}
                     </Typography>
                   </Box>
+                  
                   <Box textAlign="right">
                     <Chip
                       label={order.orderStatus}
-                      color={
-                        order.orderStatus === Sd.Status_Ready
-                          ? "success"
-                          : "default"
-                      }
+                      color={getStatusColor(order.orderStatus)}
                       size="small"
+                      variant={order.orderStatus === Sd.Status_Ready ? "filled" : "outlined"}
                       sx={{ mb: 1, fontWeight: 700 }}
                     />
-                    <NavigateNextIcon color="action" />
+                    <Box display="flex" justifyContent="flex-end">
+                       <NavigateNextIcon color="action" />
+                    </Box>
                   </Box>
                 </CardContent>
               </Card>
             ))}
           </Stack>
         ) : (
-          <Typography textAlign="center" color="text.secondary">
-            ไม่มีรายการคำสั่งซื้อ
-          </Typography>
+          <Box textAlign="center" py={5} sx={{ opacity: 0.7 }}>
+            <Typography variant="h6" color="text.secondary" mb={1}>
+              ไม่มีรายการคำสั่งซื้อ
+            </Typography>
+            <Typography variant="body2" color="text.secondary" mb={3}>
+              คุณยังไม่ได้สั่งอาหารเลย สั่งสักหน่อยไหม?
+            </Typography>
+            <Button variant="contained" onClick={() => navigate("/")}>
+                ไปหน้าเมนู
+            </Button>
+          </Box>
         )}
 
         <Button

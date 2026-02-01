@@ -1,108 +1,107 @@
+/* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import {
-  Box,
-  Container,
-  Grid,
-  Typography,
-  TextField,
-  Card,
-  Stack,
-  Button,
-  Divider,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  InputAdornment,
-  Paper,
-  CircularProgress,
+  Box, Container, Grid, Typography, TextField, Card, Stack,
+  Button, Divider, RadioGroup, FormControlLabel, Radio,
+  InputAdornment, Paper, CircularProgress,
 } from "@mui/material";
+
+// Icons
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import PaymentIcon from "@mui/icons-material/Payment";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../hooks/useAppHookState";
 import { useLazyVerifyPromoQuery } from "../../services/contentApi";
 import { useConfirmCartMutation } from "../../services/orderApi";
 import type { CreateOrder } from "../../@types/createDto/CreateOrder";
 import { clearLocalCart } from "../../stores/slices/shoppingSlice";
+import { paymentMethods } from "../../helpers/SD";
+
+const saveGuestToken = (newToken: string) => {
+  try {
+    const existingTokens = localStorage.getItem("guestTokens");
+    let tokenList: string[] = existingTokens ? JSON.parse(existingTokens) : [];
+    
+    if (!tokenList.includes(newToken)) {
+      tokenList.push(newToken);
+    }
+    
+    localStorage.setItem("guestTokens", JSON.stringify(tokenList));
+    localStorage.removeItem("guestToken"); 
+
+    // 🔥 จุดที่ต้องเพิ่ม: ส่งสัญญาณบอก Component อื่นๆ ว่า LocalStorage เปลี่ยนแล้วนะ
+    window.dispatchEvent(new Event("activeOrderUpdated"));
+    
+  } catch (error) {
+    console.error("Error saving guest tokens:", error);
+  }
+};
 
 export default function Checkout() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-
-  // ✅ 2. แก้ตรงนี้: ดึงมาทั้ง "User Object" ไม่ใช่แค่ ID
-  // เพื่อให้เอาไปใช้ auto-fill ชื่อ/เบอร์ และเอา ID ไปใช้ได้ด้วย
   const user = useAppSelector((state) => state.auth);
+  const { cartItems, totalAmount } = useAppSelector((state) => state.shoppingCart);
 
-  const { cartItems, totalAmount } = useAppSelector(
-    (state) => state.shoppingCart,
-  );
-
-// Auto-fill ข้อมูลจาก User (ถ้ามี)
-  const [customer, setCustomer] = useState({ 
-      name: user?.userName || "", 
-      phone: user?.phoneNumber || "", 
-      note: "" 
-  }); 
-  
+  // Form State
+  const [customer, setCustomer] = useState({
+    name: user?.userName || "",
+    phone: user?.phoneNumber || "",
+    note: ""
+  });
   const [errors, setErrors] = useState({ name: false, phone: false });
+
+  // Promo State
   const [promoCode, setPromoCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [promoMessage, setPromoMessage] = useState({ text: "", type: "" as "success" | "error" | "" });
 
-  // --- ⭐ 1. เพิ่ม State สำหรับจัดการเวลารับ ---
-  // 'asap' = รับทันที, 'scheduled' = ระบุเวลา
+  // Payment & Pickup State
+  const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0].value);
   const [pickupType, setPickupType] = useState<"asap" | "scheduled">("asap");
   const [scheduledTime, setScheduledTime] = useState("");
 
-  const [promoMessage, setPromoMessage] = useState({
-    text: "",
-    type: "" as "success" | "error" | "",
-  });
-
-  const [triggerVerify, { isFetching: isVerifying }] =
-    useLazyVerifyPromoQuery();
+  // API Hooks
+  const [triggerVerify, { isFetching: isVerifying }] = useLazyVerifyPromoQuery();
   const [confirmCart, { isLoading: isConfirming }] = useConfirmCartMutation();
 
   const [isOrderPlaced, setIsOrderPlaced] = useState(false);
 
+  // Redirect if cart is empty
   useEffect(() => {
-    // ถ้าตะกร้าว่าง และ ไม่ได้กำลังโหลด และ "ยังสั่งไม่เสร็จ" -> ให้กลับหน้าแรก
     if (!isOrderPlaced && cartItems.length === 0 && !isConfirming) {
       navigate("/");
     }
-  }, [cartItems, navigate, isConfirming, isOrderPlaced]); // อย่าลืมใส่ dependency
+  }, [cartItems, navigate, isConfirming, isOrderPlaced]);
 
-  // --- ⭐ ฟังก์ชันช่วยคำนวณราคา (แก้ไขใหม่) ---
-  const calculateItemTotal = (item: any) => {
-    // เนื่องจาก Backend ส่ง item.price ที่รวมค่า Option มาให้แล้ว
-    // สูตรที่ถูกต้องคือ: ราคาต่อหน่วย * จำนวน
-    return (item.price || 0) * item.quantity;
-  };
+  // Calculations
+  const calculateItemTotal = (item: any) => (item.price || 0) * item.quantity;
+  const finalTotal = Math.max(0, totalAmount - appliedDiscount);
 
+  // Handlers
   const handleApplyPromo = async () => {
     const trimmedCode = promoCode.trim();
     if (!trimmedCode) return;
     try {
       const response = await triggerVerify(trimmedCode).unwrap();
-      // สมมติ response.result มี discountValue
       const discount = response.result?.discountValue || 0;
       setAppliedDiscount(discount);
       setPromoMessage({ text: "ใช้รหัสส่วนลดสำเร็จ!", type: "success" });
     } catch (err: any) {
-      const errorMsg = err.data?.message || "รหัสส่วนลดไม่ถูกต้อง";
-      setPromoMessage({ text: errorMsg, type: "error" });
+      setPromoMessage({ text: err.data?.message || "รหัสส่วนลดไม่ถูกต้อง", type: "error" });
       setAppliedDiscount(0);
     }
   };
 
   const validateForm = () => {
     const newErrors = {
-      name: !customer.name.trim(), // ถ้า name เป็น optional ลบบรรทัดนี้ได้
+      name: !customer.name.trim(),
       phone: !customer.phone.trim() || customer.phone.length < 10,
     };
     setErrors(newErrors);
@@ -112,73 +111,87 @@ export default function Checkout() {
         alert("กรุณาระบุเวลาที่ต้องการรับสินค้า");
         return false;
       }
-
-      // ⭐ เพิ่ม: เช็กว่าเวลาที่เลือก ต้องมากกว่าเวลาปัจจุบัน
-      const selectedDate = new Date(scheduledTime);
-      const now = new Date();
-      if (selectedDate < now) {
+      if (new Date(scheduledTime) < new Date()) {
         alert("ไม่สามารถเลือกเวลาย้อนหลังได้");
         return false;
       }
     }
-
     return !newErrors.phone;
   };
 
   const handleConfirmOrder = async () => {
     if (!validateForm()) return;
 
-    const token = localStorage.getItem("cartToken");
-    if (!token) {
+    // 1. ดึง Cart Token เดิม (Session ของตะกร้าสินค้า)
+    const cartToken = localStorage.getItem("cartToken");
+    if (!cartToken) {
       alert("ไม่พบข้อมูลตะกร้าสินค้า");
       return navigate("/");
     }
 
-    // ⭐ คำนวณเวลา PickUp ที่จะส่งไป Backend
-    let finalPickUpTime = new Date().toISOString(); // Default = Now (ASAP)
+    let finalPickUpTime = new Date().toISOString();
     if (pickupType === "scheduled" && scheduledTime) {
-      // แปลงจาก input string เป็น ISO String
       finalPickUpTime = new Date(scheduledTime).toISOString();
     }
-    // สร้าง Payload แบบเบา (Lightweight) ตรงกับ CreateOrderDto
+
     const payload: CreateOrder = {
-      channel: "pickUp", // Backend น่าจะชอบ PascalCase มากกว่า camelCase
-      // ข้อมูลลูกค้า
+      channel: "pickUp",
+      paymentMethod: paymentMethod, // ส่งค่าที่เลือกไปด้วย
       customerPhone: customer.phone.trim(),
-      customerName: customer.name.trim() || undefined, // ส่ง undefined ดีกว่าส่ง string ว่าง
+      customerName: customer.name.trim() || undefined,
       customerNote: customer.note.trim() || undefined,
-      // Tokens
-      cartToken: token,
-      guestToken: token, // ใช้ token เดียวกันระบุตัวตน (Guest)
-      userId: user?.userId || undefined, // สำหรับลูกค้าที่ล็อกอิน (ถ้ามี)
-      // Promo (ส่งไปเฉพาะตอนที่มีการ Apply ผ่านแล้วเท่านั้น)
+      cartToken: cartToken,
+      guestToken: cartToken, // ส่งไปเพื่อให้ Backend รู้ว่าเป็น Guest คนเดิม
+      userId: user?.userId || undefined,
       promoCode: appliedDiscount > 0 ? promoCode.trim() : undefined,
-      // เวลา
       estimatedPickUpTime: finalPickUpTime,
     };
 
     try {
-      const result = await confirmCart(payload).unwrap();
+    const result = await confirmCart(payload).unwrap();
 
-      if (result) {
-        setIsOrderPlaced(true);
-        
-        dispatch(clearLocalCart());
+    if (result) {
+      setIsOrderPlaced(true);
 
-        // บันทึก ID ล่าสุดเผื่อใช้
-        localStorage.setItem("activeOrderId", result.id.toString());
-
-        // Trigger Event ให้ Floating Bar อัปเดต
-        window.dispatchEvent(new Event("activeOrderUpdated"));
-        window.dispatchEvent(new Event("storage"));
-
-        // ไปหน้า Success
-        navigate(`/order-success/${result.id}`, { replace: true });
+      // ---------------------------------------------------------
+      // 🔥 แก้ไขจุดนี้: เปลี่ยนจากผูกขาด Token เดียว เป็นการสะสม Token
+      // ---------------------------------------------------------
+      if (!user.userId) {
+        if (result.guestToken) {
+          // แทนการใช้ localStorage.setItem("guestToken", result.guestToken);
+          // ให้เรียกใช้ฟังก์ชันที่เราสร้างไว้ด้านบน
+          saveGuestToken(result.guestToken);
+        }
       }
+
+      // ส่วนของ orderHistory คุณสามารถเก็บไว้หรือลบทิ้งก็ได้
+      // เพราะตอนนี้เราใช้ guestTokens array เป็นหลักแล้ว
+      const currentHistory = JSON.parse(
+        localStorage.getItem("orderHistory") || "[]",
+      );
+      const newOrderEntry = {
+        id: result.id,
+        token: result.guestToken || cartToken,
+        timestamp: new Date().toISOString(),
+        status: result.orderStatus,
+      };
+      localStorage.setItem(
+        "orderHistory",
+        JSON.stringify([...currentHistory, newOrderEntry]),
+      );
+
+      // 3. Clear ตะกร้า
+      dispatch(clearLocalCart());
+      localStorage.removeItem("cartToken");
+
+      // 4. แจ้งเตือน และ Navigate
+      window.dispatchEvent(new Event("activeOrderUpdated"));
+      navigate(`/order-success/${result.id}`, { replace: true });
+    }
     } catch (err: any) {
       console.error("Checkout Error:", err);
       if (err.data?.message?.includes("สิทธิ์การใช้งานโปรโมชั่นนี้เต็มแล้ว")) {
-        alert("ขออภัย โค้ดส่วนลดหมดอายุพอดี กรุณาลองใหม่อีกครั้ง");
+        alert("ขออภัย โค้ดส่วนลดหมดอายุพอดี");
         setAppliedDiscount(0);
         setPromoMessage({ text: "โค้ดหมดอายุ/เต็มแล้ว", type: "error" });
       } else {
@@ -187,13 +200,8 @@ export default function Checkout() {
     }
   };
 
-  const finalTotal = Math.max(0, totalAmount - appliedDiscount);
-
-  // Helper สำหรับทำ Min Date ของ input type="datetime-local" (ป้องกันเลือกเวลาในอดีต)
-  // ใน getMinDateTime
   const getMinDateTime = () => {
     const now = new Date();
-    // ⭐ บวกเพิ่ม 20 นาที (เผื่อเวลาเตรียมของ)
     now.setMinutes(now.getMinutes() + 20 - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   };
@@ -210,9 +218,10 @@ export default function Checkout() {
         </Button>
 
         <Grid container spacing={4}>
-          {/* ฝั่งซ้าย: ฟอร์มข้อมูลลูกค้า */}
+          {/* Left Side: Forms */}
           <Grid size={{ xs: 12, md: 7 }}>
             <Stack spacing={3}>
+              {/* Customer Info */}
               <Paper sx={{ p: 3, borderRadius: 3 }}>
                 <Typography
                   variant="h6"
@@ -244,13 +253,13 @@ export default function Checkout() {
                       helperText={
                         errors.phone ? "กรุณากรอกเบอร์โทร 10 หลัก" : ""
                       }
+                      inputProps={{ maxLength: 10 }}
                       onChange={(e) =>
                         setCustomer({
                           ...customer,
                           phone: e.target.value.replace(/\D/g, ""),
                         })
                       }
-                      inputProps={{ maxLength: 10 }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12 }}>
@@ -268,7 +277,7 @@ export default function Checkout() {
                 </Grid>
               </Paper>
 
-              {/* การรับสินค้า */}
+              {/* Pickup Info */}
               <Paper sx={{ p: 3, borderRadius: 3 }}>
                 <Typography
                   variant="h6"
@@ -288,15 +297,16 @@ export default function Checkout() {
                     value="asap"
                     control={<Radio />}
                     label={
-                      <Box sx={{ ml: 1 }}>
-                        <Typography fontWeight={700}>
-                          รับทันที / รอรับหน้าร้าน
+                      <Typography fontWeight={700} sx={{ ml: 1 }}>
+                        รับทันที / รอรับหน้าร้าน{" "}
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          (~15-20 นาที)
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ทางร้านจะจัดเตรียมสินค้าให้เร็วที่สุด (ประมาณ 15-20
-                          นาที)
-                        </Typography>
-                      </Box>
+                      </Typography>
                     }
                     sx={{
                       mb: 1,
@@ -308,21 +318,15 @@ export default function Checkout() {
                       borderRadius: 2,
                       width: "100%",
                       ml: 0,
-                      transition: "0.2s",
                     }}
                   />
                   <FormControlLabel
                     value="scheduled"
                     control={<Radio />}
                     label={
-                      <Box sx={{ ml: 1, width: "100%" }}>
-                        <Typography fontWeight={700}>
-                          ระบุเวลารับ (ล่วงหน้า)
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          เลือกเวลาที่สะดวกเข้ามารับสินค้า
-                        </Typography>
-                      </Box>
+                      <Typography fontWeight={700} sx={{ ml: 1 }}>
+                        ระบุเวลารับ (ล่วงหน้า)
+                      </Typography>
                     }
                     sx={{
                       p: 1,
@@ -333,7 +337,6 @@ export default function Checkout() {
                       borderRadius: 2,
                       width: "100%",
                       ml: 0,
-                      transition: "0.2s",
                     }}
                   />
                 </RadioGroup>
@@ -349,9 +352,9 @@ export default function Checkout() {
                   >
                     <Typography
                       variant="body2"
-                      gutterBottom
                       fontWeight={600}
                       color="primary"
+                      gutterBottom
                     >
                       <AccessTimeIcon
                         sx={{
@@ -360,7 +363,7 @@ export default function Checkout() {
                           mr: 0.5,
                         }}
                       />{" "}
-                      เลือกวันและเวลาที่ต้องการรับ:
+                      เลือกวันและเวลา:
                     </Typography>
                     <TextField
                       fullWidth
@@ -375,6 +378,7 @@ export default function Checkout() {
                 )}
               </Paper>
 
+              {/* Payment Info */}
               <Paper sx={{ p: 3, borderRadius: 3 }}>
                 <Typography
                   variant="h6"
@@ -384,51 +388,46 @@ export default function Checkout() {
                 >
                   <PaymentIcon color="primary" /> วิธีการชำระเงิน
                 </Typography>
+
                 <RadioGroup
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
                 >
-                  <FormControlLabel
-                    value="Cash"
-                    control={<Radio />}
-                    label={
-                      <Box sx={{ ml: 1 }}>
-                        <Typography fontWeight={700}>
-                          ชำระเงินที่ร้าน
+                  {paymentMethods.map((method) => (
+                    <FormControlLabel
+                      key={method.value}
+                      value={method.value}
+                      control={<Radio />}
+                      label={
+                        <Typography fontWeight={700} sx={{ ml: 1 }}>
+                          {method.label}
                         </Typography>
-                      </Box>
-                    }
-                    sx={{
-                      mb: 1,
-                      p: 2,
-                      border: "1px solid #eee",
-                      borderRadius: 2,
-                      width: "100%",
-                      ml: 0,
-                    }}
-                  />
-                  <FormControlLabel
-                    value="PromptPay"
-                    control={<Radio />}
-                    label={
-                      <Typography fontWeight={700} sx={{ ml: 1 }}>
-                        โอนผ่านพร้อมเพย์
-                      </Typography>
-                    }
-                    sx={{
-                      p: 2,
-                      border: "1px solid #eee",
-                      borderRadius: 2,
-                      width: "100%",
-                      ml: 0,
-                    }}
-                  />
+                      }
+                      sx={{
+                        mb: method.value === "cash" ? 1 : 0, // เว้นระยะห่างยกเว้นตัวสุดท้าย
+                        p: 2,
+                        border: "1px solid #eee",
+                        borderRadius: 2,
+                        width: "100%",
+                        ml: 0,
+                        // เพิ่มลูกเล่น: ถ้าเลือกอยู่ให้เปลี่ยนสีขอบ
+                        borderColor:
+                          paymentMethod === method.value
+                            ? "primary.main"
+                            : "#eee",
+                        bgcolor:
+                          paymentMethod === method.value
+                            ? "action.hover"
+                            : "transparent",
+                      }}
+                    />
+                  ))}
                 </RadioGroup>
               </Paper>
             </Stack>
           </Grid>
 
-          {/* ฝั่งขวา: สรุปยอดสั่งซื้อ */}
+          {/* Right Side: Order Summary */}
           <Grid size={{ xs: 12, md: 5 }}>
             <Card
               sx={{
@@ -442,7 +441,6 @@ export default function Checkout() {
               <Typography variant="h6" fontWeight={800} gutterBottom>
                 สรุปคำสั่งซื้อ
               </Typography>
-
               <Stack
                 spacing={2}
                 sx={{ my: 3, maxHeight: "45vh", overflowY: "auto", pr: 1 }}
@@ -459,14 +457,12 @@ export default function Checkout() {
                       "&:last-child": { borderBottom: "none", mb: 0, pb: 0 },
                     }}
                   >
-                    {/* รูปภาพเมนู */}
                     <Box
                       component="img"
                       src={
                         item.menuItemImage ||
                         "https://placehold.co/100x100?text=No+Image"
                       }
-                      alt={item.menuItemName}
                       sx={{
                         width: 70,
                         height: 70,
@@ -475,8 +471,6 @@ export default function Checkout() {
                         bgcolor: "#f0f0f0",
                       }}
                     />
-
-                    {/* รายละเอียด */}
                     <Box sx={{ flex: 1 }}>
                       <Stack
                         direction="row"
@@ -506,52 +500,30 @@ export default function Checkout() {
                             </Box>
                             {item.menuItemName}
                           </Typography>
-
-                          {/* Options */}
-                          {item.options && item.options.length > 0 && (
-                            <Stack spacing={0.5}>
-                              {item.options.map((opt: any, index: number) => (
-                                <Typography
-                                  key={index}
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{ display: "block", lineHeight: 1.2 }}
-                                >
-                                  • {opt.optionValueName}{" "}
-                                  {opt.extraPrice > 0 &&
-                                    `(+฿${opt.extraPrice.toLocaleString()})`}
-                                </Typography>
-                              ))}
-                            </Stack>
-                          )}
+                          {item.options?.map((opt: any, i: number) => (
+                            <Typography
+                              key={i}
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: "block" }}
+                            >
+                              • {opt.optionValueName}{" "}
+                              {opt.extraPrice > 0 && `(+฿${opt.extraPrice})`}
+                            </Typography>
+                          ))}
                           {item.note && (
                             <Typography
                               variant="caption"
                               color="error"
-                              sx={{ display: "block", mt: 0.5 }}
+                              sx={{ display: "block" }}
                             >
                               * {item.note}
                             </Typography>
                           )}
                         </Box>
-
-                        {/* ราคารวมของรายการนี้ */}
-                        <Stack alignItems="flex-end">
-                          <Typography variant="body2" fontWeight={700}>
-                            {/* ⭐ เรียกใช้ Function คำนวณราคาที่ถูกต้อง */}฿
-                            {calculateItemTotal(item).toLocaleString()}
-                          </Typography>
-
-                          {/* ราคาต่อหน่วย */}
-                          {item.quantity > 1 && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              (฿{item.price.toLocaleString()} / ชิ้น)
-                            </Typography>
-                          )}
-                        </Stack>
+                        <Typography variant="body2" fontWeight={700}>
+                          ฿{calculateItemTotal(item).toLocaleString()}
+                        </Typography>
                       </Stack>
                     </Box>
                   </Box>
@@ -560,6 +532,7 @@ export default function Checkout() {
 
               <Divider sx={{ mb: 2.5 }} />
 
+              {/* Promo Code Input */}
               <TextField
                 fullWidth
                 size="small"
@@ -592,6 +565,7 @@ export default function Checkout() {
                 sx={{ mb: 3 }}
               />
 
+              {/* Total Calculation */}
               <Stack spacing={1.5} sx={{ mb: 4 }}>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography color="text.secondary">ยอดรวม</Typography>

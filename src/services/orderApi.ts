@@ -1,47 +1,41 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { baseUrlAPI, Sd } from "../helpers/SD"; // ✅ Import Sd
+import { baseUrlAPI, Sd } from "../helpers/SD";
 import type { OrderHeader } from "../@types/dto/OrderHeader";
 import type { OrdersQuery } from "../@types/requests/OrdersQuery";
 import { signalRService } from "./signalrService";
 import type { CreateOrder } from "../@types/createDto/CreateOrder";
 import type { UpdateOrder } from "../@types/UpdateDto/UpdateOrder";
-import type { CancelRequest } from "../@types/requests/cancelRequest";
+import type { CancelRequest } from "../@types/requests/CancelRequest";
 
 export const orderApi = createApi({
   reducerPath: "Order",
   baseQuery: fetchBaseQuery({ baseUrl: baseUrlAPI }),
   tagTypes: ["Order"],
   endpoints: (builder) => ({
-    
-   // -------------------------------------------------------------------------
-    // 1. ดึงออเดอร์ทั้งหมด (Admin/Staff) + Real-time Sync
     // -------------------------------------------------------------------------
-    getOrderAll: builder.query<{ results: OrderHeader[]; totalCount: number }, OrdersQuery>({
+    // 1. Get All Orders (Admin/Staff) + Real-time Sync
+    // -------------------------------------------------------------------------
+    getOrderAll: builder.query<
+      { results: OrderHeader[]; totalCount: number },
+      OrdersQuery
+    >({
       query: (params) => ({ url: "orders", params }),
 
       async onCacheEntryAdded(
         _arg,
-        { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
       ) {
         try {
           await cacheDataLoaded;
-
-          // 🔥 [แก้ตรงนี้] บังคับตัดการเชื่อมต่อเก่าทิ้งก่อน (เผื่อเป็น Guest Connection)
-          // แล้วต่อใหม่ เพื่อให้ส่ง Token Admin ไปหา Backend
-          await signalRService.stopConnection(); 
           await signalRService.startConnection();
-          
           console.log("🔌 [Admin] SignalR Re-Connected (With Admin Token)");
 
           // --- Define Handlers ---
-
           const handleNewOrder = (newOrder: OrderHeader) => {
             console.log("🆕 NewOrderReceived:", newOrder.id);
             updateCachedData((draft) => {
-              // เช็คกันเหนียวว่ามี array ไหม
               if (!draft.results) draft.results = [];
-              
               if (!draft.results.find((o) => o.id === newOrder.id)) {
                 draft.results.unshift(newOrder);
                 draft.totalCount += 1;
@@ -53,7 +47,9 @@ export const orderApi = createApi({
             console.log("🔄 Order Updated:", updatedOrder.id);
             updateCachedData((draft) => {
               if (!draft.results) return;
-              const index = draft.results.findIndex((o) => o.id === updatedOrder.id);
+              const index = draft.results.findIndex(
+                (o) => o.id === updatedOrder.id,
+              );
               if (index !== -1) {
                 draft.results[index] = updatedOrder;
               }
@@ -66,45 +62,49 @@ export const orderApi = createApi({
               if (!draft.results) return;
               const order = draft.results.find((o) => o.id === orderId);
               if (order) {
-                const detail = order.orderDetails.find((d) => d.id === detailId);
+                const detail = order.orderDetails.find(
+                  (d) => d.id === detailId,
+                );
                 if (detail) {
                   detail.kitchenStatus = kitchenStatus;
                   if (kitchenStatus === Sd.KDS_Done) detail.isReady = true;
-                  if (kitchenStatus === Sd.KDS_Cancelled) detail.isCancelled = true;
+                  if (kitchenStatus === Sd.KDS_Cancelled)
+                    detail.isCancelled = true;
                 }
               }
             });
           };
 
           const handleDeleteOrder = (deletedId: number) => {
-             console.log("🗑️ OrderDeleted:", deletedId);
-             updateCachedData((draft) => {
-                if (!draft.results) return;
-                const initialLength = draft.results.length;
-                draft.results = draft.results.filter(o => o.id !== deletedId);
-                // ถ้าลบจริง ให้ลด count ลง
-                if (draft.results.length < initialLength) {
-                    draft.totalCount = Math.max(0, draft.totalCount - 1);
-                }
-             });
+            console.log("🗑️ OrderDeleted:", deletedId);
+            updateCachedData((draft) => {
+              if (!draft.results) return;
+              const initialLength = draft.results.length;
+              draft.results = draft.results.filter((o) => o.id !== deletedId);
+              if (draft.results.length < initialLength) {
+                draft.totalCount = Math.max(0, draft.totalCount - 1);
+              }
+            });
           };
 
           // --- Subscribe Events ---
           signalRService.on("NewOrderReceived", handleNewOrder);
-          signalRService.on("UpdateEmployeeOrderList", handleUpdateOrder);
           signalRService.on("OrderStatusUpdated", handleUpdateOrder);
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
           signalRService.on("OrderDeleted", handleDeleteOrder);
+          // ✅ ADDED: Listen for employee updates
+          signalRService.on("UpdateEmployeeOrderList", handleUpdateOrder);
 
           // --- Cleanup ---
           await cacheEntryRemoved;
 
-          signalRService.off("NewOrderReceived");
-          signalRService.off("UpdateEmployeeOrderList");
-          signalRService.off("OrderStatusUpdated");
-          signalRService.off("OrderDetailUpdated");
-          signalRService.off("OrderDeleted");
-
+          // ✅ FIXED: Pass callbacks to .off() to remove only these listeners
+          signalRService.off("NewOrderReceived", handleNewOrder);
+          signalRService.off("OrderStatusUpdated", handleUpdateOrder);
+          signalRService.off("OrderDetailUpdated", handleDetailUpdate);
+          signalRService.off("OrderDeleted", handleDeleteOrder);
+          signalRService.off("UpdateEmployeeOrderList", handleUpdateOrder);
+          
         } catch (err) {
           console.error("❌ SignalR Sync Error (Admin):", err);
         }
@@ -121,32 +121,38 @@ export const orderApi = createApi({
     }),
 
     // -------------------------------------------------------------------------
-    // 2. ดึงออเดอร์ตาม ID (Customer Tracking / Admin Detail)
+    // 2. Get Order by ID (Customer Tracking / Admin Detail)
     // -------------------------------------------------------------------------
-    getOrderById: builder.query<OrderHeader, number>({
-      query: (id) => `orders/${id}`,
+    getOrderById: builder.query<OrderHeader,{ id: number; guestToken?: string }>({
+      query: ({ id, guestToken }) => ({
+        url: `orders/${id}`,
+        headers: guestToken
+          ? { Authorization: `Bearer ${guestToken}` }
+          : undefined,
+      }),
+
       async onCacheEntryAdded(
-        id,
-        { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
+        arg,
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
       ) {
+        const orderId = arg.id;
+
         try {
           await cacheDataLoaded;
-
-          // ✅ Tracking ไม่จำเป็นต้อง Force Reconnect (เพราะใช้ Anonymous ได้)
-          // แค่เช็คว่าต่อหรือยัง ถ้ายังก็ต่อ
           await signalRService.startConnection();
-          await signalRService.invoke("JoinOrderGroup", id.toString());
-          console.log(`🔌 [Tracking] Joined Group Order: ${id}`);
+          await signalRService.invoke("JoinOrderGroup", orderId.toString());
+          console.log(`🔌 [Tracking] Joined Group Order: ${orderId}`);
 
           // --- Define Handlers ---
-
           const handleHeaderUpdate = (updatedOrder: OrderHeader) => {
-            if (updatedOrder.id !== id) return;
+            if (updatedOrder.id !== orderId) return;
             updateCachedData((draft) => {
               Object.assign(draft, updatedOrder);
+              const isFinished = [
+                Sd.Status_Ready,
+                Sd.Status_Completed,
+              ].includes(updatedOrder.orderStatus);
 
-              const isFinished = [Sd.Status_Ready, Sd.Status_Completed].includes(updatedOrder.orderStatus);
-              
               if (isFinished && draft.orderDetails) {
                 draft.orderDetails.forEach((item) => {
                   if (!item.isCancelled) {
@@ -155,17 +161,16 @@ export const orderApi = createApi({
                   }
                 });
               }
-              
+
               if (updatedOrder.orderDetails && updatedOrder.orderDetails.length > 0) {
-                  draft.orderDetails = updatedOrder.orderDetails;
+                draft.orderDetails = updatedOrder.orderDetails;
               }
             });
           };
 
           const handleDetailUpdate = (payload: any) => {
-            const { orderId, detailId, kitchenStatus } = payload;
-            if (orderId !== id) return;
-
+            const { orderId: updatedId, detailId, kitchenStatus } = payload;
+            if (updatedId !== orderId) return;
             updateCachedData((draft) => {
               const item = draft.orderDetails.find((d) => d.id === detailId);
               if (item) {
@@ -178,72 +183,73 @@ export const orderApi = createApi({
 
           // --- Subscribe Events ---
           signalRService.on("OrderStatusUpdated", handleHeaderUpdate);
-          signalRService.on("UpdateEmployeeOrderList", handleHeaderUpdate); 
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
+          // ✅ ADDED: Listen for employee updates
+          signalRService.on("UpdateEmployeeOrderList", handleHeaderUpdate);
 
           // --- Cleanup ---
           await cacheEntryRemoved;
 
-          signalRService.off("OrderStatusUpdated");
-          signalRService.off("UpdateEmployeeOrderList");
-          signalRService.off("OrderDetailUpdated");
+          // ✅ FIXED: Pass callbacks
+          signalRService.off("OrderStatusUpdated", handleHeaderUpdate);
+          signalRService.off("OrderDetailUpdated", handleDetailUpdate);
+          signalRService.off("UpdateEmployeeOrderList", handleHeaderUpdate);
 
         } catch (err) {
           console.error("❌ SignalR Sync Error (Detail):", err);
         }
       },
-      providesTags: (_result, _error, id) => [{ type: "Order", id }],
+      providesTags: (_result, _error, arg) => [{ type: "Order", id: arg.id }],
     }),
 
-// ⭐ 1. ปรับปรุง getOrderHistory ให้เป็น Real-time
+    // -------------------------------------------------------------------------
+    // 3. Get Order History (Member)
+    // -------------------------------------------------------------------------
     getOrderHistory: builder.query<OrderHeader[],{ userId?: string; guestToken?: string }>({
       query: (params) => ({
         url: "orders/history",
         params,
       }),
-      
-      // ✅ เพิ่ม Logic Real-time ตรงนี้
+
       async onCacheEntryAdded(
-        arg, // arg คือ { userId, guestToken } ที่ส่งเข้ามา
-        { updateCachedData, cacheDataLoaded, cacheEntryRemoved }
+        arg,
+        { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
       ) {
         try {
           await cacheDataLoaded;
+          const userRoom = arg.userId
+            ? `User_${arg.userId}`
+            : `Guest_${arg.guestToken}`;
 
-          // 1. สร้างชื่อห้อง (ให้ตรงกับ Backend logic)
-          const userRoom = arg.userId ? `User_${arg.userId}` : `Guest_${arg.guestToken}`;
-
-          // 2. ต่อ SignalR และเข้าห้องส่วนตัว
           await signalRService.startConnection();
-          await signalRService.invoke("JoinUserGroup", userRoom); 
+          await signalRService.invoke("JoinUserGroup", userRoom);
           console.log(`🔌 [History] Joined User Room: ${userRoom}`);
 
-          // 3. ฟังก์ชันอัปเดต List
+          // --- Define Handler ---
           const handleUpdateList = (updatedOrder: OrderHeader) => {
-             updateCachedData((draft) => {
-                // หาว่ามีออเดอร์นี้ใน list ไหม
-                const index = draft.findIndex(o => o.id === updatedOrder.id);
-                
-                if (index !== -1) {
-                   // ถ้ามี -> อัปเดตข้อมูล
-                   draft[index] = updatedOrder;
-                } else {
-                   // ถ้าไม่มี (ออเดอร์ใหม่) -> เพิ่มเข้าไปบนสุด
-                   draft.unshift(updatedOrder);
-                }
-             });
+            updateCachedData((draft) => {
+              const index = draft.findIndex((o) => o.id === updatedOrder.id);
+              if (index !== -1) {
+                draft[index] = updatedOrder;
+              } else {
+                draft.unshift(updatedOrder);
+              }
+            });
           };
 
-          // 4. Subscribe Events
-          // (Backend ส่งมาที่ห้อง UserRoom เราก็จะได้ยินด้วย)
+          // --- Subscribe Events ---
           signalRService.on("OrderStatusUpdated", handleUpdateList);
-          signalRService.on("NewOrderReceived", handleUpdateList); // เผื่อลูกค้าเปิด 2 จอ จอหนึ่งสั่ง จอนี้ต้องเด้ง
+          signalRService.on("NewOrderReceived", handleUpdateList);
+          // ✅ ADDED: Listen for employee updates
+          signalRService.on("UpdateEmployeeOrderList", handleUpdateList);
 
+          // --- Cleanup ---
           await cacheEntryRemoved;
 
-          // Cleanup
-          signalRService.off("OrderStatusUpdated");
-          signalRService.off("NewOrderReceived");
+          // ✅ FIXED: Pass callbacks
+          signalRService.off("OrderStatusUpdated", handleUpdateList);
+          signalRService.off("NewOrderReceived", handleUpdateList);
+          signalRService.off("UpdateEmployeeOrderList", handleUpdateList);
 
         } catch (err) {
           console.error("❌ SignalR History Error:", err);
@@ -252,6 +258,7 @@ export const orderApi = createApi({
       providesTags: ["Order"],
     }),
 
+    // ... (rest of mutations remain unchanged) ...
     confirmCart: builder.mutation<OrderHeader, CreateOrder>({
       query: (body) => ({ url: "orders/confirm-cart", method: "POST", body }),
       invalidatesTags: ["Order"],
@@ -261,7 +268,7 @@ export const orderApi = createApi({
       query: (body) => ({ url: "orders", method: "PUT", body }),
     }),
 
-    updateOrderStatus: builder.mutation<OrderHeader, { id: number; newStatus: string }>({
+    updateOrderStatus: builder.mutation<OrderHeader,{ id: number; newStatus: string }>({
       query: ({ id, newStatus }) => ({
         url: `orders/${id}/status`,
         method: "PUT",
@@ -270,7 +277,7 @@ export const orderApi = createApi({
       }),
     }),
 
-    updateKitchenStatus: builder.mutation<void, { detailId: number; status: string }>({
+    updateKitchenStatus: builder.mutation<void,{ detailId: number; status: string }>({
       query: ({ detailId, status }) => ({
         url: `orders/details/${detailId}/status`,
         method: "PATCH",
@@ -279,8 +286,12 @@ export const orderApi = createApi({
       }),
     }),
 
-    cancelOrder: builder.mutation<{ message: string }, { id: number; request: CancelRequest }>({
-      query: ({ id, request }) => ({ url: `orders/${id}/cancel`, method: "POST", body: request }),
+    cancelOrder: builder.mutation<{ message: string },{ id: number; request: CancelRequest }>({
+      query: ({ id, request }) => ({
+        url: `orders/${id}/cancel`,
+        method: "POST",
+        body: request,
+      }),
     }),
 
     getOrderByPickUpCode: builder.query<OrderHeader, string>({
@@ -288,7 +299,7 @@ export const orderApi = createApi({
       providesTags: (_result, _error, code) => [{ type: "Order", id: code }],
     }),
 
-    confirmPayment: builder.mutation<OrderHeader, { id: number; paymentMethod: string }>({
+    confirmPayment: builder.mutation<OrderHeader,{ id: number; paymentMethod: string }>({
       query: ({ id, paymentMethod }) => ({
         url: `orders/${id}/confirm-payment`,
         method: "POST",

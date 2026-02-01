@@ -6,8 +6,10 @@ export interface OrderHeader {
   pickUpCode: string;
   customerPhone: string;
   channel: string;        // เช่น 'PickUp'
+  paymentMethod: string; // เช่น 'Cash', 'CreditCard'
 
   userId?: string;
+  guestToken?: string;
   customerName?: string;
   customerNote?: string;
   
@@ -19,6 +21,7 @@ export interface OrderHeader {
   appliedPromoCode?: string;
   subTotal: number;       // C# decimal -> TS number
   orderTotal: number;
+  discount: number;
   total: number;
 
   // วันเวลา (รับเป็น ISO String เช่น "2024-05-20T14:30:00Z")

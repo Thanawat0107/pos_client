@@ -1,5 +1,6 @@
 export interface CreateOrder {
-  channel: string;             // เช่น 'PickUp'
+  channel: string; // เช่น 'PickUp'
+  paymentMethod?: string; // เพิ่มอันนี้
 
   customerPhone: string;
   customerName?: string;
@@ -7,10 +8,10 @@ export interface CreateOrder {
 
   userId?: string;
   guestToken?: string;
-  cartToken: string;           // ⭐ สำคัญมาก
+  cartToken: string; // ⭐ สำคัญมาก
 
   promoCode?: string;
 
   // DateTime? -> string (ISO 8601 Format) | undefined
-  estimatedPickUpTime?: string; 
+  estimatedPickUpTime?: string;
 }

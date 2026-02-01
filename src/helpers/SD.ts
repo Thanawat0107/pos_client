@@ -9,6 +9,11 @@ export const ROLES = [
   { value: "All", label: "ทุกคน (All)" },
 ];
 
+export const paymentMethods = [
+  { value: "cash", label: "เงินสด" },
+  { value: "promptPay", label: "พร้อมเพย์" },
+];
+
 export const Sd = {
   // --- Order Status (ตรงกับ C# เป๊ะๆ) ---
   Status_PendingPayment: "pendingPayment", // รอชำระเงิน

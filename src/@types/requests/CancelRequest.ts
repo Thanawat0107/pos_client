@@ -1,5 +1,4 @@
-export type CancelRequest = {
-  // ส่งมาเพื่อยืนยันว่าเป็นเจ้าของออเดอร์จริงๆ
+export interface CancelRequest {
   userId?: string;
   guestToken?: string;
   isAdmin: boolean;
