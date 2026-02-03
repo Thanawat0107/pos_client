@@ -15,10 +15,10 @@ export const paymentMethods = [
 ];
 
 export const Sd = {
-  // --- Order Status (ตรงกับ C# เป๊ะๆ) ---
   Status_PendingPayment: "pendingPayment", // รอชำระเงิน
+  Status_Approved: "approved", 
   Status_Paid: "paid", // ชำระเงินแล้ว/รอคิว
-  Status_Preparing: "preparing", // ชำระเงินแล้ว/รอคิว
+  Status_Preparing: "preparing", // กำลังจัดเตรียมอาหาร
   Status_Ready: "ready", // อาหารเสร็จแล้ว/รอรับ
   Status_Completed: "completed", // จบออเดอร์/รับของแล้ว
   Status_Cancelled: "cancelled", // ยกเลิกออเดอร์
@@ -28,5 +28,6 @@ export const Sd = {
   KDS_Waiting: "WAITING", // รอคิวทำ
   KDS_Cooking: "COOKING", // กำลังทำ
   KDS_Done: "DONE", // ทำเสร็จแล้ว
+  KDS_None: "NONE", // ไม่มีสถานะ
   KDS_Cancelled: "CANCELLED", // ยกเลิกรายการนี้
 };

@@ -72,18 +72,15 @@ type Props = {
 };
 
 export default function OrderDetailDrawer({ open, onClose, order }: Props) {
-  // Hooks
   const [updateStatus, { isLoading: loadingStatus }] = useUpdateOrderStatusMutation();
   const [updateOrder, { isLoading: loadingUpdate }] = useUpdateOrderMutation();
   const [cancelOrder, { isLoading: loadingCancel }] = useCancelOrderMutation();
   const [updateKitchen, { isLoading: loadingKitchen }] = useUpdateKitchenStatusMutation();
   const isLoading = loadingStatus || loadingUpdate || loadingCancel || loadingKitchen;
 
-  // Local State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ customerName: "", customerPhone: "", note: "" });
   
-  // Cancel Dialog State
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [targetItemId, setTargetItemId] = useState<number | null>(null);
@@ -109,8 +106,6 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
   }, [order, open]);
 
   if (!order) return null;
-
-  // --- Handlers ---
 
   const handleStatusChange = async (nextStatus: string) => {
     try { await updateStatus({ id: order.id, newStatus: nextStatus }).unwrap(); } 
