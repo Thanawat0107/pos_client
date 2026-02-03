@@ -13,9 +13,9 @@ import ManageRecipeList from "../components/pages/adminManage/recipe/ManageRecip
 import ManageManualList from "../components/pages/adminManage/manual/ManageManualList";
 import ManageContentList from "../components/pages/adminManage/content/ManageContentList";
 import MenuDetails from "../components/pages/menu/MenuDetails";
-import Checkout from "../pages/order/Checkout";
-import OrderSuccess from "../pages/order/OrderSuccess";
-import ActiveOrderFloating from "../pages/order/ActiveOrderFloating";
+import Checkout from "../pages/checkout/Checkout";
+import OrderSuccess from "../pages/orderSuccess/OrderSuccess";
+import ActiveOrderFloating from "../pages/activeOrder/ActiveOrderFloating";
 import MyOrders from "../pages/order/MyOrders";
 
 export default function Routers() {
