@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo } from "react";
+ import { useEffect, useMemo } from "react";
 import { 
   Box, Container, Typography, Card, CardContent, Chip, Button, Stack, CircularProgress 
 } from "@mui/material";
