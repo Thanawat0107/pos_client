@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Stack,
   TextField,
@@ -6,8 +5,7 @@ import {
   FormControl,
   Select,
   MenuItem,
-  useMediaQuery,
-} from "@mui/material";
+  useMediaQuery} from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 import { Sd } from "../../../helpers/SD";
@@ -30,16 +28,18 @@ export default function OrderFilterBar({
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
-  // สไตล์สำหรับ Input ให้ดูขาวสะอาดและมีขอบมนๆ
+  // สไตล์สำหรับ Input
   const inputStyle = {
     bgcolor: 'white',
     borderRadius: 2,
     '& .MuiOutlinedInput-notchedOutline': {
-        borderColor: '#e0e0e0', // ขอบสีจางๆ
+        borderColor: '#e0e0e0',
     },
     '&:hover .MuiOutlinedInput-notchedOutline': {
         borderColor: '#bdbdbd',
     },
+    // ปรับความสูงให้เท่ากันเป๊ะๆ ทั้ง TextField และ Select
+    height: 40, 
   };
 
   return (
@@ -61,28 +61,46 @@ export default function OrderFilterBar({
               <SearchIcon fontSize="small" sx={{ color: 'text.disabled' }} />
             </InputAdornment>
           ),
+          style: { borderRadius: 8, backgroundColor: 'white' } // Style ของ TextField จะต่างจาก Select นิดหน่อย
         }}
         sx={{ 
-            ...inputStyle,
-            flexGrow: 1 // ให้ช่องค้นหายืดกินพื้นที่ที่เหลือ
+            flexGrow: 1,
+            '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: '#e0e0e0' },
+                '&:hover fieldset': { borderColor: '#bdbdbd' },
+            }
         }}
       />
 
-      {/* 2. กรองสถานะออเดอร์ (ใช้ค่าจาก Sd) */}
-      <FormControl sx={{ minWidth: isMdUp ? 200 : "100%" }} size="small">
+      {/* 2. กรองสถานะออเดอร์ (Update ตาม Flow ใหม่) */}
+      <FormControl sx={{ minWidth: isMdUp ? 220 : "100%" }} size="small">
         <Select
           value={status}
           onChange={(e) => onStatusChange(e.target.value)}
           displayEmpty
           sx={inputStyle}
         >
-          <MenuItem value="all">สถานะ: ทั้งหมด</MenuItem>
-          <MenuItem value={Sd.Status_PendingPayment}>รอชำระเงิน</MenuItem>
-          <MenuItem value={Sd.Status_Paid}>รอคิว/จ่ายแล้ว</MenuItem>
-          <MenuItem value={Sd.Status_Preparing}>กำลังปรุง</MenuItem>
-          <MenuItem value={Sd.Status_Ready}>พร้อมรับ</MenuItem>
-          <MenuItem value={Sd.Status_Completed}>สำเร็จ</MenuItem>
-          <MenuItem value={Sd.Status_Cancelled}>ยกเลิก</MenuItem>
+          <MenuItem value="all">📝 สถานะ: ทั้งหมด</MenuItem>
+          
+          {/* --- Zone Action Required (ต้องทำทันที) --- */}
+          <MenuItem value={Sd.Status_Pending} sx={{ color: 'warning.main', fontWeight: 'bold' }}>
+            ⏳ รออนุมัติ (ร้านต้องกดรับ)
+          </MenuItem>
+          <MenuItem value={Sd.Status_PendingPayment} sx={{ color: 'error.main' }}>
+            💰 รอชำระเงิน
+          </MenuItem>
+
+          {/* --- Zone In Progress (ครัวกำลังทำ) --- */}
+          <MenuItem value={Sd.Status_Approved}>✅ อนุมัติแล้ว (รอคิว)</MenuItem>
+          <MenuItem value={Sd.Status_Paid}>💵 ชำระเงินแล้ว (รอคิว)</MenuItem>
+          <MenuItem value={Sd.Status_Preparing}>👨‍🍳 กำลังปรุง</MenuItem>
+          <MenuItem value={Sd.Status_Ready}>🔔 พร้อมรับสินค้า</MenuItem>
+          
+          {/* --- Zone Finished --- */}
+          <MenuItem value={Sd.Status_Completed}>🏁 สำเร็จ/รับของแล้ว</MenuItem>
+          <MenuItem value={Sd.Status_Cancelled} sx={{ color: 'text.disabled' }}>
+            ❌ ยกเลิก
+          </MenuItem>
         </Select>
       </FormControl>
 
@@ -94,9 +112,9 @@ export default function OrderFilterBar({
           displayEmpty
           sx={inputStyle}
         >
-          <MenuItem value="all">การชำระ: ทั้งหมด</MenuItem>
-          <MenuItem value="UNPAID">ยังไม่จ่าย</MenuItem>
-          <MenuItem value="PAID">จ่ายแล้ว</MenuItem>
+          <MenuItem value="all">💳 การชำระ: ทั้งหมด</MenuItem>
+          <MenuItem value="UNPAID">❌ ยังไม่จ่าย</MenuItem>
+          <MenuItem value="PAID">✅ จ่ายแล้ว/เครดิต</MenuItem>
         </Select>
       </FormControl>
 
@@ -108,10 +126,10 @@ export default function OrderFilterBar({
           displayEmpty
           sx={inputStyle}
         >
-          <MenuItem value="all">ช่องทาง: ทั้งหมด</MenuItem>
-          <MenuItem value="PickUp">รับที่ร้าน</MenuItem>
-          <MenuItem value="DineIn">ทานที่ร้าน</MenuItem>
-          <MenuItem value="Delivery">เดลิเวอรี่</MenuItem>
+          <MenuItem value="all">🛵 ช่องทาง: ทั้งหมด</MenuItem>
+          <MenuItem value="PickUp">🛍️ รับหน้าร้าน</MenuItem>
+          <MenuItem value="DineIn">🍽️ ทานที่ร้าน</MenuItem>
+          <MenuItem value="Delivery">🛵 เดลิเวอรี่</MenuItem>
         </Select>
       </FormControl>
     </Stack>

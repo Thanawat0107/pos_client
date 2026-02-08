@@ -73,9 +73,9 @@ export default function ActiveOrderFloating() {
   }
 
   // --- Handlers ---
-  const handleClickBar = (event: React.MouseEvent<HTMLElement>) => {
+  const handleClickBar = (event: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
     if (activeOrders.length > 1) {
-      setAnchorEl(event.currentTarget);
+      setAnchorEl(event.currentTarget as HTMLElement);
     } else {
       navigate(`/order-success/${activeOrders[0].id}`);
     }

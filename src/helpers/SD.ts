@@ -16,8 +16,9 @@ export const paymentMethods = [
 
 export const Sd = {
   Status_PendingPayment: "pendingPayment", // รอชำระเงิน
-  Status_Approved: "approved", 
   Status_Paid: "paid", // ชำระเงินแล้ว/รอคิว
+  Status_Pending: "pending", // รอดำเนินการ
+  Status_Approved: "approved", 
   Status_Preparing: "preparing", // กำลังจัดเตรียมอาหาร
   Status_Ready: "ready", // อาหารเสร็จแล้ว/รอรับ
   Status_Completed: "completed", // จบออเดอร์/รับของแล้ว

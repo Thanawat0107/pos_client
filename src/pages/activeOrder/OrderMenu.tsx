@@ -1,13 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Menu, MenuItem, ListItemText, ListItemIcon, Box, Typography, Divider } from "@mui/material";
+import { Menu, MenuItem, ListItemText, ListItemIcon, Box, Typography, Chip } from "@mui/material";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import { getStatusInfo } from "../../helpers/utils";
+import { getStatusConfig } from "../../utility/OrderHelpers";
+import type { OrderHeader } from "../../@types/dto/OrderHeader";
 
 interface Props {
   anchorEl: HTMLElement | null;
   open: boolean;
   onClose: () => void;
-  activeOrders: any[];
+  activeOrders: OrderHeader[];
   onSelect: (orderId: number) => void;
 }
 
@@ -19,29 +19,91 @@ export default function OrderMenu({ anchorEl, open, onClose, activeOrders, onSel
       onClose={onClose}
       PaperProps={{
         elevation: 8,
-        sx: { width: 320, maxHeight: 450, borderRadius: 3, mt: -1, p: 0, overflow: 'hidden' }
+        sx: { 
+            // ✅ Responsive Width:
+            // Mobile (xs): กว้างเกือบเต็มจอ (ลบขอบซ้ายขวาหน่อย)
+            // Desktop (md): กว้าง 320px เท่าเดิม
+            width: { xs: 'calc(100vw - 48px)', md: 320 },
+            
+            // ✅ Responsive Height:
+            // Mobile: สูงไม่เกิน 70% ของจอ (กันบัง Header)
+            // Desktop: สูงไม่เกิน 450px
+            maxHeight: { xs: '70vh', md: 450 },
+            
+            borderRadius: 4, 
+            mt: -1.5,
+            overflow: 'hidden' 
+        }
       }}
       anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
     >
-      <Box sx={{ p: 2, bgcolor: '#f5f5f5' }}>
-        <Typography variant="subtitle1" fontWeight="bold">รายการที่กำลังดำเนินการ</Typography>
-        <Typography variant="caption" color="text.secondary">เลือกรายการเพื่อดูรายละเอียด</Typography>
+      <Box sx={{ p: 2, bgcolor: '#fafafa', borderBottom: '1px solid #eee' }}>
+        <Typography variant="subtitle1" fontWeight={800} color="text.primary">
+            รายการที่กำลังดำเนินการ
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+            เลือกรายการเพื่อดูรายละเอียด
+        </Typography>
       </Box>
-      <Divider />
-      <Box sx={{ maxHeight: 350, overflowY: 'auto' }}>
-        {activeOrders.map((order: any) => {
-          const conf = getStatusInfo(order.orderStatus);
+
+      <Box sx={{ maxHeight: { xs: '60vh', md: 350 }, overflowY: 'auto' }}>
+        {activeOrders.map((order) => {
+          const config = getStatusConfig(order.orderStatus);
+          const timeString = new Date(order.createdAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
           return (
-            <MenuItem key={order.id} onClick={() => onSelect(order.id)} sx={{ py: 1.5, borderBottom: '1px solid #f0f0f0' }}>
-              <ListItemIcon sx={{ color: conf.color }}>{conf.icon}</ListItemIcon>
+            <MenuItem 
+                key={order.id} 
+                onClick={() => onSelect(order.id)} 
+                sx={{ 
+                    py: 2, 
+                    borderBottom: '1px solid #f0f0f0',
+                    transition: 'all 0.2s',
+                    '&:hover': { bgcolor: '#f5f5f5' }
+                }}
+            >
+              <ListItemIcon sx={{ color: config.iconColor, minWidth: 40 }}>
+                {config.icon}
+              </ListItemIcon>
+
               <ListItemText
-                primary={`ออเดอร์ #${order.pickUpCode || order.id}`}
-                secondary={conf.label}
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
-                secondaryTypographyProps={{ color: conf.color, fontWeight: 700, fontSize: '0.8rem' }}
+                // ✅ แก้ Hydration Error: บอกให้ secondary เรนเดอร์เป็น div (เพราะข้างในมี Chip/Box)
+                secondaryTypographyProps={{ component: 'div' }} 
+                primary={
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography fontWeight={700} fontSize="0.95rem">
+                            {order.pickUpCode 
+                                ? `คิวที่: ${order.pickUpCode}` 
+                                : `Order #${order.orderCode || order.id}`}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {timeString} น.
+                        </Typography>
+                    </Box>
+                }
+                secondary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, gap: 1 }}>
+                        <Chip 
+                            label={config.label} 
+                            size="small" 
+                            sx={{ 
+                                height: 20, 
+                                fontSize: '0.7rem', 
+                                fontWeight: 700,
+                                bgcolor: config.bg, 
+                                color: config.text,
+                                border: `1px solid ${config.iconColor}40`
+                            }} 
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                            {order.orderDetails?.length || 0} รายการ
+                        </Typography>
+                    </Box>
+                }
               />
-              <ArrowForwardIosIcon sx={{ fontSize: 12, color: 'grey.400' }} />
+
+              <ArrowForwardIosIcon sx={{ fontSize: 14, color: 'grey.400', ml: 1 }} />
             </MenuItem>
           );
         })}

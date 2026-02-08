@@ -159,16 +159,17 @@ export default function Checkout() {
         localStorage.removeItem("cartToken");
         window.dispatchEvent(new Event("activeOrderUpdated"));
 
+        navigate(`/order-success/${result.id}`, { replace: true });
         // ตรวจสอบค่า String ให้ตรงกับ SD.cs ใน Backend
         // "PendingPayment" คือยอด > 200 ที่ต้องจ่ายเงินก่อน
-        if (result.orderStatus === Sd.Status_PendingPayment) {
-          // ไปหน้าชำระเงิน (Payment Page) ที่คุณกำลังจะสร้าง
-          navigate(`/payment/${result.id}`, { replace: true });
-        } else {
-          // กรณี "Approved" (ยอด <= 200) หรือสถานะอื่นๆ
-          // ไปหน้าสำเร็จ/ติดตามสถานะ (Success Page)
-          navigate(`/order-success/${result.id}`, { replace: true });
-        }
+        // if (result.orderStatus === Sd.Status_PendingPayment) {
+        //   // ไปหน้าชำระเงิน (Payment Page) ที่คุณกำลังจะสร้าง
+        //   navigate(`/payment/${result.id}`, { replace: true });
+        // } else {
+        //   // กรณี "Approved" (ยอด <= 200) หรือสถานะอื่นๆ
+        //   // ไปหน้าสำเร็จ/ติดตามสถานะ (Success Page)
+        //   navigate(`/order-success/${result.id}`, { replace: true });
+        // }
       }
     } catch (err: any) {
       console.error("Checkout Error:", err);

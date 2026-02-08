@@ -4,7 +4,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
-import { Sd } from "./SD";
+import { Sd } from "../helpers/SD";
 
 // Animation
 export const pulse = keyframes`

@@ -9,12 +9,12 @@ import {
   Alert,
   Typography,
   keyframes,
-} from "@mui/material"; // ลบ Paper ออกถ้าใช้ Component แยก
+} from "@mui/material";
 import CallIcon from "@mui/icons-material/Call";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HomeIcon from "@mui/icons-material/Home";
 import { useParams, useNavigate } from "react-router-dom";
-import { HubConnectionBuilder } from "@microsoft/signalr";
+
 import {
   useGetOrderByIdQuery,
   useCancelOrderMutation,
@@ -26,7 +26,6 @@ import OrderStatusCard from "./OrderStatusCard";
 import OrderTimeline from "./OrderTimeline";
 import OrderMenuList from "./OrderMenuList";
 import CancelDialog from "./CancelDialog";
-// import PaymentGateway from "./PaymentGateway"; // ✅ [2] Import หน้าจ่ายเงินที่เราจะทำ
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -41,6 +40,7 @@ export default function OrderSuccess() {
   const userId = useAppSelector((state) => state.auth?.userId);
   const userRole = useAppSelector((state) => state.auth?.role);
 
+  // --- Guest Token Logic ---
   const guestTokens = useMemo(() => {
     try {
       const saved = localStorage.getItem("guestTokens");
@@ -63,11 +63,11 @@ export default function OrderSuccess() {
     data: order,
     isLoading,
     isError,
-    refetch,
   } = useGetOrderByIdQuery(
     { id: orderId, guestToken: orderToken },
     { skip: isNaN(orderId) },
   );
+
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
 
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -79,36 +79,10 @@ export default function OrderSuccess() {
   const isFirstLoad = useRef(true);
   const [prevStatus, setPrevStatus] = useState<string>("");
 
-  useEffect(() => {
-    if (!orderId) return;
-
-    const connection = new HubConnectionBuilder()
-      .withUrl(`${import.meta.env.VITE_API_URL}/hubs/orderHub`) // ปรับ URL ตาม Environment ของคุณ
-      .withAutomaticReconnect()
-      .build();
-
-    connection
-      .start()
-      .then(() => {
-        // Join Group ตาม User หรือ Guest
-        const groupName = userId ? `User_${userId}` : `Guest_${orderToken}`;
-        if (groupName) connection.invoke("JoinGroup", groupName);
-      })
-      .catch((err) => console.error("SignalR Error:", err));
-
-    connection.on("OrderStatusUpdated", (updatedOrder: any) => {
-      // ถ้า ID ตรงกับออเดอร์นี้ ให้โหลดข้อมูลใหม่ทันที
-      if (updatedOrder.id === orderId) {
-        refetch();
-      }
-    });
-
-    // ฟัง Event อื่นๆ เช่น PaymentVerified ได้ที่นี่
-
-    return () => {
-      connection.stop();
-    };
-  }, [orderId, userId, orderToken, refetch]);
+  const canCancelOrder =
+    order &&
+    (order.orderStatus === Sd.Status_PendingPayment ||
+      order.orderStatus === Sd.Status_Pending);
 
   useEffect(() => {
     if (isNaN(orderId)) {
@@ -147,6 +121,7 @@ export default function OrderSuccess() {
     setCancelReason("");
     setConfirmDialogOpen(true);
   };
+  
   const handleOpenCancelItem = (itemId: number, itemName: string) => {
     setTargetItem({ id: itemId, name: itemName });
     setCancelReason("");
@@ -159,7 +134,6 @@ export default function OrderSuccess() {
       if (targetItem) requestBody.orderItemId = targetItem.id;
       await cancelOrder({ id: orderId, request: requestBody }).unwrap();
       setConfirmDialogOpen(false);
-      refetch();
     } catch (err: any) {
       alert(err.data?.message || "ไม่สามารถยกเลิกรายการนี้ได้");
     }
@@ -218,18 +192,6 @@ export default function OrderSuccess() {
             estimatedPickUpTime={order.estimatedPickUpTime ?? null}
           />
 
-          {/* ✅ [2] Logic แสดง Payment Gateway 
-             ถ้าสถานะคือ PendingPayment -> แสดง QR Code ให้ลูกค้าจ่าย
-          */}
-          {/* {order.orderStatus === Sd.Status_PendingPayment && (
-             <PaymentGateway 
-                orderId={order.id} 
-                totalAmount={order.total} 
-                qrCodeUrl={order.qrCodeUrl} // สมมติว่า Backend ส่ง URL หรือ String QR มา
-                refetchOrder={refetch} // ส่งฟังก์ชันไปให้ PaymentGateway เรียกเมื่ออัปโหลดสลิปเสร็จ
-             />
-          )} */}
-
           {/* รายการอาหาร */}
           <OrderMenuList
             orderDetails={order.orderDetails}
@@ -238,15 +200,11 @@ export default function OrderSuccess() {
             total={order.total}
             appliedPromoCode={order.appliedPromoCode}
             onCancelItem={handleOpenCancelItem}
-            canCancel={order.orderStatus === Sd.Status_PendingPayment}
+            canCancel={canCancelOrder ?? false}
           />
 
           <Stack spacing={2}>
-            {/* ✅ [3] ปุ่มยกเลิกออเดอร์ใหญ่
-                ให้ยกเลิกได้เฉพาะตอนยังไม่จ่ายเงิน (PendingPayment) 
-                ถ้า Approved แล้ว (เริ่มทำ) ควรให้โทรหาพนักงานแทน
-            */}
-            {order.orderStatus === Sd.Status_PendingPayment && (
+            {canCancelOrder && (
               <Button
                 fullWidth
                 variant="outlined"

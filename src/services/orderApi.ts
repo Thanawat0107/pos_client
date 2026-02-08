@@ -217,13 +217,29 @@ export const orderApi = createApi({
       ) {
         try {
           await cacheDataLoaded;
-          const userRoom = arg.userId
-            ? `User_${arg.userId}`
-            : `Guest_${arg.guestToken}`;
-
           await signalRService.startConnection();
-          await signalRService.invoke("JoinUserGroup", userRoom);
-          console.log(`🔌 [History] Joined User Room: ${userRoom}`);
+
+          // 1. ถ้าเป็น User (ง่าย)
+          if (arg.userId) {
+            const userRoom = `User_${arg.userId}`;
+            await signalRService.invoke("JoinUserGroup", userRoom);
+            console.log(`🔌 [History] Joined: ${userRoom}`);
+          }
+          // 2. ถ้าเป็น Guest (ต้องแยก Token)
+          else if (arg.guestToken) {
+            // แยก string ด้วย comma (,)
+            const tokens = arg.guestToken.split(",");
+
+            // วนลูป Join ทุกห้อง
+            for (const t of tokens) {
+              const cleanToken = t.trim(); // กันเหนียวเผื่อมีเว้นวรรค
+              if (cleanToken) {
+                const guestRoom = `Guest_${cleanToken}`;
+                await signalRService.invoke("JoinUserGroup", guestRoom);
+                console.log(`🔌 [History] Joined: ${guestRoom}`);
+              }
+            }
+          }
 
           // --- Define Handler ---
           const handleUpdateList = (updatedOrder: OrderHeader) => {

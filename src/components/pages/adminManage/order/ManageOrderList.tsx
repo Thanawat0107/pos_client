@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
- import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Container,
@@ -16,13 +16,15 @@ import {
   Alert,
   Card,
   CardContent,
+  Chip, // ✅ เพิ่ม Chip
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive'; // ✅ เพิ่ม Icon แจ้งเตือน
 import ManageOrderItem from "./ManageOrderItem";
 import OrderDetailDrawer from "./OrderDetailDrawer";
 import OrderFilterBar from "../OrderFilterBar";
 import { useGetOrderAllQuery } from "../../../../services/orderApi";
-import { Sd } from "../../../../helpers/SD"; 
+import { Sd } from "../../../../helpers/SD";
 
 export default function ManageOrderList() {
   // State Filter
@@ -33,26 +35,29 @@ export default function ManageOrderList() {
     channel: "all",
   });
   
-  // ✅ เก็บ ID แทน object เพื่อหลีกเลี่ยง reference comparison issues
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   // API Call
   const { data, isLoading, isError, refetch, isFetching } = useGetOrderAllQuery(
     {
       pageNumber: 1,
-      pageSize: 10,
+      pageSize: 50, // ✅ แนะนำเพิ่มจำนวนต่อหน้า เพื่อให้เห็นภาพรวมได้ครบ
     },
+    {
+       // pollingInterval: 15000, // (Optional) ถ้าอยากให้ Auto-refresh ทุก 15 วิ เปิดบรรทัดนี้ได้ครับ
+       refetchOnMountOrArgChange: true
+    }
   );
 
   const rows = data?.results ?? [];
 
-  // ✅ คำนวณ selectedOrder จาก ID (useMemo ป้องกัน re-render เกินจำเป็น)
+  // Logic selectedOrder
   const selectedOrder = useMemo(() => {
     if (!selectedOrderId) return null;
     return rows.find((r) => r.id === selectedOrderId) ?? null;
   }, [selectedOrderId, rows]);
 
-  // ✅ Debug log เมื่อ Order เปลี่ยน (ไม่ทำให้เกิด infinite loop)
+  // Debug log
   useEffect(() => {
     if (selectedOrder) {
       console.log("🔍 Selected Order State:", {
@@ -63,37 +68,63 @@ export default function ManageOrderList() {
     }
   }, [selectedOrder]);
 
-  // Filter Logic (Client Side)
+  // ✅ [จุดที่ 1] Filter & Sorting Logic
   const filteredRows = useMemo(() => {
     return rows
       .filter((r) => {
         const searchLower = filters.q.toLowerCase();
 
+        // 1. Search
         const matchesQ =
           !filters.q ||
           r.orderCode.toLowerCase().includes(searchLower) ||
           (r.customerName && r.customerName.toLowerCase().includes(searchLower)) ||
           r.customerPhone.includes(filters.q);
 
+        // 2. Status
         const matchesStatus =
           filters.status === "all" || r.orderStatus === filters.status;
 
+        // 3. Channel
         const matchesChannel =
           filters.channel === "all" || r.channel === filters.channel;
 
-        const matchesPay =
-          filters.pay === "all" ||
-          (filters.pay === "UNPAID" && r.orderStatus === Sd.Status_PendingPayment) ||
-          (filters.pay === "PAID" &&
-            r.orderStatus !== Sd.Status_PendingPayment &&
-            r.orderStatus !== Sd.Status_Cancelled);
+        // 4. Payment (Logic ปรับปรุงใหม่ให้แม่นยำขึ้น)
+        let matchesPay = true;
+        if (filters.pay === "UNPAID") {
+            // เฉพาะที่ติดสถานะ "รอชำระเงิน"
+            matchesPay = r.orderStatus === Sd.Status_PendingPayment; 
+        } else if (filters.pay === "PAID") {
+            // สถานะเหล่านี้ถือว่า "ผ่านเรื่องเงินแล้ว" (เข้าครัวได้)
+            const paidStatuses = [
+                Sd.Status_Paid, 
+                Sd.Status_Approved, // ✅ รวม Approved ด้วย
+                Sd.Status_Preparing, 
+                Sd.Status_Ready, 
+                Sd.Status_Completed
+            ];
+            matchesPay = paidStatuses.includes(r.orderStatus);
+        }
 
         return matchesQ && matchesStatus && matchesChannel && matchesPay;
       })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort((a, b) => {
+        // ✅ [จุดสำคัญ] Sorting Logic: เอา "Pending" (รออนุมัติ) ขึ้นก่อนเสมอ!
+        if (a.orderStatus === Sd.Status_Pending && b.orderStatus !== Sd.Status_Pending) return -1;
+        if (a.orderStatus !== Sd.Status_Pending && b.orderStatus === Sd.Status_Pending) return 1;
+
+        // รองลงมาคือ "PendingPayment" (รอจ่าย)
+        if (a.orderStatus === Sd.Status_PendingPayment && b.orderStatus !== Sd.Status_PendingPayment) return -1;
+        if (a.orderStatus !== Sd.Status_PendingPayment && b.orderStatus === Sd.Status_PendingPayment) return 1;
+
+        // สุดท้ายเรียงตามเวลาล่าสุด
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
   }, [rows, filters]);
 
-  // --- UI ---
+  // ✅ [จุดที่ 2] นับจำนวนออเดอร์ที่รอการอนุมัติ
+  const pendingCount = rows.filter(r => r.orderStatus === Sd.Status_Pending).length;
+
   if (isError) {
     return <Container sx={{ mt: 4 }}><Alert severity="error">โหลดข้อมูลไม่สำเร็จ</Alert></Container>;
   }
@@ -110,27 +141,38 @@ export default function ManageOrderList() {
           mb={3}
         >
           <Box>
-            <Typography variant="h5" fontWeight={800} sx={{ color: "#2b3445" }}>
-              จัดการรายการคำสั่งซื้อ
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={2}>
+                <Typography variant="h5" fontWeight={800} sx={{ color: "#2b3445" }}>
+                จัดการรายการคำสั่งซื้อ
+                </Typography>
+                
+                {/* ✅ Badge แจ้งเตือนงานด่วน */}
+                {pendingCount > 0 && (
+                    <Chip 
+                        icon={<NotificationsActiveIcon />} 
+                        label={`รออนุมัติ ${pendingCount} รายการ`} 
+                        color="warning" 
+                        size="small"
+                        sx={{ fontWeight: 'bold', animation: 'pulse 2s infinite' }}
+                    />
+                )}
+            </Stack>
             <Typography variant="body2" color="text.secondary">
               รายการออเดอร์ทั้งหมดในระบบ
             </Typography>
           </Box>
           
-          {/* ✅ ปรับปุ่มรีเฟรชให้สวยเหมือนในรูป (ขอบแดง ตัวหนังสือแดง) */}
           <Button
             startIcon={isFetching ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
             onClick={() => refetch()}
             variant="outlined"
-            // ลบ color="error" ออก แล้ว custom เองเพื่อให้สีตรงเป๊ะ
             disabled={isFetching}
             sx={{ 
                 borderRadius: 2, 
                 textTransform: "none", 
                 fontWeight: 700,
-                borderColor: '#ef5350', // แดงอ่อนๆ หน่อย
-                color: '#d32f2f',       // แดงเข้ม
+                borderColor: '#ef5350',
+                color: '#d32f2f',
                 '&:hover': {
                     borderColor: '#d32f2f',
                     bgcolor: '#ffebee'
@@ -177,7 +219,6 @@ export default function ManageOrderList() {
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    {/* ✅ Header Style สวยๆ */}
                     <TableCell align="center" sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381", width: 60 }}>#</TableCell>
                     <TableCell sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381" }}>เลขออเดอร์ / รหัสรับ</TableCell>
                     <TableCell sx={{ bgcolor: "#f9fafb", fontWeight: 700, color: "#637381" }}>ลูกค้า</TableCell>
@@ -216,6 +257,15 @@ export default function ManageOrderList() {
         order={selectedOrder}
         onClose={() => setSelectedOrderId(null)}
       />
+      
+      {/* Animation สำหรับ Chip */}
+      <style>{`
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
     </Box>
   );
 }
