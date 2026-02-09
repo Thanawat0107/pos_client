@@ -89,7 +89,7 @@ export const orderApi = createApi({
 
           // --- Subscribe Events ---
           signalRService.on("NewOrderReceived", handleNewOrder);
-          signalRService.on("OrderStatusUpdated", handleUpdateOrder);
+          signalRService.on("OrderUpdated", handleUpdateOrder);
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
           signalRService.on("OrderDeleted", handleDeleteOrder);
           // ✅ ADDED: Listen for employee updates
@@ -100,11 +100,10 @@ export const orderApi = createApi({
 
           // ✅ FIXED: Pass callbacks to .off() to remove only these listeners
           signalRService.off("NewOrderReceived", handleNewOrder);
-          signalRService.off("OrderStatusUpdated", handleUpdateOrder);
+          signalRService.off("OrderUpdated", handleUpdateOrder);
           signalRService.off("OrderDetailUpdated", handleDetailUpdate);
           signalRService.off("OrderDeleted", handleDeleteOrder);
           signalRService.off("UpdateEmployeeOrderList", handleUpdateOrder);
-          
         } catch (err) {
           console.error("❌ SignalR Sync Error (Admin):", err);
         }
@@ -123,7 +122,10 @@ export const orderApi = createApi({
     // -------------------------------------------------------------------------
     // 2. Get Order by ID (Customer Tracking / Admin Detail)
     // -------------------------------------------------------------------------
-    getOrderById: builder.query<OrderHeader,{ id: number; guestToken?: string }>({
+    getOrderById: builder.query<
+      OrderHeader,
+      { id: number; guestToken?: string }
+    >({
       query: ({ id, guestToken }) => ({
         url: `orders/${id}`,
         headers: guestToken
@@ -162,7 +164,10 @@ export const orderApi = createApi({
                 });
               }
 
-              if (updatedOrder.orderDetails && updatedOrder.orderDetails.length > 0) {
+              if (
+                updatedOrder.orderDetails &&
+                updatedOrder.orderDetails.length > 0
+              ) {
                 draft.orderDetails = updatedOrder.orderDetails;
               }
             });
@@ -194,7 +199,6 @@ export const orderApi = createApi({
           signalRService.off("OrderStatusUpdated", handleHeaderUpdate);
           signalRService.off("OrderDetailUpdated", handleDetailUpdate);
           signalRService.off("UpdateEmployeeOrderList", handleHeaderUpdate);
-
         } catch (err) {
           console.error("❌ SignalR Sync Error (Detail):", err);
         }
@@ -205,7 +209,10 @@ export const orderApi = createApi({
     // -------------------------------------------------------------------------
     // 3. Get Order History (Member)
     // -------------------------------------------------------------------------
-    getOrderHistory: builder.query<OrderHeader[],{ userId?: string; guestToken?: string }>({
+    getOrderHistory: builder.query<
+      OrderHeader[],
+      { userId?: string; guestToken?: string }
+    >({
       query: (params) => ({
         url: "orders/history",
         params,
@@ -266,7 +273,6 @@ export const orderApi = createApi({
           signalRService.off("OrderStatusUpdated", handleUpdateList);
           signalRService.off("NewOrderReceived", handleUpdateList);
           signalRService.off("UpdateEmployeeOrderList", handleUpdateList);
-
         } catch (err) {
           console.error("❌ SignalR History Error:", err);
         }
@@ -284,7 +290,10 @@ export const orderApi = createApi({
       query: (body) => ({ url: "orders", method: "PUT", body }),
     }),
 
-    updateOrderStatus: builder.mutation<OrderHeader,{ id: number; newStatus: string }>({
+    updateOrderStatus: builder.mutation<
+      OrderHeader,
+      { id: number; newStatus: string }
+    >({
       query: ({ id, newStatus }) => ({
         url: `orders/${id}/status`,
         method: "PUT",
@@ -293,7 +302,10 @@ export const orderApi = createApi({
       }),
     }),
 
-    updateKitchenStatus: builder.mutation<void,{ detailId: number; status: string }>({
+    updateKitchenStatus: builder.mutation<
+      void,
+      { detailId: number; status: string }
+    >({
       query: ({ detailId, status }) => ({
         url: `orders/details/${detailId}/status`,
         method: "PATCH",
@@ -302,7 +314,10 @@ export const orderApi = createApi({
       }),
     }),
 
-    cancelOrder: builder.mutation<{ message: string },{ id: number; request: CancelRequest }>({
+    cancelOrder: builder.mutation<
+      { message: string },
+      { id: number; request: CancelRequest }
+    >({
       query: ({ id, request }) => ({
         url: `orders/${id}/cancel`,
         method: "POST",
@@ -315,13 +330,21 @@ export const orderApi = createApi({
       providesTags: (_result, _error, code) => [{ type: "Order", id: code }],
     }),
 
-    confirmPayment: builder.mutation<OrderHeader,{ id: number; paymentMethod: string }>({
+    confirmPayment: builder.mutation<
+      OrderHeader,
+      { id: number; paymentMethod: string }
+    >({
       query: ({ id, paymentMethod }) => ({
         url: `orders/${id}/confirm-payment`,
         method: "POST",
-        body: JSON.stringify(paymentMethod),
+        body: JSON.stringify(paymentMethod), // ส่งไปเป็น "cash" หรือ "promptPay"
         headers: { "Content-Type": "application/json" },
       }),
+      // ✅ เพิ่มตรงนี้: เพื่อบังคับโหลดข้อมูลออเดอร์นี้ใหม่ทันทีที่กดสำเร็จ (กันเหนียว)
+      invalidatesTags: (result, error, arg) => [
+        { type: "Order", id: arg.id }, // รีเฟรชเฉพาะออเดอร์นี้ (หน้า Detail)
+        { type: "Order", id: "LIST" }, // (Optional) ถ้ารายการหน้า List ไม่ขยับ ให้ใส่ id: "LIST" เพิ่ม
+      ],
     }),
 
     deleteOrder: builder.mutation<void, number>({

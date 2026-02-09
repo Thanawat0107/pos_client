@@ -1,4 +1,4 @@
-import ManageOrderList from "../../components/pages/adminManage/order/ManageOrderList";
+import ManageOrderList from "../../components/pages/adminManage/order/orderLists/ManageOrderList";
 
 export default function ManageOrder() {
   return (
