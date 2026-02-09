@@ -9,7 +9,7 @@ import { useLazyVerifyPromoQuery } from "../../services/contentApi";
 import { useConfirmCartMutation } from "../../services/orderApi";
 import type { CreateOrder } from "../../@types/createDto/CreateOrder";
 import { clearLocalCart } from "../../stores/slices/shoppingSlice";
-import { paymentMethods, Sd } from "../../helpers/SD";
+import { paymentMethods } from "../../helpers/SD";
 import CustomerForm from "./CustomerForm";
 import PickupSection from "./PickupSection";
 import PaymentSection from "./PaymentSection";
@@ -51,7 +51,7 @@ export default function Checkout() {
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [promoMessage, setPromoMessage] = useState({ text: "", type: "" as "success" | "error" | "" });
 
-  const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0].value);
+  const [paymentMethod, setPaymentMethod] = useState(paymentMethods.paymentStatus_Cash);
   const [pickupType, setPickupType] = useState<"asap" | "scheduled">("asap");
   const [scheduledTime, setScheduledTime] = useState("");
 

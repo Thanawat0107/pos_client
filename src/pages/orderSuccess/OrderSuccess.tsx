@@ -9,23 +9,29 @@ import {
   Alert,
   Typography,
   keyframes,
+  Snackbar,
 } from "@mui/material";
 import CallIcon from "@mui/icons-material/Call";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HomeIcon from "@mui/icons-material/Home";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
+// Service Imports
 import {
   useGetOrderByIdQuery,
   useCancelOrderMutation,
 } from "../../services/orderApi";
-import { Sd } from "../../helpers/SD";
+
+import { paymentMethods, Sd } from "../../helpers/SD";
 import { useAppSelector } from "../../hooks/useAppHookState";
 import { SD_Roles } from "../../@types/Enum";
+
+// Components
 import OrderStatusCard from "./OrderStatusCard";
 import OrderTimeline from "./OrderTimeline";
 import OrderMenuList from "./OrderMenuList";
 import CancelDialog from "./CancelDialog";
+import OrderPaymentSection from "./OrderPaymentSection"; // ✅ Import Component ใหม่
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -59,23 +65,38 @@ export default function OrderSuccess() {
     );
   }, [userId, guestTokens]);
 
+  // 1. Fetch Order Data
   const {
     data: order,
     isLoading,
     isError,
+    refetch,
   } = useGetOrderByIdQuery(
     { id: orderId, guestToken: orderToken },
     { skip: isNaN(orderId) },
   );
 
+  // 🔥 CORE LOGIC: คำนวณว่าจะแสดง QR Code หรือไม่
+  const showPaymentSection = useMemo(() => {
+    if (!order) return false;
+    const isForcedPayment = order.orderStatus === Sd.Status_PendingPayment;
+    const isPromptPay = order.paymentMethod === paymentMethods.paymentStatus_PromptPay; 
+    const isPendingButPromptPay = order.orderStatus === Sd.Status_Pending && isPromptPay;
+    return isForcedPayment || isPendingButPromptPay;
+  }, [order]);
+
+  // 2. Mutation for Cancel Order
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
 
+  // --- Local States ---
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [targetItem, setTargetItem] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
+  const [targetItem, setTargetItem] = useState<{ id: number; name: string } | null>(null);
+
+  // Notification State
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+
   const isFirstLoad = useRef(true);
   const [prevStatus, setPrevStatus] = useState<string>("");
 
@@ -84,6 +105,7 @@ export default function OrderSuccess() {
     (order.orderStatus === Sd.Status_PendingPayment ||
       order.orderStatus === Sd.Status_Pending);
 
+  // --- Effects ---
   useEffect(() => {
     if (isNaN(orderId)) {
       navigate("/", { replace: true });
@@ -99,12 +121,14 @@ export default function OrderSuccess() {
     }
   }, [order, isLoading, orderId, userId, guestTokens, userRole, navigate]);
 
+  // Sound & Vibrate Effect on Status Change
   useEffect(() => {
     if (order?.orderStatus) {
       if (
-        order.orderStatus === Sd.Status_Ready &&
+        (order.orderStatus === Sd.Status_Ready ||
+          order.orderStatus === Sd.Status_Paid) &&
         !isFirstLoad.current &&
-        prevStatus !== Sd.Status_Ready
+        prevStatus !== order.orderStatus
       ) {
         new Audio("/assets/sounds/notification.mp3")
           .play()
@@ -116,12 +140,27 @@ export default function OrderSuccess() {
     }
   }, [order?.orderStatus, prevStatus]);
 
+  // --- Handlers ---
+  const handlePaymentSuccess = () => {
+    setToastMsg("ส่งสลิปเรียบร้อย กำลังตรวจสอบความถูกต้อง...");
+    setToastOpen(true);
+    // Fallback refetch
+    setTimeout(() => {
+      refetch();
+    }, 3000);
+  };
+
+  const handlePaymentError = (msg: string) => {
+    setToastMsg(msg);
+    setToastOpen(true);
+  };
+
   const handleOpenCancelOrder = () => {
     setTargetItem(null);
     setCancelReason("");
     setConfirmDialogOpen(true);
   };
-  
+
   const handleOpenCancelItem = (itemId: number, itemName: string) => {
     setTargetItem({ id: itemId, name: itemName });
     setCancelReason("");
@@ -135,23 +174,18 @@ export default function OrderSuccess() {
       await cancelOrder({ id: orderId, request: requestBody }).unwrap();
       setConfirmDialogOpen(false);
     } catch (err: any) {
-      alert(err.data?.message || "ไม่สามารถยกเลิกรายการนี้ได้");
+      setToastMsg(err.data?.message || "ไม่สามารถยกเลิกรายการนี้ได้");
+      setToastOpen(true);
     }
   };
 
   if (isLoading)
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
         <CircularProgress size={60} />
       </Box>
     );
+
   if (isError || !order)
     return (
       <Container maxWidth="sm" sx={{ mt: 8, textAlign: "center" }}>
@@ -185,6 +219,16 @@ export default function OrderSuccess() {
             pickUpCode={order.pickUpCode}
             paymentMethod={order.paymentMethod}
           />
+
+          {/* 🔥 Payment Section Component */}
+          {showPaymentSection && (
+            <OrderPaymentSection 
+                orderId={orderId}
+                totalAmount={order.total}
+                onPaymentSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+            />
+          )}
 
           {/* Timeline */}
           <OrderTimeline
@@ -265,6 +309,23 @@ export default function OrderSuccess() {
           reason={cancelReason}
           setReason={setCancelReason}
         />
+
+        {/* ✅ Toast Notification */}
+        <Snackbar
+          open={toastOpen}
+          autoHideDuration={4000}
+          onClose={() => setToastOpen(false)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            onClose={() => setToastOpen(false)}
+            severity="info"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {toastMsg}
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   );

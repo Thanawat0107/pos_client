@@ -1,7 +1,6 @@
 export const baseUrl = "https://localhost:7061";
 export const baseUrlAPI = baseUrl + "/api/";
 
-
 export const ROLES = [
   { value: "admin", label: "ผู้ดูแลระบบ (Admin)" },
   { value: "employee", label: "พนักงานทั่วไป (Employee)" },
@@ -9,10 +8,10 @@ export const ROLES = [
   { value: "All", label: "ทุกคน (All)" },
 ];
 
-export const paymentMethods = [
-  { value: "cash", label: "เงินสด" },
-  { value: "promptPay", label: "พร้อมเพย์" },
-];
+export const paymentMethods ={
+  paymentStatus_PromptPay: "promptPay", // รอชำระเงิน
+  paymentStatus_Cash: "cash", // ชำระเงินแล้ว
+}
 
 export const Sd = {
   Status_PendingPayment: "pendingPayment", // รอชำระเงิน

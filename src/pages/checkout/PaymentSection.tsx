@@ -11,7 +11,13 @@ import {
 import PaymentIcon from "@mui/icons-material/Payment";
 import MoneyIcon from '@mui/icons-material/Money';
 import QrCodeIcon from '@mui/icons-material/QrCode2';
-import { paymentMethods } from "../../helpers/SD"; // สมมติว่ามี Cash, Transfer
+import { paymentMethods } from "../../helpers/SD";
+
+// แปลง object เป็น array สำหรับการแสดงผล
+const paymentMethodsList = [
+  { value: paymentMethods.paymentStatus_Cash, label: "เงินสด (Cash)", description: "ชำระที่เคาน์เตอร์เมื่อรับสินค้า" },
+  { value: paymentMethods.paymentStatus_PromptPay, label: "โอนเงิน / QR พร้อมเพย์", description: "สแกนจ่าย / แนบสลิป" }
+];
 
 interface PaymentSectionProps {
   paymentMethod: string;
@@ -27,8 +33,8 @@ export default function PaymentSection({
 
   // ✅ Logic: ถ้ายอดเกิน 200 แล้วเลือก Cash อยู่ -> ดีดไปเป็น Transfer ทันที
   useEffect(() => {
-    if (finalTotal > 200 && paymentMethod === "cash") {
-      setPaymentMethod("promptPay"); // หรือค่าที่เป็น QR Code ใน SD ของคุณ
+    if (finalTotal > 200 && paymentMethod === paymentMethods.paymentStatus_Cash) {
+      setPaymentMethod(paymentMethods.paymentStatus_PromptPay);
     }
   }, [finalTotal, paymentMethod, setPaymentMethod]);
 
@@ -54,9 +60,9 @@ export default function PaymentSection({
         value={paymentMethod}
         onChange={(e) => setPaymentMethod(e.target.value)}
       >
-        {paymentMethods.map((method) => {
-          // ตรวจสอบว่าเป็นวิธีชำระเงินสดหรือไม่ (แก้ string "Cash" ให้ตรงกับ SD ของคุณ)
-          const isCash = method.value === "cash"; 
+        {paymentMethodsList.map((method) => {
+          // ตรวจสอบว่าเป็นวิธีชำระเงินสดหรือไม่
+          const isCash = method.value === paymentMethods.paymentStatus_Cash; 
           
           // ถ้าเป็นเงินสด และยอดเกิน 200 -> ให้ Disable
           const isDisabled = isCash && finalTotal > 200;
@@ -83,15 +89,9 @@ export default function PaymentSection({
                     </Typography>
                     
                     {/* คำอธิบายเพิ่มเติม */}
-                    {isCash ? (
-                         <Typography variant="caption" color={isDisabled ? "error" : "text.secondary"}>
-                            {isDisabled ? "ไม่รองรับยอดเกิน 200 บาท" : "ชำระที่เคาน์เตอร์เมื่อรับสินค้า"}
-                         </Typography>
-                    ) : (
-                         <Typography variant="caption" color="text.secondary">
-                            สแกนจ่าย / แนบสลิป
-                         </Typography>
-                    )}
+                    <Typography variant="caption" color={isDisabled ? "error" : "text.secondary"}>
+                      {isDisabled ? "ไม่รองรับยอดเกิน 200 บาท" : method.description}
+                    </Typography>
                   </Box>
                 </Box>
               }

@@ -94,11 +94,9 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
     if (!actionInfo) return;
     try {
       if (actionInfo.actionType === "CONFIRM_PAYMENT") {
-        const defaultMethod =
-          paymentMethods.find((p) => p.value === "cash")?.value || "cash";
         await confirmPayment({
           id: row.id,
-          paymentMethod: defaultMethod,
+          paymentMethod: paymentMethods.paymentStatus_Cash,
         }).unwrap();
       } else {
         await updateStatus({
