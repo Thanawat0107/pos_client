@@ -46,9 +46,12 @@ export default function OrderPaymentSection({
   onError,
 }: OrderPaymentSectionProps) {
   // 1. Fetch QR Code
-  const { data: qrData, isLoading: isQrLoading } =
-    useGetPaymentQRQuery(orderId);
+const { data: qrData, isLoading: isQrLoading, error } = useGetPaymentQRQuery(orderId);
 
+  console.log("--- DEBUG QR DATA ---");
+  console.log("Full Object:", qrData);
+  console.log("Error (if any):", error);
+  
   // 2. Mutation
   const [confirmPayment, { isLoading: isUploading }] =
     useConfirmPaymentMutation();
@@ -185,15 +188,11 @@ export default function OrderPaymentSection({
                   src={getQrSrc(qrData)}
                   alt="Payment QR"
                   style={{
-                    maxWidth: "100%",
-                    maxHeight: 250,
-                    objectFit: "contain",
-                    display: "block" // บังคับแสดงผล
-                  }}
-                  // เพิ่ม Debug ตรงนี้ ดูว่าจริงๆ แล้วค่าคืออะไร
-                  onError={(e) => {
-                    console.log("❌ Error Loading Image. Raw Data:", qrData);
-                    e.currentTarget.style.display = "none";
+                    width: "100%", // เปลี่ยนจาก maxWidth เป็น width ให้ชัดเจน
+                    height: "auto", // ให้สูงตามสัดส่วน
+                    aspectRatio: "1/1", // บังคับเป็นสี่เหลี่ยมจัตุรัส (ปกติ QR เป็นสี่เหลี่ยม)
+                    display: "block",
+                    backgroundColor: "#fff", // เผื่อภาพโปร่งใสจะได้เห็นชัด
                   }}
                 />
               ) : (
