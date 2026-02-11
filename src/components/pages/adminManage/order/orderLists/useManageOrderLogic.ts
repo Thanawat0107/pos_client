@@ -2,13 +2,25 @@ import { useState, useMemo } from "react";
 import type { OrderHeader } from "../../../../../@types/dto/OrderHeader";
 import { Sd } from "../../../../../helpers/SD";
 
+const UNPAID = "UNPAID";
+const ALL = "all";
+
 export function useManageOrderLogic(rows: OrderHeader[]) {
   const [filters, setFilters] = useState({
     q: "",
-    status: "all",
-    pay: "all",
-    channel: "all",
+    status: ALL,
+    pay: ALL,
+    channel: ALL,
   });
+
+  const resetFilters = () => {
+    setFilters({
+      q: "",
+      status: ALL,
+      pay: ALL,
+      channel: ALL,
+    });
+  };
 
   // Filter & Sorting Logic
   const filteredRows = useMemo(() => {
@@ -26,15 +38,15 @@ export function useManageOrderLogic(rows: OrderHeader[]) {
 
         // 2. Status
         const matchesStatus =
-          filters.status === "all" || r.orderStatus === filters.status;
+          filters.status === ALL || r.orderStatus === filters.status;
 
         // 3. Channel
         const matchesChannel =
-          filters.channel === "all" || r.channel === filters.channel;
+          filters.channel === ALL || r.channel === filters.channel;
 
         // 4. Payment Logic
         let matchesPay = true;
-        if (filters.pay === "UNPAID") {
+        if (filters.pay === UNPAID) {
           const isActiveStatuses = [
             Sd.Status_Approved,
             Sd.Status_Preparing,
@@ -44,7 +56,7 @@ export function useManageOrderLogic(rows: OrderHeader[]) {
             r.orderStatus === Sd.Status_PendingPayment ||
             r.orderStatus === Sd.Status_Pending ||
             (isActiveStatuses && !r.paidAt);
-        } else if (filters.pay === "PAID") {
+        } else if (filters.pay === Sd.Status_Paid) {
           matchesPay =
             r.orderStatus === Sd.Status_Paid ||
             r.orderStatus === Sd.Status_Completed ||
@@ -90,6 +102,7 @@ export function useManageOrderLogic(rows: OrderHeader[]) {
   return {
     filters,
     setFilters,
+    resetFilters,
     filteredRows,
     pendingCount,
   };

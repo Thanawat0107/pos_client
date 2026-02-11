@@ -42,18 +42,18 @@ export const paymentApi = createApi({
               );
 
               // สั่ง Invalidate เพื่อให้ RTK Query ไปดึงข้อมูลใหม่
-              dispatch(paymentApi.util.invalidateTags(["Payment", "Order"]));
+              dispatch(paymentApi.util.invalidateTags([{ type: "Payment", id: updatedOrderId }, { type: "Order", id: updatedOrderId }]));
             }
           };
 
           // 5. Subscribe Event: ใช้ on ของ Service คุณ
-          signalRService.on("ReceiveOrderStatusUpdate", handleStatusUpdate);
+          signalRService.on("OrderStatusUpdated", handleStatusUpdate);
 
           // 6. Cleanup: รอจนกว่า Component นี้จะถูกทำลาย (Unmount)
           await cacheEntryRemoved;
 
           // 7. Unsubscribe: ใช้ off ของ Service คุณ (ส่ง callback ตัวเดิมไปเพื่อลบออกจาก array)
-          signalRService.off("ReceiveOrderStatusUpdate", handleStatusUpdate);
+          signalRService.off("OrderStatusUpdated", handleStatusUpdate);
         } catch (err) {
           console.error("SignalR integration error:", err);
         }

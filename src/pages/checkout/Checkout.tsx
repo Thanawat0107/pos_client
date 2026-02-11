@@ -9,7 +9,7 @@ import { useLazyVerifyPromoQuery } from "../../services/contentApi";
 import { useConfirmCartMutation } from "../../services/orderApi";
 import type { CreateOrder } from "../../@types/createDto/CreateOrder";
 import { clearLocalCart } from "../../stores/slices/shoppingSlice";
-import { paymentMethods } from "../../helpers/SD";
+import { Channel, paymentMethods } from "../../helpers/SD";
 import CustomerForm from "./CustomerForm";
 import PickupSection from "./PickupSection";
 import PaymentSection from "./PaymentSection";
@@ -117,7 +117,7 @@ export default function Checkout() {
     }
 
     const payload: CreateOrder = {
-      channel: "pickUp",
+      channel: Channel.Channel_PickUp,
       paymentMethod: paymentMethod,
       customerPhone: customer.phone.trim(),
       customerName: customer.name.trim() || undefined,

@@ -46,12 +46,16 @@ export default function OrderPaymentSection({
   onError,
 }: OrderPaymentSectionProps) {
   // 1. Fetch QR Code
-const { data: qrData, isLoading: isQrLoading, error } = useGetPaymentQRQuery(orderId);
+  const {
+    data: qrData,
+    isLoading: isQrLoading,
+    error,
+  } = useGetPaymentQRQuery(orderId);
 
   console.log("--- DEBUG QR DATA ---");
   console.log("Full Object:", qrData);
   console.log("Error (if any):", error);
-  
+
   // 2. Mutation
   const [confirmPayment, { isLoading: isUploading }] =
     useConfirmPaymentMutation();

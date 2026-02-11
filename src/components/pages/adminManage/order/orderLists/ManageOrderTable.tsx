@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Stack,
   Box,
+  Button,
 } from "@mui/material";
 import ManageOrderItem from "../orderItems/ManageOrderItem"; // Adjust path
 import type { OrderHeader } from "../../../../../@types/dto/OrderHeader";
@@ -19,6 +20,7 @@ type Props = {
   isLoading: boolean;
   rows: OrderHeader[];
   onSelectOrder: (id: number) => void;
+  onClearFilters: () => void; // ✅ เพิ่มใหม่
   children?: React.ReactNode; // สำหรับ FilterBar ที่ส่งเข้ามา
 };
 
@@ -26,6 +28,7 @@ export default function ManageOrderTable({
   isLoading,
   rows,
   onSelectOrder,
+  onClearFilters,
   children,
 }: Props) {
   return (
@@ -112,6 +115,7 @@ export default function ManageOrderTable({
                 </TableCell>
               </TableRow>
             </TableHead>
+            // ในส่วน TableBody แก้ไขดังนี้:
             <TableBody>
               {isLoading ? (
                 <TableRow>
@@ -121,8 +125,19 @@ export default function ManageOrderTable({
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                    <Typography color="text.secondary">ไม่พบรายการ</Typography>
+                  <TableCell colSpan={7} align="center" sx={{ py: 12 }}>
+                    <Stack spacing={2} alignItems="center">
+                      <Typography color="text.secondary" variant="h6">
+                        ไม่พบรายการออเดอร์ที่คุณค้นหา
+                      </Typography>
+                      <Button
+                        variant="text"
+                        onClick={onClearFilters} // ✅ เรียกฟังก์ชันล้างค่า
+                        sx={{ fontWeight: 700, textDecoration: "underline" }}
+                      >
+                        ล้างตัวกรองทั้งหมด
+                      </Button>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ) : (

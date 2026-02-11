@@ -13,58 +13,75 @@ import OrderItemCustomer from "./OrderItemCustomer";
 import OrderStatusBadge from "../../../../../utility/OrderStatusBadge";
 import OrderItemActions from "./OrderItemActions";
 
+const UPDATE_STATUS = "UPDATE_STATUS";
+const CONFIRM_PAYMENT = "CONFIRM_PAYMENT";
+
 const getNextActionConfig = (row: OrderHeader) => {
   const { orderStatus, paidAt } = row;
+
   switch (orderStatus) {
-    case Sd.Status_Pending:
+    case Sd.Status_Pending: // ออเดอร์เงินสด <= 200 รอพนักงานกดยืนยัน
       return {
         label: "รับออเดอร์",
-        actionType: "UPDATE_STATUS",
+        actionType: UPDATE_STATUS,
         nextStatus: Sd.Status_Approved,
         color: "warning" as const,
         icon: <CheckCircleIcon />,
+        canCancel: true, // อนุญาตให้ยกเลิกได้
       };
-    case Sd.Status_PendingPayment:
+
+    case Sd.Status_PendingPayment: // รอโอนเงิน (PromptPay) หรือ ยอดเงินสดสูง
       return {
         label: "ยืนยันชำระเงิน",
-        actionType: "CONFIRM_PAYMENT",
+        actionType: CONFIRM_PAYMENT,
         nextStatus: Sd.Status_Paid,
         color: "error" as const,
         icon: <PaidIcon />,
+        canCancel: true, // อนุญาตให้ยกเลิกได้ (กรณีโอนไม่สำเร็จ/เปลี่ยนใจ)
       };
+
     case Sd.Status_Approved:
-    case Sd.Status_Paid:
+    case Sd.Status_Paid: // ออเดอร์พร้อมทำ
       return {
         label: "เริ่มปรุงอาหาร",
-        actionType: "UPDATE_STATUS",
+        actionType: UPDATE_STATUS,
         nextStatus: Sd.Status_Preparing,
-        color: "primary" as const,
+        color: "info" as const,
         icon: <SoupKitchenIcon />,
+        canCancel: false,
       };
+
     case Sd.Status_Preparing:
       return {
         label: "ปรุงเสร็จแล้ว",
-        actionType: "UPDATE_STATUS",
+        actionType: UPDATE_STATUS,
         nextStatus: Sd.Status_Ready,
         color: "secondary" as const,
         icon: <RoomServiceIcon />,
+        canCancel: false,
       };
+
     case Sd.Status_Ready:
-      if (!paidAt)
+      if (!paidAt) {
+        // กรณีรับของแล้วค่อยจ่ายเงินสดหน้าร้าน
         return {
-          label: "รับเงินสด",
-          actionType: "CONFIRM_PAYMENT",
+          label: "รับเงินสด / จบงาน",
+          actionType: CONFIRM_PAYMENT,
           nextStatus: Sd.Status_Paid,
-          color: "info" as const,
+          color: "success" as const,
           icon: <PaidIcon />,
+          canCancel: false,
         };
+      }
       return {
-        label: "จบงาน/รับของ",
-        actionType: "UPDATE_STATUS",
+        label: "จบงาน / รับของ",
+        actionType: UPDATE_STATUS,
         nextStatus: Sd.Status_Completed,
         color: "success" as const,
         icon: <CheckCircleIcon />,
+        canCancel: false,
       };
+
     default:
       return null;
   }
@@ -78,25 +95,25 @@ type Props = {
 
 export default function ManageOrderItem({ row, index, onView }: Props) {
   const actionInfo = getNextActionConfig(row);
-  const totalItems = row.orderDetails.reduce(
-    (acc, item) => acc + item.quantity,
-    0,
-  );
-  const isPending = row.orderStatus === Sd.Status_Pending;
+  const totalItems = row.orderDetails.reduce((acc, item) => acc + item.quantity, 0);
+  
+  // กำหนดว่าออเดอร์ไหนต้อง "เตือน" เป็นพิเศษ (รอรับออเดอร์ หรือ รอเงินโอน)
+  const isUrgent = row.orderStatus === Sd.Status_Pending || row.orderStatus === Sd.Status_PendingPayment;
 
-  const [updateStatus, { isLoading: isUpdating }] =
-    useUpdateOrderStatusMutation();
+  const [updateStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
   const [confirmPayment, { isLoading: isPaying }] = useConfirmPaymentMutation();
   const isLoading = isUpdating || isPaying;
 
   const handleActionClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!actionInfo) return;
+
     try {
-      if (actionInfo.actionType === "CONFIRM_PAYMENT") {
+      if (actionInfo.actionType === CONFIRM_PAYMENT) {
+        // ✅ ปรับแก้: ใช้ PaymentMethod เดิมที่มากับ Order ไม่ล็อคเป็น Cash อย่างเดียว
         await confirmPayment({
           id: row.id,
-          paymentMethod: paymentMethods.paymentStatus_Cash,
+          paymentMethod: row.paymentMethod || paymentMethods.paymentStatus_Cash,
         }).unwrap();
       } else {
         await updateStatus({
@@ -113,37 +130,36 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
     e.stopPropagation();
     if (window.confirm("ยืนยันการปฏิเสธ/ยกเลิกออเดอร์นี้?")) {
       try {
-        await updateStatus({
-          id: row.id,
-          newStatus: Sd.Status_Cancelled,
-        }).unwrap();
+        await updateStatus({ id: row.id, newStatus: Sd.Status_Cancelled }).unwrap();
       } catch (err) {
         console.error("Cancel failed", err);
       }
     }
   };
 
-  const bgStyle = isPending
+  // Pulse effect เฉพาะออเดอร์ที่พนักงานต้อง Action ทันที
+  const bgStyle = isUrgent
     ? {
-        bgcolor: "#fff3e0",
+        bgcolor: row.orderStatus === Sd.Status_Pending ? "#fff3e0" : "#fce4ec",
         animation: "pulse-bg 2s infinite",
-        "&:hover": { bgcolor: "#ffe0b2" },
+        "&:hover": { bgcolor: row.orderStatus === Sd.Status_Pending ? "#ffe0b2" : "#f8bbd0" },
       }
     : { transition: "0.2s", "&:hover": { bgcolor: "action.hover" } };
 
   return (
     <>
-      <style>{`@keyframes pulse-bg { 0% { background-color: #fff3e0; } 50% { background-color: #ffe0b2; } 100% { background-color: #fff3e0; } }`}</style>
+      <style>{`
+        @keyframes pulse-bg { 
+          0% { opacity: 1; } 
+          50% { opacity: 0.8; } 
+          100% { opacity: 1; } 
+        }
+      `}</style>
       <TableRow
-        hover={!isPending}
+        hover={!isUrgent}
         onClick={onView}
-        sx={{
-          cursor: "pointer",
-          "&:last-child td, &:last-child th": { border: 0 },
-          ...bgStyle,
-        }}
+        sx={{ cursor: "pointer", "&:last-child td, &:last-child th": { border: 0 }, ...bgStyle }}
       >
-        {/* Component 1: Info */}
         <OrderItemInfo
           index={index}
           orderCode={row.orderCode}
@@ -151,7 +167,6 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
           channel={row.channel}
         />
 
-        {/* Component 2: Customer */}
         <OrderItemCustomer
           name={row.customerName}
           phone={row.customerPhone}
@@ -159,45 +174,29 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
           totalItems={totalItems}
         />
 
-        {/* Status Badge (Reuse existing) */}
         <TableCell sx={{ minWidth: 100 }}>
           <OrderStatusBadge status={row.orderStatus} />
         </TableCell>
 
-        {/* Time Column (Small enough to keep here or extract if needed) */}
         <TableCell sx={{ minWidth: 100 }}>
           <Stack direction="row" spacing={1} alignItems="center">
-            <AccessTimeIcon
-              fontSize="inherit"
-              sx={{ color: "text.disabled" }}
-            />
+            <AccessTimeIcon fontSize="inherit" sx={{ color: "text.disabled" }} />
             <Box>
               <Typography variant="caption" display="block" fontWeight={600}>
-                {new Date(row.createdAt).toLocaleTimeString("th-TH", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}{" "}
-                น.
+                {new Date(row.createdAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.
               </Typography>
-              <Typography
-                variant="caption"
-                color="text.disabled"
-                sx={{ fontSize: "10px" }}
-              >
-                {new Date(row.createdAt).toLocaleDateString("th-TH", {
-                  day: "numeric",
-                  month: "short",
-                })}
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "10px" }}>
+                {new Date(row.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}
               </Typography>
             </Box>
           </Stack>
         </TableCell>
 
-        {/* Component 3: Actions */}
         <OrderItemActions
           actionInfo={actionInfo}
           isLoading={isLoading}
-          isPending={isPending}
+          isPending={false}
+          canCancel={actionInfo?.canCancel ?? false}
           onActionClick={handleActionClick}
           onCancelClick={handleCancelClick}
           onViewClick={onView}

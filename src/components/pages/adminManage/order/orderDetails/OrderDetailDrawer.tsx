@@ -28,6 +28,7 @@ import OrderActionBoard from "./OrderActionBoard";
 import OrderCustomerInfo from "./OrderCustomerInfo";
 import OrderItemsList from "./OrderItemsList";
 import OrderModals from "./OrderModals";
+import { paymentMethods } from "../../../../../helpers/SD";
 
 const BRAND_COLOR = "#D32F2F";
 const BG_COLOR = "#f5f5f5";
@@ -102,7 +103,7 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
     try {
       await confirmPayment({
         id: order.id,
-        paymentMethod: "cash",
+        paymentMethod: paymentMethods.paymentStatus_Cash,
       }).unwrap();
     } catch (err) {
       console.error(err);

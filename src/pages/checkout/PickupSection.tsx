@@ -35,7 +35,6 @@ const CLOSED_DAY = 6; // 0=อาทิตย์, 1=จันทร์, ..., 6=�
 export default function PickupSection({
   pickupType,
   setPickupType,
-  scheduledTime,
   setScheduledTime,
 }: PickupSectionProps) {
 

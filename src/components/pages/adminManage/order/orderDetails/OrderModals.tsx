@@ -80,40 +80,51 @@ export default function OrderModals({
       {/* Cancel Dialog */}
       <Dialog
         open={cancelDialogOpen}
-        onClose={() => setCancelDialogOpen(false)}
+        onClose={() => !isLoading && setCancelDialogOpen(false)} // กันคนกดปิดตอนกำลังคุยกับ Server
       >
-        <DialogTitle sx={{ color: "#d32f2f", fontWeight: 700 }}>
+        <DialogTitle sx={{ color: "#d32f2f", fontWeight: 800, px: 3, pt: 3 }}>
           {targetItemId
-            ? `ยกเลิกเมนู "${targetItemName}"?`
-            : "ยกเลิกออเดอร์ทั้งหมด?"}
+            ? `ยกเลิกเมนู "${targetItemName}"`
+            : "⚠️ ยกเลิกออเดอร์ทั้งหมด"}
         </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
+        <DialogContent sx={{ px: 3 }}>
+          <DialogContentText sx={{ mb: 2, fontSize: "0.95rem" }}>
             {targetItemId
-              ? "คุณต้องการยกเลิกรายการอาหารนี้ใช่หรือไม่? ยอดเงินจะถูกคำนวณใหม่"
-              : "การกระทำนี้ไม่สามารถย้อนกลับได้ กรุณาระบุเหตุผล (Optional)"}
+              ? "รายการนี้จะถูกตัดออกจากบิล และยอดเงินรวมจะถูกคำนวณใหม่โดยอัตโนมัติ"
+              : "คำสั่งซื้อนี้จะถูกระงับการทำงานทั้งหมด โปรดระบุเหตุผลเพื่อเป็นหลักฐาน"}
           </DialogContentText>
           <TextField
             autoFocus
             margin="dense"
-            label="เหตุผลการยกเลิก"
+            label={
+              targetItemId ? "เหตุผล (ไม่บังคับ)" : "เหตุผลการยกเลิก (บังคับ)"
+            } // ปรับ Label ตามบริบท
             fullWidth
             variant="outlined"
             value={cancelReason}
             onChange={(e) => setCancelReason(e.target.value)}
+            disabled={isLoading}
+            multiline
+            rows={2} // ให้พิมพ์สะดวกขึ้น
           />
         </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setCancelDialogOpen(false)} color="inherit">
-            ปิด
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            onClick={() => setCancelDialogOpen(false)}
+            color="inherit"
+            disabled={isLoading}
+          >
+            ย้อนกลับ
           </Button>
           <Button
             onClick={onConfirmCancel}
             variant="contained"
             color="error"
-            disabled={isLoading}
+            // ✅ บังคับใส่เหตุผลถ้าเป็นการยกเลิกทั้งออเดอร์
+            disabled={isLoading || (!targetItemId && !cancelReason.trim())}
+            sx={{ fontWeight: 700, px: 3 }}
           >
-            ยืนยันการยกเลิก
+            ยืนยันยกเลิก
           </Button>
         </DialogActions>
       </Dialog>

@@ -80,8 +80,10 @@ export default function OrderSuccess() {
   const showPaymentSection = useMemo(() => {
     if (!order) return false;
     const isForcedPayment = order.orderStatus === Sd.Status_PendingPayment;
-    const isPromptPay = order.paymentMethod === paymentMethods.paymentStatus_PromptPay; 
-    const isPendingButPromptPay = order.orderStatus === Sd.Status_Pending && isPromptPay;
+    const isPromptPay =
+      order.paymentMethod === paymentMethods.paymentStatus_PromptPay;
+    const isPendingButPromptPay =
+      order.orderStatus === Sd.Status_Pending && isPromptPay;
     return isForcedPayment || isPendingButPromptPay;
   }, [order]);
 
@@ -91,7 +93,10 @@ export default function OrderSuccess() {
   // --- Local States ---
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [targetItem, setTargetItem] = useState<{ id: number; name: string } | null>(null);
+  const [targetItem, setTargetItem] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   // Notification State
   const [toastOpen, setToastOpen] = useState(false);
@@ -181,7 +186,14 @@ export default function OrderSuccess() {
 
   if (isLoading)
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
         <CircularProgress size={60} />
       </Box>
     );
@@ -222,11 +234,11 @@ export default function OrderSuccess() {
 
           {/* 🔥 Payment Section Component */}
           {showPaymentSection && (
-            <OrderPaymentSection 
-                orderId={orderId}
-                totalAmount={order.total}
-                onPaymentSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
+            <OrderPaymentSection
+              orderId={orderId}
+              totalAmount={order.total}
+              onPaymentSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
             />
           )}
 

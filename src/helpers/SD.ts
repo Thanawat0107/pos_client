@@ -8,7 +8,11 @@ export const ROLES = [
   { value: "All", label: "ทุกคน (All)" },
 ];
 
-export const paymentMethods ={
+export const Channel = {
+  Channel_PickUp: "pickUp", // รับที่ร้าน
+};
+
+export const paymentMethods = {
   paymentStatus_PromptPay: "promptPay", // รอชำระเงิน
   paymentStatus_Cash: "cash", // ชำระเงินแล้ว
 }

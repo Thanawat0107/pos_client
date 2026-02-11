@@ -83,27 +83,32 @@ function ColorlibStepIcon(props: StepIconProps) {
 }
 
 export default function OrderTimeline({ status }: { status: string }) {
+  // หากยกเลิก ไม่แสดง Timeline
   if (status === Sd.Status_Cancelled) return null;
 
-  // ✅ แก้ไข Logic ตรงนี้ให้เป็น Linear Flow (เรียงลำดับจริง)
+  /**
+   * Logic การกำหนด Active Step (0-4)
+   * activeStep จะบอกว่า "ขั้นตอนปัจจุบัน" คือขั้นตอนไหน
+   * ขั้นตอนที่ผ่านมาแล้วจะถูกแสดงเป็น 'Completed' โดยอัตโนมัติ
+   */
   const getActiveStep = (s: string) => {
     switch (s) {
       case Sd.Status_Pending:
-        return 0; // Step 1: รออนุมัติ
+        return 0; // กำลังรออนุมัติ (Step 1 Active)
 
-      case Sd.Status_PendingPayment: // รอจ่าย (Step 2)
-      case Sd.Status_Approved: // รับออเดอร์แล้ว (Step 2)
-      case Sd.Status_Paid: // จ่ายเงินแล้ว (Step 2)
-        return 1; // รวมกลุ่มนี้ไว้ที่ "ชำระเงิน/รอคิว"
+      case Sd.Status_PendingPayment:
+      case Sd.Status_Approved:
+      case Sd.Status_Paid:
+        return 1; // อยู่ในขั้นตอนชำระเงินหรือรอคิว (Step 2 Active)
 
       case Sd.Status_Preparing:
-        return 2; // Step 3: กำลังปรุง
+        return 2; // กำลังปรุงอาหาร (Step 3 Active)
 
       case Sd.Status_Ready:
-        return 3; // Step 4: พร้อมรับ
+        return 3; // อาหารเสร็จแล้ว พร้อมรับ (Step 4 Active)
 
       case Sd.Status_Completed:
-        return 4; // Step 5: สำเร็จ
+        return 4; // จบออเดอร์แล้ว (Step 5 Active)
 
       default:
         return 0;
@@ -118,20 +123,32 @@ export default function OrderTimeline({ status }: { status: string }) {
     "สำเร็จ",
   ];
 
+  // กรณีจบออเดอร์ (Completed) เราอาจต้องการให้แสดงว่า "ผ่านครบทุกขั้นตอน"
+  // โดยการส่งค่าที่มากกว่าจำนวน step จริง (เช่น 5) เข้าไปใน activeStep
+  // หรือจะปล่อยไว้ที่ 4 เพื่อให้ไอคอนสุดท้ายสว่างก็ได้
+  const currentStep = getActiveStep(status);
+
   return (
     <Box sx={{ width: "100%", py: 2 }}>
       <Stepper
         alternativeLabel
-        activeStep={getActiveStep(status)}
+        // หากต้องการให้ 'สำเร็จ' แสดงเป็นสถานะที่ทำเสร็จแล้ว (Checkmark)
+        // ให้ใช้เงื่อนไข: status === Sd.Status_Completed ? 5 : currentStep
+        activeStep={status === Sd.Status_Completed ? 5 : currentStep}
         connector={<ColorlibConnector />}
       >
-        {stepsLabel.map((label) => (
+        {stepsLabel.map((label, index) => (
           <Step key={label}>
             <StepLabel StepIconComponent={ColorlibStepIcon}>
               <Typography
                 variant="caption"
-                fontWeight={700}
-                sx={{ mt: 1, display: "block" }}
+                fontWeight={currentStep === index ? 800 : 600}
+                sx={{
+                  mt: 1,
+                  display: "block",
+                  color: currentStep === index ? BRAND_COLOR : "text.secondary",
+                  transition: "all 0.3s",
+                }}
               >
                 {label}
               </Typography>

@@ -13,6 +13,7 @@ import {
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import PaymentIcon from "@mui/icons-material/Payment";
+import { paymentMethods } from "../../helpers/SD";
 
 interface OrderSummaryProps {
   cartItems: any[];
@@ -53,7 +54,7 @@ export default function OrderSummary({
     if (isConfirming) return "";
     
     // ถ้าเลือกจ่ายเงินสด -> ยืนยันคำสั่งซื้อ
-    if (paymentMethod === "cash") {
+    if (paymentMethod === paymentMethods.paymentStatus_Cash) {
         return `ยืนยันคำสั่งซื้อ • ฿${finalTotal.toLocaleString()}`;
     }
     

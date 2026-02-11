@@ -341,7 +341,7 @@ export const orderApi = createApi({
         headers: { "Content-Type": "application/json" },
       }),
       // ✅ เพิ่มตรงนี้: เพื่อบังคับโหลดข้อมูลออเดอร์นี้ใหม่ทันทีที่กดสำเร็จ (กันเหนียว)
-      invalidatesTags: (result, error, arg) => [
+      invalidatesTags: (_result, _error, arg) => [
         { type: "Order", id: arg.id }, // รีเฟรชเฉพาะออเดอร์นี้ (หน้า Detail)
         { type: "Order", id: "LIST" }, // (Optional) ถ้ารายการหน้า List ไม่ขยับ ให้ใส่ id: "LIST" เพิ่ม
       ],

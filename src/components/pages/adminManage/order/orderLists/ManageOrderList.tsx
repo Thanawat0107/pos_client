@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useMemo } from "react";
 import { Box, Container, Alert } from "@mui/material";
 import { useGetOrderAllQuery } from "../../../../../services/orderApi";
@@ -16,8 +17,8 @@ export default function ManageOrderList() {
 
   const rows = data?.results ?? [];
 
-  // 2. Custom Hook Logic
-  const { filters, setFilters, filteredRows, pendingCount } =
+// ✅ ดึง resetFilters ออกมาด้วย
+  const { filters, setFilters, resetFilters, filteredRows, pendingCount } =
     useManageOrderLogic(rows);
 
   // 3. Selection State
@@ -50,6 +51,7 @@ export default function ManageOrderList() {
           isLoading={isLoading}
           rows={filteredRows}
           onSelectOrder={setSelectedOrderId}
+          onClearFilters={resetFilters}
         >
           <OrderFilterBar
             q={filters.q}
