@@ -15,8 +15,6 @@ import CallIcon from "@mui/icons-material/Call";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate, useParams } from "react-router-dom";
-
-// Service Imports
 import {
   useGetOrderByIdQuery,
   useCancelOrderMutation,
@@ -26,12 +24,11 @@ import { paymentMethods, Sd } from "../../helpers/SD";
 import { useAppSelector } from "../../hooks/useAppHookState";
 import { SD_Roles } from "../../@types/Enum";
 
-// Components
 import OrderStatusCard from "./OrderStatusCard";
 import OrderTimeline from "./OrderTimeline";
 import OrderMenuList from "./OrderMenuList";
 import CancelDialog from "./CancelDialog";
-import OrderPaymentSection from "./OrderPaymentSection"; // ✅ Import Component ใหม่
+import OrderPaymentSection from "./OrderPaymentSection";
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -45,6 +42,10 @@ export default function OrderSuccess() {
 
   const userId = useAppSelector((state) => state.auth?.userId);
   const userRole = useAppSelector((state) => state.auth?.role);
+
+  // --- 🛡️ States สำหรับระบบ Smart Verification ---
+  const [isVerifying, setIsVerifying] = useState(false);
+  const verifyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- Guest Token Logic ---
   const guestTokens = useMemo(() => {
@@ -76,21 +77,31 @@ export default function OrderSuccess() {
     { skip: isNaN(orderId) },
   );
 
-  // 🔥 CORE LOGIC: คำนวณว่าจะแสดง QR Code หรือไม่
+  // 🔥 CORE LOGIC: คำนวณสถานะการแสดงส่วนชำระเงิน (รัดกุมขึ้น)
   const showPaymentSection = useMemo(() => {
     if (!order) return false;
+
+    // สถานะปลายทางที่ไม่ต้องแสดง QR แล้ว
+    const terminalStatuses = [
+      Sd.Status_Paid,
+      Sd.Status_Preparing,
+      Sd.Status_Ready,
+      Sd.Status_Completed,
+      Sd.Status_Cancelled,
+    ];
+    if (terminalStatuses.includes(order.orderStatus)) return false;
+
     const isForcedPayment = order.orderStatus === Sd.Status_PendingPayment;
     const isPromptPay =
       order.paymentMethod === paymentMethods.paymentStatus_PromptPay;
     const isPendingButPromptPay =
       order.orderStatus === Sd.Status_Pending && isPromptPay;
+
     return isForcedPayment || isPendingButPromptPay;
   }, [order]);
 
-  // 2. Mutation for Cancel Order
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
 
-  // --- Local States ---
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [targetItem, setTargetItem] = useState<{
@@ -98,7 +109,6 @@ export default function OrderSuccess() {
     name: string;
   } | null>(null);
 
-  // Notification State
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
 
@@ -110,7 +120,34 @@ export default function OrderSuccess() {
     (order.orderStatus === Sd.Status_PendingPayment ||
       order.orderStatus === Sd.Status_Pending);
 
-  // --- Effects ---
+  // --- 📡 Smart Verification: เฝ้าดูการเปลี่ยนสถานะจาก SignalR ---
+  useEffect(() => {
+    if (!order) return;
+
+    // ตรวจสอบว่าสถานะขยับออกจากช่วง "รอจ่าย" หรือยัง
+    const hasStatusAdvanced =
+      order.orderStatus !== Sd.Status_PendingPayment &&
+      order.orderStatus !== Sd.Status_Pending;
+
+    if (isVerifying && hasStatusAdvanced) {
+      setIsVerifying(false);
+      if (verifyTimeoutRef.current) clearTimeout(verifyTimeoutRef.current);
+
+      if (order.orderStatus === Sd.Status_Paid) {
+        setToastMsg("ระบบยืนยันยอดเงินสำเร็จเรียบร้อย ขอบคุณค่ะ!");
+        setToastOpen(true);
+      }
+    }
+  }, [order?.orderStatus, isVerifying]);
+
+  // Cleanup Timer เมื่อ Unmount
+  useEffect(() => {
+    return () => {
+      if (verifyTimeoutRef.current) clearTimeout(verifyTimeoutRef.current);
+    };
+  }, []);
+
+  // Security Check Effect
   useEffect(() => {
     if (isNaN(orderId)) {
       navigate("/", { replace: true });
@@ -126,12 +163,17 @@ export default function OrderSuccess() {
     }
   }, [order, isLoading, orderId, userId, guestTokens, userRole, navigate]);
 
-  // Sound & Vibrate Effect on Status Change
+  // Sound & Vibrate Effect (เพิ่มแจ้งเตือนเมื่อโดน Cancel)
   useEffect(() => {
     if (order?.orderStatus) {
+      const alertedStatuses = [
+        Sd.Status_Ready,
+        Sd.Status_Paid,
+        Sd.Status_Cancelled,
+      ];
+
       if (
-        (order.orderStatus === Sd.Status_Ready ||
-          order.orderStatus === Sd.Status_Paid) &&
+        alertedStatuses.includes(order.orderStatus) &&
         !isFirstLoad.current &&
         prevStatus !== order.orderStatus
       ) {
@@ -147,17 +189,21 @@ export default function OrderSuccess() {
 
   // --- Handlers ---
   const handlePaymentSuccess = () => {
-    setToastMsg("ส่งสลิปเรียบร้อย กำลังตรวจสอบความถูกต้อง...");
+    setToastMsg("อัปโหลดสลิปเรียบร้อย ระบบกำลังตรวจสอบความถูกต้อง...");
     setToastOpen(true);
-    // Fallback refetch
-    setTimeout(() => {
+    setIsVerifying(true);
+
+    // 🛡️ Fallback: หาก SignalR ขัดข้อง 10 วินาทีให้บังคับ Refetch
+    verifyTimeoutRef.current = setTimeout(() => {
+      setIsVerifying(false);
       refetch();
-    }, 3000);
+    }, 10000);
   };
 
   const handlePaymentError = (msg: string) => {
     setToastMsg(msg);
     setToastOpen(true);
+    setIsVerifying(false);
   };
 
   const handleOpenCancelOrder = () => {
@@ -214,41 +260,71 @@ export default function OrderSuccess() {
     <Box sx={{ bgcolor: "#F5F7FA", minHeight: "100vh", py: { xs: 3, md: 5 } }}>
       <Container maxWidth="sm">
         <Stack spacing={3} sx={{ animation: `${slideUp} 0.5s ease-out` }}>
+          {/* แจ้งเตือนเมื่อออเดอร์ถูกยกเลิก */}
           {order.orderStatus === Sd.Status_Cancelled && (
             <Alert
               severity="error"
               variant="filled"
               icon={<CallIcon fontSize="inherit" />}
-              sx={{ borderRadius: 3, fontWeight: 600 }}
+              sx={{
+                borderRadius: 3,
+                fontWeight: 600,
+                boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)",
+              }}
             >
-              ออเดอร์นี้ถูกยกเลิกแล้ว
+              ออเดอร์นี้ถูกยกเลิกแล้ว กรุณาติดต่อพนักงานหากมีข้อสงสัย
             </Alert>
           )}
 
-          {/* ส่วนแสดงสถานะ */}
+          {/* การ์ดสถานะหลัก */}
           <OrderStatusCard
             orderStatus={order.orderStatus}
             pickUpCode={order.pickUpCode}
             paymentMethod={order.paymentMethod}
           />
 
-          {/* 🔥 Payment Section Component */}
-          {showPaymentSection && (
-            <OrderPaymentSection
-              orderId={orderId}
-              totalAmount={order.total}
-              onPaymentSuccess={handlePaymentSuccess}
-              onError={handlePaymentError}
-            />
-          )}
+          {/* 🔥 ส่วนของการชำระเงินและระบบยืนยันอัตโนมัติ */}
+          {/* {showPaymentSection && (
+            <Box sx={{ position: "relative" }}>
+              <OrderPaymentSection
+                orderId={orderId}
+                totalAmount={order.total}
+                onPaymentSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+                disabled={isVerifying}
+              />
 
-          {/* Timeline */}
+              {isVerifying && (
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  alignItems="center"
+                  justifyContent="center"
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    bgcolor: "primary.50",
+                    borderRadius: 2,
+                    border: "1px dashed",
+                    borderColor: "primary.main",
+                    color: "primary.main",
+                  }}
+                >
+                  <CircularProgress size={20} thickness={5} />
+                  <Typography variant="body2" fontWeight={700}>
+                    กำลังรอการยืนยันยอดเงินจากเซิร์ฟเวอร์...
+                  </Typography>
+                </Stack>
+              )}
+            </Box>
+          )} */}
+
+          {/* Timeline และรายการอาหาร */}
           <OrderTimeline
             orderStatus={order.orderStatus}
             estimatedPickUpTime={order.estimatedPickUpTime ?? null}
           />
 
-          {/* รายการอาหาร */}
           <OrderMenuList
             orderDetails={order.orderDetails}
             subTotal={order.subTotal}
@@ -259,6 +335,7 @@ export default function OrderSuccess() {
             canCancel={canCancelOrder ?? false}
           />
 
+          {/* ปุ่มคำสั่งต่างๆ */}
           <Stack spacing={2}>
             {canCancelOrder && (
               <Button
@@ -267,14 +344,16 @@ export default function OrderSuccess() {
                 color="error"
                 startIcon={<CancelIcon />}
                 onClick={handleOpenCancelOrder}
+                disabled={isVerifying}
                 sx={{
                   borderRadius: 3,
                   borderWidth: 2,
                   py: 1.5,
                   fontWeight: 700,
+                  "&:hover": { borderWidth: 2 },
                 }}
               >
-                ยกเลิกออเดอร์
+                ยกเลิกออเดอร์นี้
               </Button>
             )}
 
@@ -293,10 +372,11 @@ export default function OrderSuccess() {
                 boxShadow: "0 4px 12px rgba(255, 87, 34, 0.3)",
               }}
             >
-              กลับหน้าหลัก / สั่งเพิ่ม
+              กลับหน้าหลัก / สั่งรายการอื่นเพิ่ม
             </Button>
           </Stack>
 
+          {/* Footer ข้อมูลออเดอร์ */}
           <Typography
             variant="caption"
             display="block"
@@ -304,11 +384,12 @@ export default function OrderSuccess() {
             color="text.secondary"
             sx={{ mt: 2, opacity: 0.7 }}
           >
-            Order ID: #{order.id} •{" "}
+            Order ID: #{order.id} • สั่งเมื่อ{" "}
             {new Date(order.createdAt).toLocaleTimeString("th-TH", {
               hour: "2-digit",
               minute: "2-digit",
-            })}
+            })}{" "}
+            น.
           </Typography>
         </Stack>
 
@@ -322,7 +403,6 @@ export default function OrderSuccess() {
           setReason={setCancelReason}
         />
 
-        {/* ✅ Toast Notification */}
         <Snackbar
           open={toastOpen}
           autoHideDuration={4000}
@@ -333,7 +413,7 @@ export default function OrderSuccess() {
             onClose={() => setToastOpen(false)}
             severity="info"
             variant="filled"
-            sx={{ width: "100%" }}
+            sx={{ width: "100%", borderRadius: 2 }}
           >
             {toastMsg}
           </Alert>

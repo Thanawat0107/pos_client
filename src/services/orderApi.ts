@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { baseUrlAPI, Sd } from "../helpers/SD";
 import type { OrderHeader } from "../@types/dto/OrderHeader";
@@ -13,14 +13,27 @@ export const orderApi = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: baseUrlAPI }),
   tagTypes: ["Order"],
   endpoints: (builder) => ({
-    // -------------------------------------------------------------------------
-    // 1. Get All Orders (Admin/Staff) + Real-time Sync
-    // -------------------------------------------------------------------------
     getOrderAll: builder.query<
       { results: OrderHeader[]; totalCount: number },
       OrdersQuery
     >({
       query: (params) => ({ url: "orders", params }),
+      transformResponse: (response: OrderHeader[], meta) => {
+        return {
+          results: response,
+          totalCount: Number(meta?.response?.headers.get("X-Total-Count")) || 0,
+        };
+      },
+      providesTags: (result) =>
+        result?.results
+          ? [
+              ...result.results.map(({ id }) => ({
+                type: "Order" as const,
+                id,
+              })),
+              { type: "Order", id: "LIST" },
+            ]
+          : [{ type: "Order", id: "LIST" }],
 
       async onCacheEntryAdded(
         _arg,
@@ -29,11 +42,9 @@ export const orderApi = createApi({
         try {
           await cacheDataLoaded;
           await signalRService.startConnection();
-          console.log("🔌 [Admin] SignalR Re-Connected (With Admin Token)");
 
-          // --- Define Handlers ---
+          // Handler สำหรับคำสั่งซื้อใหม่
           const handleNewOrder = (newOrder: OrderHeader) => {
-            console.log("🆕 NewOrderReceived:", newOrder.id);
             updateCachedData((draft) => {
               if (!draft.results) draft.results = [];
               if (!draft.results.find((o) => o.id === newOrder.id)) {
@@ -43,19 +54,18 @@ export const orderApi = createApi({
             });
           };
 
+          // Handler สำหรับอัปเดตสถานะออเดอร์หลัก
           const handleUpdateOrder = (updatedOrder: OrderHeader) => {
-            console.log("🔄 Order Updated:", updatedOrder.id);
             updateCachedData((draft) => {
               if (!draft.results) return;
               const index = draft.results.findIndex(
                 (o) => o.id === updatedOrder.id,
               );
-              if (index !== -1) {
-                draft.results[index] = updatedOrder;
-              }
+              if (index !== -1) draft.results[index] = updatedOrder;
             });
           };
 
+          // 🚩 [จุดสำคัญที่เพิ่ม] Handler สำหรับอัปเดตรายจาน (Granular Update)
           const handleDetailUpdate = (payload: any) => {
             const { orderId, detailId, kitchenStatus } = payload;
             updateCachedData((draft) => {
@@ -67,61 +77,30 @@ export const orderApi = createApi({
                 );
                 if (detail) {
                   detail.kitchenStatus = kitchenStatus;
-                  if (kitchenStatus === Sd.KDS_Done) detail.isReady = true;
-                  if (kitchenStatus === Sd.KDS_Cancelled)
-                    detail.isCancelled = true;
+                  // ✅ อัปเดตสถานะ Boolean เพื่อให้ UI (เช่น ขีดฆ่า หรือ ปุ่มยกเลิก) เปลี่ยนทันที
+                  detail.isReady = kitchenStatus === Sd.KDS_Done;
+                  detail.isCancelled = kitchenStatus === Sd.KDS_Cancelled;
                 }
               }
             });
           };
 
-          const handleDeleteOrder = (deletedId: number) => {
-            console.log("🗑️ OrderDeleted:", deletedId);
-            updateCachedData((draft) => {
-              if (!draft.results) return;
-              const initialLength = draft.results.length;
-              draft.results = draft.results.filter((o) => o.id !== deletedId);
-              if (draft.results.length < initialLength) {
-                draft.totalCount = Math.max(0, draft.totalCount - 1);
-              }
-            });
-          };
-
-          // --- Subscribe Events ---
           signalRService.on("NewOrderReceived", handleNewOrder);
           signalRService.on("OrderUpdated", handleUpdateOrder);
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
-          signalRService.on("OrderDeleted", handleDeleteOrder);
-          // ✅ ADDED: Listen for employee updates
           signalRService.on("UpdateEmployeeOrderList", handleUpdateOrder);
 
-          // --- Cleanup ---
           await cacheEntryRemoved;
-
-          // ✅ FIXED: Pass callbacks to .off() to remove only these listeners
           signalRService.off("NewOrderReceived", handleNewOrder);
           signalRService.off("OrderUpdated", handleUpdateOrder);
           signalRService.off("OrderDetailUpdated", handleDetailUpdate);
-          signalRService.off("OrderDeleted", handleDeleteOrder);
           signalRService.off("UpdateEmployeeOrderList", handleUpdateOrder);
         } catch (err) {
-          console.error("❌ SignalR Sync Error (Admin):", err);
+          console.error("SignalR Admin Error:", err);
         }
       },
-
-      transformResponse: (results: OrderHeader[], meta) => {
-        const totalCount = meta?.response?.headers.get("X-Total-Count");
-        return {
-          results: results ?? [],
-          totalCount: totalCount ? parseInt(totalCount) : 0,
-        };
-      },
-      providesTags: ["Order"],
     }),
 
-    // -------------------------------------------------------------------------
-    // 2. Get Order by ID (Customer Tracking / Admin Detail)
-    // -------------------------------------------------------------------------
     getOrderById: builder.query<
       OrderHeader,
       { id: number; guestToken?: string }
@@ -132,83 +111,53 @@ export const orderApi = createApi({
           ? { Authorization: `Bearer ${guestToken}` }
           : undefined,
       }),
-
+      providesTags: (_result, _error, arg) => [{ type: "Order", id: arg.id }],
       async onCacheEntryAdded(
         arg,
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
       ) {
-        const orderId = arg.id;
-
         try {
           await cacheDataLoaded;
           await signalRService.startConnection();
-          await signalRService.invoke("JoinOrderGroup", orderId.toString());
-          console.log(`🔌 [Tracking] Joined Group Order: ${orderId}`);
+          await signalRService.invoke("JoinOrderGroup", arg.id.toString());
 
-          // --- Define Handlers ---
-          const handleHeaderUpdate = (updatedOrder: OrderHeader) => {
-            if (updatedOrder.id !== orderId) return;
+          // Handler สำหรับ Header (สถานะแม่)
+          const handleUpdate = (updatedOrder: OrderHeader) => {
+            if (updatedOrder.id !== arg.id) return;
             updateCachedData((draft) => {
               Object.assign(draft, updatedOrder);
-              const isFinished = [
-                Sd.Status_Ready,
-                Sd.Status_Completed,
-              ].includes(updatedOrder.orderStatus);
-
-              if (isFinished && draft.orderDetails) {
-                draft.orderDetails.forEach((item) => {
-                  if (!item.isCancelled) {
-                    item.kitchenStatus = Sd.KDS_Done;
-                    item.isReady = true;
-                  }
-                });
-              }
-
-              if (
-                updatedOrder.orderDetails &&
-                updatedOrder.orderDetails.length > 0
-              ) {
-                draft.orderDetails = updatedOrder.orderDetails;
-              }
             });
           };
 
+          // 🚩 [จุดสำคัญที่เพิ่ม] Handler สำหรับรายจาน (เพื่อให้ลูกค้าเห็นจานอาหารเปลี่ยนสีทันที)
           const handleDetailUpdate = (payload: any) => {
             const { orderId: updatedId, detailId, kitchenStatus } = payload;
-            if (updatedId !== orderId) return;
+            if (updatedId !== arg.id) return;
             updateCachedData((draft) => {
               const item = draft.orderDetails.find((d) => d.id === detailId);
               if (item) {
                 item.kitchenStatus = kitchenStatus;
-                if (kitchenStatus === Sd.KDS_Cancelled) item.isCancelled = true;
-                if (kitchenStatus === Sd.KDS_Done) item.isReady = true;
+                // ✅ อัปเดตสถานะ Boolean ทันที
+                item.isReady = kitchenStatus === Sd.KDS_Done;
+                item.isCancelled = kitchenStatus === Sd.KDS_Cancelled;
               }
             });
           };
 
-          // --- Subscribe Events ---
-          signalRService.on("OrderStatusUpdated", handleHeaderUpdate);
+          signalRService.on("OrderStatusUpdated", handleUpdate);
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
-          // ✅ ADDED: Listen for employee updates
-          signalRService.on("UpdateEmployeeOrderList", handleHeaderUpdate);
+          signalRService.on("UpdateEmployeeOrderList", handleUpdate);
 
-          // --- Cleanup ---
           await cacheEntryRemoved;
-
-          // ✅ FIXED: Pass callbacks
-          signalRService.off("OrderStatusUpdated", handleHeaderUpdate);
+          signalRService.off("OrderStatusUpdated", handleUpdate);
           signalRService.off("OrderDetailUpdated", handleDetailUpdate);
-          signalRService.off("UpdateEmployeeOrderList", handleHeaderUpdate);
+          signalRService.off("UpdateEmployeeOrderList", handleUpdate);
         } catch (err) {
-          console.error("❌ SignalR Sync Error (Detail):", err);
+          console.error("SignalR Detail Error:", err);
         }
       },
-      providesTags: (_result, _error, arg) => [{ type: "Order", id: arg.id }],
     }),
 
-    // -------------------------------------------------------------------------
-    // 3. Get Order History (Member)
-    // -------------------------------------------------------------------------
     getOrderHistory: builder.query<
       OrderHeader[],
       { userId?: string; guestToken?: string }
@@ -280,7 +229,6 @@ export const orderApi = createApi({
       providesTags: ["Order"],
     }),
 
-    // ... (rest of mutations remain unchanged) ...
     confirmCart: builder.mutation<OrderHeader, CreateOrder>({
       query: (body) => ({ url: "orders/confirm-cart", method: "POST", body }),
       invalidatesTags: ["Order"],
@@ -330,6 +278,7 @@ export const orderApi = createApi({
       providesTags: (_result, _error, code) => [{ type: "Order", id: code }],
     }),
 
+    // 3. Confirm Payment (แอดมินยืนยัน)
     confirmPayment: builder.mutation<
       OrderHeader,
       { id: number; paymentMethod: string }
@@ -337,13 +286,13 @@ export const orderApi = createApi({
       query: ({ id, paymentMethod }) => ({
         url: `orders/${id}/confirm-payment`,
         method: "POST",
-        body: JSON.stringify(paymentMethod), // ส่งไปเป็น "cash" หรือ "promptPay"
+        body: JSON.stringify(paymentMethod),
         headers: { "Content-Type": "application/json" },
       }),
-      // ✅ เพิ่มตรงนี้: เพื่อบังคับโหลดข้อมูลออเดอร์นี้ใหม่ทันทีที่กดสำเร็จ (กันเหนียว)
+      // ✅ ล้างแคชทั้งรายชิ้นและหน้ารวม เพื่อให้ข้อมูล Sync ทุกจุด
       invalidatesTags: (_result, _error, arg) => [
-        { type: "Order", id: arg.id }, // รีเฟรชเฉพาะออเดอร์นี้ (หน้า Detail)
-        { type: "Order", id: "LIST" }, // (Optional) ถ้ารายการหน้า List ไม่ขยับ ให้ใส่ id: "LIST" เพิ่ม
+        { type: "Order", id: arg.id },
+        { type: "Order", id: "LIST" },
       ],
     }),
 

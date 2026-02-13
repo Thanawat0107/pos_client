@@ -115,7 +115,6 @@ export default function ManageOrderTable({
                 </TableCell>
               </TableRow>
             </TableHead>
-            // ในส่วน TableBody แก้ไขดังนี้:
             <TableBody>
               {isLoading ? (
                 <TableRow>

@@ -5,7 +5,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import Draggable, { type DraggableEventHandler } from 'react-draggable';
 import { Sd } from "../../helpers/SD";
 import { getStatusConfig } from "../../utility/OrderHelpers"; 
-import { pulse } from "../../utility/utils";
+import { pulseGreen } from "../../utility/utils"; 
 import type { OrderHeader } from "../../@types/dto/OrderHeader";
 
 interface Props {
@@ -74,7 +74,7 @@ export default function FloatingButton({ activeOrders, onClick }: Props) {
               color: "white",
               display: "flex",
               alignItems: "center",
-              animation: isAnyReady ? `${pulse} 2s infinite` : "none",
+              animation: isAnyReady ? `${pulseGreen} 2s infinite` : "none",
               transition: "transform 0.1s ease-out, filter 0.3s", 
               "&:hover": { filter: "brightness(1.1)" },
               borderRadius: isMobile ? "50%" : 10,

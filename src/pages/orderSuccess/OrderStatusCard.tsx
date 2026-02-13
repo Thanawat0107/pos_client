@@ -5,12 +5,14 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import SoupKitchenIcon from "@mui/icons-material/SoupKitchen";
 import CancelIcon from "@mui/icons-material/Cancel";
-import { Sd } from "../../helpers/SD";
+import { Sd, paymentMethods } from "../../helpers/SD";
 import { getStatusConfig } from "../../utility/OrderHelpers";
 
-const pulse = keyframes`
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
-  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
+// ✅ ปรับ Pulse Animation ให้รับสีแบบ Dynamic (ถ้าต้องการ)
+// หรือใช้สีที่ Soft ลงเพื่อให้เข้ากับสไตล์ Modern
+const pulse = (color: string) => keyframes`
+  0% { transform: scale(1); box-shadow: 0 0 0 0 ${color}; }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(0, 0, 0, 0); }
   100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
 `;
 
@@ -27,22 +29,23 @@ export default function OrderStatusCard({
 }: Props) {
   const config = getStatusConfig(orderStatus);
 
+  // 1. ✅ ปรับหัวข้อให้สื่อสารชัดเจนขึ้น
   const getHeadline = () => {
     switch (orderStatus) {
       case Sd.Status_Pending:
-        return "รอร้านยืนยัน";
+        return "รอร้านยืนยันออเดอร์";
       case Sd.Status_PendingPayment:
-        return "รอชำระเงิน";
+        return "รอการชำระเงิน";
       case Sd.Status_Approved:
-        return "รับออเดอร์แล้ว";
+        return "เตรียมส่งเข้าครัว";
       case Sd.Status_Paid:
-        return "ชำระเงินแล้ว";
+        return "รับออเดอร์เรียบร้อย";
       case Sd.Status_Preparing:
-        return "กำลังปรุงอาหาร...";
+        return "เชฟกำลังปรุงอาหาร...";
       case Sd.Status_Ready:
-        return "อาหารเสร็จแล้ว!";
+        return "อาหารเสร็จแล้วครับ!";
       case Sd.Status_Completed:
-        return "ขอบคุณที่ใช้บริการ";
+        return "ขอบคุณที่มาอุดหนุนครับ";
       case Sd.Status_Cancelled:
         return "ออเดอร์ถูกยกเลิก";
       default:
@@ -50,26 +53,45 @@ export default function OrderStatusCard({
     }
   };
 
+  // 2. ✅ ปรับไอคอนหลักให้มีลูกเล่น (Animation)
   const getMainIcon = () => {
-    const iconStyle = { fontSize: 80, color: config.iconColor, mb: 1 };
+    const iconStyle = { fontSize: 85, color: config.iconColor, mb: 1 };
+    // สร้างสีสำหรับ Pulse จาก config.iconColor
+    const pulseColor = config.iconColor + "44"; // เติม 44 เพื่อให้โปร่งแสง (Alpha)
 
     switch (orderStatus) {
       case Sd.Status_Pending:
       case Sd.Status_PendingPayment:
         return (
           <AccessTimeIcon
-            sx={{ ...iconStyle, animation: `${pulse} 2s infinite` }}
+            sx={{
+              ...iconStyle,
+              animation: `${pulse(pulseColor)} 2.2s infinite ease-in-out`,
+            }}
           />
         );
 
       case Sd.Status_Preparing:
         return (
           <SoupKitchenIcon
-            sx={{ ...iconStyle, animation: `${pulse} 1.5s infinite` }}
+            sx={{
+              ...iconStyle,
+              animation: `${pulse(pulseColor)} 1.8s infinite ease-in-out`,
+            }}
           />
         );
 
       case Sd.Status_Ready:
+        return (
+          <CheckCircleIcon
+            sx={{
+              ...iconStyle,
+              color: "#2E7D32",
+              animation: `${pulse("#2E7D3244")} 2s infinite`,
+            }}
+          />
+        );
+
       case Sd.Status_Completed:
         return <CheckCircleIcon sx={{ ...iconStyle, color: "#2E7D32" }} />;
 
@@ -81,21 +103,43 @@ export default function OrderStatusCard({
     }
   };
 
-  // 3. แปลงชื่อวิธีชำระเงิน (เหมือนเดิม)
+  // 3. ✅ ปรับ Logic การโชว์วิธีจ่ายเงินให้ Robust ขึ้น
   const getPaymentLabel = (method: string) => {
     const m = method?.toLowerCase() || "";
-    // ถ้า Backend ส่งเป็น "Transfer" หรือ "PromptPay"
-    if (m.includes("promptpay") || m.includes("transfer") || m.includes("qr"))
-      return <span style={{ color: "#1976D2" }}>โอนจ่าย / QR Code</span>;
-    // ถ้า Backend ส่งเป็น "Cash"
-    if (m.includes("cash")) return <span>เงินสด (ชำระหน้าร้าน)</span>;
-
-    return <span>{method}</span>;
+    if (
+      m === paymentMethods.paymentStatus_PromptPay.toLowerCase() ||
+      m.includes("qr") ||
+      m.includes("transfer")
+    ) {
+      return (
+        <Typography
+          component="span"
+          variant="body2"
+          sx={{ color: "#1976D2", fontWeight: 700 }}
+        >
+          โอนจ่าย (PromptPay / QR)
+        </Typography>
+      );
+    }
+    if (m === paymentMethods.paymentStatus_Cash.toLowerCase()) {
+      return (
+        <Typography
+          component="span"
+          variant="body2"
+          sx={{ color: "#455A64", fontWeight: 700 }}
+        >
+          เงินสด (ชำระหน้าร้าน)
+        </Typography>
+      );
+    }
+    return (
+      <Typography component="span" variant="body2" fontWeight={700}>
+        {method}
+      </Typography>
+    );
   };
 
-  // 4. ✅ Logic การโชว์เลขคิว
-  // โชว์เฉพาะตอนร้านรับแล้ว (Approved/Paid/Preparing/Ready/Completed)
-  // ซ่อนตอน Pending, PendingPayment, Cancelled
+  // 4. ✅ Logic เลขคิว (คุมความปลอดภัย)
   const showQueueNumber =
     orderStatus !== Sd.Status_Pending &&
     orderStatus !== Sd.Status_PendingPayment &&
@@ -103,108 +147,104 @@ export default function OrderStatusCard({
 
   return (
     <Paper
-      elevation={4}
+      elevation={0} // ใช้ 0 แล้วคุมเงาด้วย sx จะดู Modern กว่า
       sx={{
         p: 4,
         textAlign: "center",
-        borderRadius: 5,
-        overflow: "hidden",
-        position: "relative",
+        borderRadius: 6,
         background: "#fff",
-        borderTop: `8px solid ${config.iconColor}`, // ใช้ borderTop แทน Box แยกจะง่ายกว่า
+        boxShadow: "0 10px 40px rgba(0,0,0,0.04)",
+        borderTop: `10px solid ${config.iconColor}`,
+        transition: "all 0.5s ease", // เวลาเปลี่ยนสถานะจะได้ดู Smooth
       }}
     >
-      {/* ไอคอนแสดงอารมณ์ */}
-      <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
+      <Box sx={{ mt: 1, display: "flex", justifyContent: "center" }}>
         {getMainIcon()}
       </Box>
 
-      {/* หัวข้อสถานะ */}
       <Typography
         variant="h4"
-        fontWeight={800}
+        fontWeight={900}
         color={config.text}
-        gutterBottom
+        sx={{ mb: 1, letterSpacing: -0.5 }}
       >
         {getHeadline()}
       </Typography>
 
-      {/* กล่องแสดงเลขคิว */}
       {showQueueNumber ? (
         <Paper
           elevation={0}
           sx={{
             bgcolor: config.bg,
             border: `2px dashed ${config.iconColor}`,
-            py: 2,
+            py: 2.5,
             px: 3,
-            borderRadius: 4,
+            borderRadius: 5,
             mb: 3,
             mx: "auto",
-            maxWidth: 280,
+            maxWidth: 260,
           }}
         >
           <Typography
             variant="overline"
-            color={config.text}
-            sx={{ letterSpacing: 2, fontWeight: 800, display: "block", mb: -1 }}
+            sx={{
+              letterSpacing: 3,
+              fontWeight: 900,
+              color: config.text,
+              opacity: 0.8,
+            }}
           >
-            คิวรับอาหาร
+            คิวของคุณคือ
           </Typography>
           <Typography
             variant="h2"
-            fontWeight={900}
+            fontWeight={1000}
             color={config.text}
-            sx={{ fontSize: { xs: "3.5rem", md: "4.5rem" }, lineHeight: 1.2 }}
+            sx={{ fontSize: { xs: "3.8rem", md: "4.8rem" }, lineHeight: 1 }}
           >
-            {pickUpCode || "-"}
+            {pickUpCode || "---"}
           </Typography>
         </Paper>
       ) : (
-        // กล่องข้อความแจ้งเตือน (กรณีไม่ได้คิว)
         <Box
           sx={{
             my: 3,
-            p: 2,
+            p: 2.5,
             bgcolor: config.bg,
-            borderRadius: 3,
+            borderRadius: 4,
             border: `1px dashed ${config.iconColor}`,
           }}
         >
-          <Typography variant="body1" fontWeight={600} color={config.text}>
+          <Typography variant="body1" fontWeight={700} color={config.text}>
             {orderStatus === Sd.Status_Cancelled
-              ? "รายการนี้ถูกยกเลิกแล้ว"
-              : "กรุณารอสักครู่เพื่อให้ได้คิว"}
+              ? "คำสั่งซื้อนี้ถูกยกเลิกแล้ว"
+              : "ร้านกำลังตรวจสอบออเดอร์ของคุณ..."}
           </Typography>
         </Box>
       )}
 
-      {/* วิธีชำระเงิน */}
       <Stack
         direction="row"
         justifyContent="center"
         alignItems="center"
-        spacing={1}
-        sx={{ mb: 3 }}
+        spacing={1.5}
+        sx={{ mb: 3, opacity: 0.8 }}
       >
-        <PaymentIcon color="action" fontSize="small" />
-        <Typography variant="body2" color="text.secondary" fontWeight={600}>
-          {getPaymentLabel(paymentMethod)}
-        </Typography>
+        <PaymentIcon sx={{ color: "text.disabled", fontSize: 20 }} />
+        {getPaymentLabel(paymentMethod)}
       </Stack>
 
-      {/* Chip สถานะ (สรุป) */}
       <Chip
-        label={config.label} // ดึง label ภาษาไทยจาก Helper
+        label={config.label}
         sx={{
           bgcolor: config.iconColor,
           color: "#fff",
-          fontWeight: 700,
-          px: 2,
-          py: 2.5,
-          fontSize: "1rem",
-          borderRadius: 50,
-          boxShadow: `0 4px 12px ${config.bg}`,
+          fontWeight: 800,
+          px: 3,
+          py: 3,
+          fontSize: "1.1rem",
+          borderRadius: "100px",
+          boxShadow: `0 8px 20px ${config.iconColor}44`,
         }}
       />
     </Paper>

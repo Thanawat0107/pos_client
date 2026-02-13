@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import {
@@ -11,9 +13,9 @@ import {
   Stack,
   Typography,
   styled,
+  Alert,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   useGetPaymentQRQuery,
@@ -37,6 +39,7 @@ interface OrderPaymentSectionProps {
   totalAmount: number;
   onPaymentSuccess: () => void;
   onError: (msg: string) => void;
+  disabled?: boolean; // ✅ เพิ่มเพื่อรับสถานะจากหน้า Success
 }
 
 export default function OrderPaymentSection({
@@ -44,17 +47,14 @@ export default function OrderPaymentSection({
   totalAmount,
   onPaymentSuccess,
   onError,
+  disabled = false,
 }: OrderPaymentSectionProps) {
   // 1. Fetch QR Code
   const {
     data: qrData,
     isLoading: isQrLoading,
-    error,
+    error: qrError,
   } = useGetPaymentQRQuery(orderId);
-
-  console.log("--- DEBUG QR DATA ---");
-  console.log("Full Object:", qrData);
-  console.log("Error (if any):", error);
 
   // 2. Mutation
   const [confirmPayment, { isLoading: isUploading }] =
@@ -70,7 +70,6 @@ export default function OrderPaymentSection({
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        // Limit 5MB
         onError("ขนาดไฟล์ต้องไม่เกิน 5MB");
         return;
       }
@@ -88,6 +87,7 @@ export default function OrderPaymentSection({
     if (!selectedFile) return;
 
     try {
+      // 🚀 ส่งข้อมูลไปยัง Backend (CheckSlipAsync)
       const result = await confirmPayment({
         orderId: orderId,
         file: selectedFile,
@@ -95,51 +95,45 @@ export default function OrderPaymentSection({
 
       if (result.success) {
         setIsVerifying(true);
-        // แจ้ง Parent ว่าสำเร็จ (เพื่อแสดง Toast)
+        // แจ้ง Parent (OrderSuccess) เพื่อเริ่มระบบเฝ้าดู SignalR
         onPaymentSuccess();
 
-        // Clear Form
+        // ล้างไฟล์ที่เลือกไว้
         setSelectedFile(null);
         setPreviewUrl(null);
       }
     } catch (err: any) {
-      onError(err.data?.message || "การส่งหลักฐานชำระเงินล้มเหลว");
+      onError(
+        err.data?.message ||
+          "การส่งหลักฐานชำระเงินล้มเหลว กรุณาตรวจสอบสลิปอีกครั้ง",
+      );
       setIsVerifying(false);
     }
   };
 
-  // ✅ ฟังก์ชันช่วยแปลงข้อมูล QR Code ให้เป็น src ที่ถูกต้อง
+  // ✅ Helper: จัดการข้อมูล QR Code
   const getQrSrc = (data: any) => {
     if (!data) return "";
-
-    // 1. ดึง String ออกมา ไม่ว่ามันจะเป็น Object หรือ String เพียวๆ
-    let base64String = "";
-    if (typeof data === "string") {
-      base64String = data;
-    } else if (typeof data === "object" && data.qrImage) {
-      base64String = data.qrImage;
-    }
-
+    let base64String = typeof data === "string" ? data : data.qrImage;
     if (!base64String) return "";
 
-    // 2. เช็คว่ามี Header "data:image..." หรือยัง ถ้าไม่มีให้เติม
-    if (base64String.startsWith("data:image")) {
-      return base64String;
-    } else {
-      return `data:image/png;base64,${base64String}`;
-    }
+    return base64String.startsWith("data:image")
+      ? base64String
+      : `data:image/png;base64,${base64String}`;
   };
 
   return (
     <Card
       sx={{
         borderRadius: 4,
-        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-        overflow: "visible",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+        overflow: "hidden",
+        border: isVerifying ? "2px solid #2E7D32" : "none",
+        transition: "all 0.3s ease",
       }}
     >
       <CardContent sx={{ textAlign: "center", p: 3 }}>
-        {isVerifying ? (
+        {isVerifying || disabled ? (
           <Box
             sx={{
               py: 4,
@@ -148,77 +142,100 @@ export default function OrderPaymentSection({
               alignItems: "center",
             }}
           >
-            <CircularProgress size={50} sx={{ mb: 2 }} />
-            <Typography variant="h6" fontWeight={700}>
-              กำลังตรวจสอบยอดเงิน...
+            <CircularProgress
+              size={60}
+              thickness={5}
+              color="success"
+              sx={{ mb: 2 }}
+            />
+            <Typography variant="h6" fontWeight={800} color="success.main">
+              กำลังตรวจสอบสลิปอัตโนมัติ...
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              กรุณารอสักครู่ ระบบกำลังยืนยันสลิปของคุณ
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              ระบบจะอัปเดตสถานะให้คุณทันทีเมื่อยืนยันยอดสำเร็จ
             </Typography>
           </Box>
         ) : (
           <>
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              ชำระเงิน (QR Code)
+            <Typography variant="h6" fontWeight={800} gutterBottom>
+              ชำระเงินผ่าน PromptPay
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              ยอดชำระ:{" "}
-              <strong style={{ color: "#2E7D32", fontSize: "1.2rem" }}>
-                ฿{totalAmount.toLocaleString()}
-              </strong>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              สแกน QR Code ด้านล่างด้วยแอปธนาคารของคุณ
+            </Typography>
+            <Typography
+              variant="h5"
+              fontWeight={900}
+              sx={{ color: "#1976d2", mb: 2 }}
+            >
+              ฿
+              {totalAmount.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+              })}
             </Typography>
 
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 3 }} />
 
-            {/* QR Code Display */}
+            {/* QR Code Area */}
             <Box
               sx={{
                 display: "flex",
-                flexDirection: "column", // ปรับเป็น column เผื่อมี text error
                 justifyContent: "center",
                 alignItems: "center",
                 minHeight: 250,
-                bgcolor: "#f9f9f9",
-                borderRadius: 2,
+                bgcolor: "#fff",
+                borderRadius: 3,
                 mb: 3,
-                border: "1px dashed #ccc",
-                p: 2, // เพิ่ม padding หน่อยเผื่อรูปใหญ่
+                border: "2px solid #f0f0f0",
+                p: 2,
+                boxShadow: "inset 0 0 10px rgba(0,0,0,0.02)",
               }}
             >
               {isQrLoading ? (
-                <CircularProgress />
+                <Stack alignItems="center" spacing={1}>
+                  <CircularProgress size={30} />
+                  <Typography variant="caption">
+                    กำลังสร้าง QR Code...
+                  </Typography>
+                </Stack>
               ) : qrData ? (
-                <img
+                <Box
+                  component="img"
                   src={getQrSrc(qrData)}
-                  alt="Payment QR"
-                  style={{
-                    width: "100%", // เปลี่ยนจาก maxWidth เป็น width ให้ชัดเจน
-                    height: "auto", // ให้สูงตามสัดส่วน
-                    aspectRatio: "1/1", // บังคับเป็นสี่เหลี่ยมจัตุรัส (ปกติ QR เป็นสี่เหลี่ยม)
+                  alt="PromptPay QR"
+                  sx={{
+                    width: "100%",
+                    maxWidth: 220,
+                    height: "auto",
                     display: "block",
-                    backgroundColor: "#fff", // เผื่อภาพโปร่งใสจะได้เห็นชัด
                   }}
                 />
               ) : (
-                <Typography color="error">ไม่สามารถโหลด QR Code ได้</Typography>
+                <Alert severity="error">โหลด QR Code ไม่สำเร็จ</Alert>
               )}
             </Box>
 
-            {/* File Upload Section */}
+            {/* Upload Area */}
             <Stack spacing={2} alignItems="center">
               {!previewUrl ? (
                 <Button
                   component="label"
                   variant="outlined"
+                  fullWidth
                   startIcon={<CloudUploadIcon />}
+                  disabled={isQrLoading}
                   sx={{
                     borderRadius: 3,
-                    width: "100%",
-                    py: 1.5,
+                    py: 1.8,
                     borderStyle: "dashed",
+                    borderWidth: 2,
+                    textTransform: "none",
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    "&:hover": { borderWidth: 2 },
                   }}
                 >
-                  แนบสลิปการโอนเงิน
+                  อัปโหลดสลิปเพื่อยืนยัน
                   <VisuallyHiddenInput
                     type="file"
                     accept="image/*"
@@ -227,57 +244,68 @@ export default function OrderPaymentSection({
                 </Button>
               ) : (
                 <Box
-                  sx={{ position: "relative", width: "100%", maxWidth: 200 }}
+                  sx={{
+                    position: "relative",
+                    width: "100%",
+                    textAlign: "center",
+                  }}
                 >
-                  <img
-                    src={previewUrl}
-                    alt="Slip Preview"
-                    style={{
-                      width: "100%",
-                      borderRadius: 8,
-                      border: "1px solid #ddd",
-                    }}
-                  />
-                  <IconButton
-                    onClick={handleRemoveFile}
-                    size="small"
-                    sx={{
-                      position: "absolute",
-                      top: -10,
-                      right: -10,
-                      bgcolor: "error.main",
-                      color: "white",
-                      "&:hover": { bgcolor: "error.dark" },
-                    }}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    gutterBottom
                   >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
+                    ตัวอย่างสลิปที่เลือก:
+                  </Typography>
+                  <Box sx={{ position: "relative", display: "inline-block" }}>
+                    <img
+                      src={previewUrl}
+                      alt="Slip Preview"
+                      style={{
+                        maxWidth: "180px",
+                        borderRadius: 12,
+                        border: "2px solid #4caf50",
+                      }}
+                    />
+                    <IconButton
+                      onClick={handleRemoveFile}
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        top: -8,
+                        right: -8,
+                        bgcolor: "error.main",
+                        color: "white",
+                        boxShadow: 2,
+                        "&:hover": { bgcolor: "error.dark" },
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
               )}
 
-              {/* Confirm Button */}
               <Button
                 variant="contained"
                 color="success"
                 fullWidth
                 size="large"
-                disabled={!selectedFile || isUploading}
+                disabled={!selectedFile || isUploading || disabled}
                 onClick={handleConfirmPayment}
                 startIcon={
-                  isUploading ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : (
-                    <CheckCircleIcon />
-                  )
+                  isUploading && <CircularProgress size={20} color="inherit" />
                 }
                 sx={{
                   borderRadius: 3,
-                  py: 1.5,
-                  fontWeight: 700,
-                  boxShadow: "0 4px 12px rgba(46, 125, 50, 0.3)",
+                  py: 1.8,
+                  fontWeight: 800,
+                  fontSize: "1.05rem",
+                  boxShadow: "0 6px 20px rgba(46, 125, 50, 0.25)",
                 }}
               >
-                {isUploading ? "กำลังอัปโหลด..." : "ยืนยันการชำระเงิน"}
+                {isUploading ? "กำลังประมวลผล..." : "ส่งหลักฐานการโอนเงิน"}
               </Button>
             </Stack>
           </>

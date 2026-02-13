@@ -1,4 +1,4 @@
-import {
+ import {
   Paper,
   Typography,
   Box,
@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import AccessTimeFilledIcon from "@mui/icons-material/AccessTimeFilled";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { Sd } from "../../helpers/SD";
 import {
   ColorlibConnector,
@@ -21,34 +22,33 @@ interface Props {
   estimatedPickUpTime: string | null;
 }
 
-// Animation
+// ✅ Animation สำหรับสถานะที่กำลังดำเนินการ
 const pulse = keyframes`
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
-  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 152, 0, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
 `;
 
-// ชื่อ Step หลัก (Default)
 const steps = ["รับออเดอร์", "กำลังปรุง", "พร้อมเสิร์ฟ", "เรียบร้อย"];
 
 export default function OrderTimeline({
   orderStatus,
   estimatedPickUpTime,
 }: Props) {
-  // 1. ✅ คำนวณ Active Step ให้ตรงกับสถานะ Backend
+  // 1. ✅ ปรับ Mapping Step ให้มีความก้าวหน้ามากขึ้น
   const getActiveStep = () => {
     switch (orderStatus) {
-      case Sd.Status_Pending:
       case Sd.Status_PendingPayment:
+      case Sd.Status_Pending:
+        return 0; // ช่วงรอ (เงิน/คน)
       case Sd.Status_Approved:
       case Sd.Status_Paid:
-        return 0; // Step 1: รับออเดอร์ (รวมรอจ่าย/รออนุมัติ)
       case Sd.Status_Preparing:
-        return 1; // Step 2: กำลังปรุง
+        return 1; // เริ่มเข้าครัวหรือเตรียมของแล้ว
       case Sd.Status_Ready:
-        return 2; // Step 3: พร้อมเสิร์ฟ
+        return 2; // อาหารเสร็จแล้ว
       case Sd.Status_Completed:
-        return 3; // Step 4: จบงาน
+        return 3; // จบงาน
       default:
         return 0;
     }
@@ -56,56 +56,85 @@ export default function OrderTimeline({
 
   const activeStep = getActiveStep();
 
-  // ถ้าถูกยกเลิก ไม่ต้องโชว์ Timeline
+  // ✅ ถ้าถูกยกเลิก ไม่แสดง Timeline (ตาม Logic เดิมที่ถูกต้อง)
   if (orderStatus === Sd.Status_Cancelled) return null;
 
-  // 2. ✅ Logic การแสดงเวลา (Estimated Time)
-  // จะโชว์ก็ต่อเมื่อ: มีเวลาส่งมา AND ร้านรับเรื่องแล้ว (Approved/Paid/Preparing/Ready)
-  // และต้องซ่อนเมื่อ: ยังไม่จ่าย(PendingPayment) หรือ รอร้านกดรับ(Pending) หรือ จบงานแล้ว(Completed)
+  // 2. ✅ ปรับ Logic การแสดงเวลาให้ดูเป็นมืออาชีพขึ้น
   const showTime =
     estimatedPickUpTime &&
-    orderStatus !== Sd.Status_Pending &&
-    orderStatus !== Sd.Status_PendingPayment &&
-    orderStatus !== Sd.Status_Completed;
+    orderStatus !== Sd.Status_Completed &&
+    // ป้องกันการโชว์เวลา "มั่ว" ถ้าวันข้างหลังส่งมาเป็นค่าว่างหรือ Invalid
+    !isNaN(Date.parse(estimatedPickUpTime));
 
-  // 3. ✅ Logic เปลี่ยนชื่อ Step แรก ตามบริบท (Dynamic Label)
+  // 3. ✅ Dynamic Label: สื่อสารกับลูกค้าให้ชัดเจนว่าอยู่จุดไหน
   const getStepLabel = (label: string, index: number) => {
     if (index === 0) {
       if (orderStatus === Sd.Status_PendingPayment) return "รอชำระเงิน";
       if (orderStatus === Sd.Status_Pending) return "รอร้านยืนยัน";
-      if (orderStatus === Sd.Status_Approved || orderStatus === Sd.Status_Paid)
-        return "รับออเดอร์แล้ว";
+      return "ยืนยันออเดอร์แล้ว";
+    }
+    if (
+      index === 1 &&
+      (orderStatus === Sd.Status_Approved || orderStatus === Sd.Status_Paid)
+    ) {
+      return "กำลังเตรียมจัดส่งเข้าครัว";
     }
     return label;
   };
+
+  // ✅ เลือกสี Alert ตามสถานะ
+  const getAlertConfig = () => {
+    if (orderStatus === Sd.Status_Ready) {
+      return {
+        severity: "success" as const,
+        icon: <CheckCircleIcon />,
+        text: "อาหารของคุณเสร็จเรียบร้อยแล้ว!",
+      };
+    }
+    return {
+      severity: "info" as const,
+      icon: <AccessTimeFilledIcon />,
+      text: "คาดว่าจะได้รับอาหารเวลา:",
+    };
+  };
+
+  const alertConfig = getAlertConfig();
 
   return (
     <Paper
       sx={{
         p: 3,
         borderRadius: 4,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
         mb: 3,
+        background: "linear-gradient(to bottom, #ffffff, #fafafa)",
       }}
     >
       <Typography
         variant="h6"
         fontWeight={800}
         gutterBottom
-        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}
       >
-        <RestaurantIcon color="primary" /> สถานะการจัดเตรียม
+        <RestaurantIcon color="primary" />
+        {orderStatus === Sd.Status_Completed
+          ? "ออเดอร์เสร็จสมบูรณ์"
+          : "สถานะออเดอร์ล่าสุด"}
       </Typography>
 
-      {/* ส่วนแสดงเวลาที่คาดว่าจะได้รับ */}
+      {/* ✅ ปรับปรุงส่วนแสดงเวลาให้เด่นชัดขึ้น */}
       {showTime && (
         <Alert
-          severity="info"
-          icon={<AccessTimeFilledIcon fontSize="inherit" />}
+          severity={alertConfig.severity}
+          icon={alertConfig.icon}
           sx={{
-            mb: 3,
-            borderRadius: 2,
-            alignItems: "center",
+            mb: 4,
+            borderRadius: 3,
+            fontWeight: 700,
+            boxShadow:
+              alertConfig.severity === "success"
+                ? "0 4px 12px rgba(76, 175, 80, 0.2)"
+                : "none",
             "& .MuiAlert-message": { width: "100%" },
           }}
         >
@@ -114,11 +143,12 @@ export default function OrderTimeline({
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              width: "100%",
             }}
           >
-            <span>คาดว่าจะได้รับ:</span>
-            <Typography variant="h6" fontWeight={800} color="primary.dark">
+            <Typography variant="body2" fontWeight={600}>
+              {alertConfig.text}
+            </Typography>
+            <Typography variant="h6" fontWeight={900}>
               {new Date(estimatedPickUpTime!).toLocaleTimeString("th-TH", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -129,7 +159,7 @@ export default function OrderTimeline({
         </Alert>
       )}
 
-      <Box sx={{ mt: 2 }}>
+      <Box sx={{ width: "100%", py: 2 }}>
         <Stepper
           alternativeLabel
           activeStep={activeStep}
@@ -139,13 +169,15 @@ export default function OrderTimeline({
             const isActive = index === activeStep;
             const isCompleted = index < activeStep;
 
+            // ✅ Pulse animation เฉพาะ step ที่กำลังทำและยังไม่จบออเดอร์
+            const shouldPulse = isActive && orderStatus !== Sd.Status_Completed;
+
             return (
               <Step key={label} completed={isCompleted}>
                 <StepLabel
                   StepIconComponent={ColorlibStepIcon}
                   sx={{
-                    // Animation: เฉพาะจุดที่เป็น Active ปัจจุบัน
-                    "& .MuiStepLabel-iconContainer": isActive
+                    "& .MuiStepLabel-iconContainer": shouldPulse
                       ? {
                           animation: `${pulse} 2s infinite`,
                           borderRadius: "50%",
@@ -155,14 +187,19 @@ export default function OrderTimeline({
                 >
                   <Typography
                     variant="caption"
-                    fontWeight={isActive ? 800 : 500}
-                    color={isActive ? "primary.main" : "text.secondary"}
                     sx={{
+                      display: "block",
+                      mt: 0.5,
+                      fontWeight: isActive ? 900 : 600,
+                      color: isActive
+                        ? "primary.main"
+                        : isCompleted
+                          ? "text.primary"
+                          : "text.disabled",
+                      fontSize: isActive ? "0.8rem" : "0.75rem",
                       transition: "all 0.3s",
-                      transform: isActive ? "scale(1.1)" : "scale(1)",
                     }}
                   >
-                    {/* เรียกฟังก์ชันเปลี่ยนชื่อ Step */}
                     {getStepLabel(label, index)}
                   </Typography>
                 </StepLabel>

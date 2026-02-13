@@ -103,7 +103,7 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
     try {
       await confirmPayment({
         id: order.id,
-        paymentMethod: paymentMethods.paymentStatus_Cash,
+        paymentMethod: order.paymentMethod || paymentMethods.paymentStatus_Cash,
       }).unwrap();
     } catch (err) {
       console.error(err);
