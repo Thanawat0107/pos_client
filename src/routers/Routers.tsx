@@ -17,6 +17,7 @@ import Checkout from "../pages/checkout/Checkout";
 import OrderSuccess from "../pages/orderSuccess/OrderSuccess";
 import ActiveOrderFloating from "../pages/activeOrder/ActiveOrderFloating";
 import MyOrders from "../pages/order/MyOrders";
+import Dashboard from "../components/pages/adminManage/dashboard/Dashboard";
 
 export default function Routers() {
   return (
@@ -43,6 +44,7 @@ export default function Routers() {
         <Route path="/manage-content" element={<ManageContentList />} />
         <Route path="/manage-category" element={<ManageCategory />} />
         <Route path="/manage-order" element={<ManageOrder />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

@@ -12,6 +12,7 @@ import shoppingSlice from "./slices/shoppingSlice";
 import { orderApi } from "../services/orderApi";
 import { contentApi } from "../services/contentApi";
 import paymentApi from "../services/paymentApi";
+import { dashboardApi } from "../services/dashboardApi";
 
 export const store = configureStore({
   reducer: {
@@ -28,6 +29,7 @@ export const store = configureStore({
     [shoppingCartApi.reducerPath]: shoppingCartApi.reducer,
     [orderApi.reducerPath]: orderApi.reducer,
     [paymentApi.reducerPath]: paymentApi.reducer,
+    [dashboardApi.reducerPath]: dashboardApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -41,6 +43,7 @@ export const store = configureStore({
       shoppingCartApi.middleware,
       orderApi.middleware,
       paymentApi.middleware,
+      dashboardApi.middleware,
     ),
 });
 
