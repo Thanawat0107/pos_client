@@ -159,14 +159,21 @@ export const contentApi = createApi({
       invalidatesTags: ["Content"],
     }),
 
-    verifyPromo: builder.query<ApiResponse<Content>, string>({
-      query: (code) => ({
-        url: `contents/verify-promo/${code}`, // path ให้ตรงกับ Controller (ระวัง s ที่ contents ด้วยนะครับ)
+    // ปรับจาก string เป็น object { code, amount, userId, guestToken }
+    verifyPromo: builder.query<
+      ApiResponse<Content>,
+      { code: string; amount: number; userId?: string; guestToken?: string }
+    >({
+      query: (arg) => ({
+        url: `contents/verify-promo/${arg.code}`,
         method: "GET",
-        // RTK Query จะส่ง X-Guest-Token ให้อัตโนมัติถ้าคุณตั้งค่าใน baseQuery
-        // หรือจะส่งเฉพาะกิจที่นี่ก็ได้
+        params: {
+          currentOrderAmount: arg.amount,
+          userId: arg.userId,
+          guestToken: arg.guestToken,
+        },
         headers: {
-          "X-Guest-Token": localStorage.getItem("cartToken") || "",
+          "X-Guest-Token": arg.guestToken || "",
         },
       }),
     }),

@@ -8,8 +8,6 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import { Sd, paymentMethods } from "../../helpers/SD";
 import { getStatusConfig } from "../../utility/OrderHelpers";
 
-// ✅ ปรับ Pulse Animation ให้รับสีแบบ Dynamic (ถ้าต้องการ)
-// หรือใช้สีที่ Soft ลงเพื่อให้เข้ากับสไตล์ Modern
 const pulse = (color: string) => keyframes`
   0% { transform: scale(1); box-shadow: 0 0 0 0 ${color}; }
   70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(0, 0, 0, 0); }
@@ -29,7 +27,6 @@ export default function OrderStatusCard({
 }: Props) {
   const config = getStatusConfig(orderStatus);
 
-  // 1. ✅ ปรับหัวข้อให้สื่อสารชัดเจนขึ้น
   const getHeadline = () => {
     switch (orderStatus) {
       case Sd.Status_Pending:
@@ -45,7 +42,7 @@ export default function OrderStatusCard({
       case Sd.Status_Ready:
         return "อาหารเสร็จแล้วครับ!";
       case Sd.Status_Completed:
-        return "ขอบคุณที่มาอุดหนุนครับ";
+        return "ขอบคุณที่มาอุดหนุน";
       case Sd.Status_Cancelled:
         return "ออเดอร์ถูกยกเลิก";
       default:
@@ -53,11 +50,14 @@ export default function OrderStatusCard({
     }
   };
 
-  // 2. ✅ ปรับไอคอนหลักให้มีลูกเล่น (Animation)
   const getMainIcon = () => {
-    const iconStyle = { fontSize: 85, color: config.iconColor, mb: 1 };
-    // สร้างสีสำหรับ Pulse จาก config.iconColor
-    const pulseColor = config.iconColor + "44"; // เติม 44 เพื่อให้โปร่งแสง (Alpha)
+    // ปรับขนาดไอคอนให้ Responsive: มือถือเล็กหน่อย (70), จอใหญ่ (90)
+    const iconStyle = {
+      fontSize: { xs: 70, sm: 90 },
+      color: config.iconColor,
+      mb: 1,
+    };
+    const pulseColor = config.iconColor + "44";
 
     switch (orderStatus) {
       case Sd.Status_Pending:
@@ -70,7 +70,6 @@ export default function OrderStatusCard({
             }}
           />
         );
-
       case Sd.Status_Preparing:
         return (
           <SoupKitchenIcon
@@ -80,7 +79,6 @@ export default function OrderStatusCard({
             }}
           />
         );
-
       case Sd.Status_Ready:
         return (
           <CheckCircleIcon
@@ -91,21 +89,23 @@ export default function OrderStatusCard({
             }}
           />
         );
-
       case Sd.Status_Completed:
         return <CheckCircleIcon sx={{ ...iconStyle, color: "#2E7D32" }} />;
-
       case Sd.Status_Cancelled:
         return <CancelIcon sx={{ ...iconStyle, color: "#D32F2F" }} />;
-
-      default: // Approved, Paid
+      default:
         return <StorefrontIcon sx={iconStyle} />;
     }
   };
 
-  // 3. ✅ ปรับ Logic การโชว์วิธีจ่ายเงินให้ Robust ขึ้น
   const getPaymentLabel = (method: string) => {
     const m = method?.toLowerCase() || "";
+    // ปรับขนาดตัวหนังสือวิธีการชำระเงินให้เป็น body1 (ใหญ่ขึ้น)
+    const labelStyle = {
+      fontWeight: 700,
+      fontSize: { xs: "0.95rem", sm: "1rem" },
+    };
+
     if (
       m === paymentMethods.paymentStatus_PromptPay.toLowerCase() ||
       m.includes("qr") ||
@@ -114,8 +114,8 @@ export default function OrderStatusCard({
       return (
         <Typography
           component="span"
-          variant="body2"
-          sx={{ color: "#1976D2", fontWeight: 700 }}
+          variant="body1"
+          sx={{ ...labelStyle, color: "#1976D2" }}
         >
           โอนจ่าย (PromptPay / QR)
         </Typography>
@@ -125,21 +125,20 @@ export default function OrderStatusCard({
       return (
         <Typography
           component="span"
-          variant="body2"
-          sx={{ color: "#455A64", fontWeight: 700 }}
+          variant="body1"
+          sx={{ ...labelStyle, color: "#455A64" }}
         >
           เงินสด (ชำระหน้าร้าน)
         </Typography>
       );
     }
     return (
-      <Typography component="span" variant="body2" fontWeight={700}>
+      <Typography component="span" variant="body1" sx={labelStyle}>
         {method}
       </Typography>
     );
   };
 
-  // 4. ✅ Logic เลขคิว (คุมความปลอดภัย)
   const showQueueNumber =
     orderStatus !== Sd.Status_Pending &&
     orderStatus !== Sd.Status_PendingPayment &&
@@ -147,15 +146,15 @@ export default function OrderStatusCard({
 
   return (
     <Paper
-      elevation={0} // ใช้ 0 แล้วคุมเงาด้วย sx จะดู Modern กว่า
+      elevation={0}
       sx={{
-        p: 4,
+        p: { xs: 3, sm: 5 }, // เพิ่ม Padding แนวตั้งให้ดูโปร่งขึ้น
         textAlign: "center",
-        borderRadius: 6,
+        borderRadius: { xs: 5, sm: 6 },
         background: "#fff",
-        boxShadow: "0 10px 40px rgba(0,0,0,0.04)",
-        borderTop: `10px solid ${config.iconColor}`,
-        transition: "all 0.5s ease", // เวลาเปลี่ยนสถานะจะได้ดู Smooth
+        boxShadow: "0 15px 50px rgba(0,0,0,0.06)", // เงาให้นุ่มขึ้น
+        borderTop: `12px solid ${config.iconColor}`,
+        transition: "all 0.5s ease",
       }}
     >
       <Box sx={{ mt: 1, display: "flex", justifyContent: "center" }}>
@@ -166,7 +165,11 @@ export default function OrderStatusCard({
         variant="h4"
         fontWeight={900}
         color={config.text}
-        sx={{ mb: 1, letterSpacing: -0.5 }}
+        sx={{
+          mb: 2,
+          letterSpacing: -0.5,
+          fontSize: { xs: "1.75rem", sm: "2.125rem" }, // ปรับขนาดพาดหัวตามหน้าจอ
+        }}
       >
         {getHeadline()}
       </Typography>
@@ -177,21 +180,24 @@ export default function OrderStatusCard({
           sx={{
             bgcolor: config.bg,
             border: `2px dashed ${config.iconColor}`,
-            py: 2.5,
-            px: 3,
+            py: { xs: 2.5, sm: 3.5 }, // เพิ่มพื้นที่ให้เลขคิวดูเด่น
+            px: 2,
             borderRadius: 5,
             mb: 3,
             mx: "auto",
-            maxWidth: 260,
+            maxWidth: { xs: 240, sm: 280 },
           }}
         >
           <Typography
             variant="overline"
             sx={{
-              letterSpacing: 3,
-              fontWeight: 900,
+              display: "block",
+              letterSpacing: 2,
+              fontWeight: 800,
               color: config.text,
-              opacity: 0.8,
+              opacity: 0.7,
+              fontSize: { xs: "0.8rem", sm: "0.9rem" },
+              lineHeight: 1.5,
             }}
           >
             คิวของคุณคือ
@@ -200,7 +206,11 @@ export default function OrderStatusCard({
             variant="h2"
             fontWeight={1000}
             color={config.text}
-            sx={{ fontSize: { xs: "3.8rem", md: "4.8rem" }, lineHeight: 1 }}
+            sx={{
+              fontSize: { xs: "4rem", sm: "5rem" }, // เลขคิวใหญ่มาก เห็นชัดแม้ถือห่างๆ
+              lineHeight: 1,
+              my: 0.5,
+            }}
           >
             {pickUpCode || "---"}
           </Typography>
@@ -208,14 +218,19 @@ export default function OrderStatusCard({
       ) : (
         <Box
           sx={{
-            my: 3,
-            p: 2.5,
+            my: 4,
+            p: 3,
             bgcolor: config.bg,
             borderRadius: 4,
-            border: `1px dashed ${config.iconColor}`,
+            border: `1.5px dashed ${config.iconColor}`,
           }}
         >
-          <Typography variant="body1" fontWeight={700} color={config.text}>
+          <Typography
+            variant="body1"
+            fontWeight={700}
+            color={config.text}
+            sx={{ fontSize: "1.1rem" }}
+          >
             {orderStatus === Sd.Status_Cancelled
               ? "คำสั่งซื้อนี้ถูกยกเลิกแล้ว"
               : "ร้านกำลังตรวจสอบออเดอร์ของคุณ..."}
@@ -227,10 +242,12 @@ export default function OrderStatusCard({
         direction="row"
         justifyContent="center"
         alignItems="center"
-        spacing={1.5}
-        sx={{ mb: 3, opacity: 0.8 }}
+        spacing={1}
+        sx={{ mb: 4, opacity: 0.9 }}
       >
-        <PaymentIcon sx={{ color: "text.disabled", fontSize: 20 }} />
+        <PaymentIcon
+          sx={{ color: "text.disabled", fontSize: { xs: 22, sm: 24 } }}
+        />
         {getPaymentLabel(paymentMethod)}
       </Stack>
 
@@ -240,11 +257,12 @@ export default function OrderStatusCard({
           bgcolor: config.iconColor,
           color: "#fff",
           fontWeight: 800,
-          px: 3,
-          py: 3,
-          fontSize: "1.1rem",
+          px: { xs: 2, sm: 4 },
+          height: { xs: 45, sm: 50 }, // ความสูงที่พอดีกับมือถือ
+          fontSize: { xs: "1rem", sm: "1.1rem" },
           borderRadius: "100px",
-          boxShadow: `0 8px 20px ${config.iconColor}44`,
+          boxShadow: `0 8px 25px ${config.iconColor}55`,
+          "& .MuiChip-label": { px: { xs: 2, sm: 3 } },
         }}
       />
     </Paper>

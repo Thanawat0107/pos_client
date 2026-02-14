@@ -43,11 +43,9 @@ export default function OrderSuccess() {
   const userId = useAppSelector((state) => state.auth?.userId);
   const userRole = useAppSelector((state) => state.auth?.role);
 
-  // --- 🛡️ States สำหรับระบบ Smart Verification ---
   const [isVerifying, setIsVerifying] = useState(false);
   const verifyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // --- Guest Token Logic ---
   const guestTokens = useMemo(() => {
     try {
       const saved = localStorage.getItem("guestTokens");
@@ -66,7 +64,6 @@ export default function OrderSuccess() {
     );
   }, [userId, guestTokens]);
 
-  // 1. Fetch Order Data
   const {
     data: order,
     isLoading,
@@ -77,11 +74,8 @@ export default function OrderSuccess() {
     { skip: isNaN(orderId) },
   );
 
-  // 🔥 CORE LOGIC: คำนวณสถานะการแสดงส่วนชำระเงิน (รัดกุมขึ้น)
   const showPaymentSection = useMemo(() => {
     if (!order) return false;
-
-    // สถานะปลายทางที่ไม่ต้องแสดง QR แล้ว
     const terminalStatuses = [
       Sd.Status_Paid,
       Sd.Status_Preparing,
@@ -101,14 +95,12 @@ export default function OrderSuccess() {
   }, [order]);
 
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
-
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [targetItem, setTargetItem] = useState<{
     id: number;
     name: string;
   } | null>(null);
-
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
 
@@ -120,11 +112,8 @@ export default function OrderSuccess() {
     (order.orderStatus === Sd.Status_PendingPayment ||
       order.orderStatus === Sd.Status_Pending);
 
-  // --- 📡 Smart Verification: เฝ้าดูการเปลี่ยนสถานะจาก SignalR ---
   useEffect(() => {
     if (!order) return;
-
-    // ตรวจสอบว่าสถานะขยับออกจากช่วง "รอจ่าย" หรือยัง
     const hasStatusAdvanced =
       order.orderStatus !== Sd.Status_PendingPayment &&
       order.orderStatus !== Sd.Status_Pending;
@@ -132,7 +121,6 @@ export default function OrderSuccess() {
     if (isVerifying && hasStatusAdvanced) {
       setIsVerifying(false);
       if (verifyTimeoutRef.current) clearTimeout(verifyTimeoutRef.current);
-
       if (order.orderStatus === Sd.Status_Paid) {
         setToastMsg("ระบบยืนยันยอดเงินสำเร็จเรียบร้อย ขอบคุณค่ะ!");
         setToastOpen(true);
@@ -140,14 +128,12 @@ export default function OrderSuccess() {
     }
   }, [order?.orderStatus, isVerifying]);
 
-  // Cleanup Timer เมื่อ Unmount
   useEffect(() => {
     return () => {
       if (verifyTimeoutRef.current) clearTimeout(verifyTimeoutRef.current);
     };
   }, []);
 
-  // Security Check Effect
   useEffect(() => {
     if (isNaN(orderId)) {
       navigate("/", { replace: true });
@@ -163,7 +149,6 @@ export default function OrderSuccess() {
     }
   }, [order, isLoading, orderId, userId, guestTokens, userRole, navigate]);
 
-  // Sound & Vibrate Effect (เพิ่มแจ้งเตือนเมื่อโดน Cancel)
   useEffect(() => {
     if (order?.orderStatus) {
       const alertedStatuses = [
@@ -171,7 +156,6 @@ export default function OrderSuccess() {
         Sd.Status_Paid,
         Sd.Status_Cancelled,
       ];
-
       if (
         alertedStatuses.includes(order.orderStatus) &&
         !isFirstLoad.current &&
@@ -187,13 +171,10 @@ export default function OrderSuccess() {
     }
   }, [order?.orderStatus, prevStatus]);
 
-  // --- Handlers ---
   const handlePaymentSuccess = () => {
     setToastMsg("อัปโหลดสลิปเรียบร้อย ระบบกำลังตรวจสอบความถูกต้อง...");
     setToastOpen(true);
     setIsVerifying(true);
-
-    // 🛡️ Fallback: หาก SignalR ขัดข้อง 10 วินาทีให้บังคับ Refetch
     verifyTimeoutRef.current = setTimeout(() => {
       setIsVerifying(false);
       refetch();
@@ -246,33 +227,48 @@ export default function OrderSuccess() {
 
   if (isError || !order)
     return (
-      <Container maxWidth="sm" sx={{ mt: 8, textAlign: "center" }}>
-        <Typography variant="h5" color="error">
+      <Container maxWidth="sm" sx={{ mt: 8, textAlign: "center", px: 3 }}>
+        <Typography variant="h5" color="error" fontWeight={700}>
           ไม่พบข้อมูลออเดอร์
         </Typography>
-        <Button onClick={() => navigate("/")} sx={{ mt: 2 }}>
+        <Button
+          onClick={() => navigate("/")}
+          variant="contained"
+          sx={{ mt: 3, borderRadius: 3, px: 4, py: 1.5, fontSize: "1.1rem" }}
+        >
           กลับหน้าหลัก
         </Button>
       </Container>
     );
 
   return (
-    <Box sx={{ bgcolor: "#F5F7FA", minHeight: "100vh", py: { xs: 3, md: 5 } }}>
-      <Container maxWidth="sm">
-        <Stack spacing={3} sx={{ animation: `${slideUp} 0.5s ease-out` }}>
-          {/* แจ้งเตือนเมื่อออเดอร์ถูกยกเลิก */}
+    <Box sx={{ bgcolor: "#F5F7FA", minHeight: "100vh", py: { xs: 2, md: 5 } }}>
+      <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
+        <Stack
+          spacing={{ xs: 2, md: 3 }}
+          sx={{ animation: `${slideUp} 0.5s ease-out` }}
+        >
+          {/* แจ้งเตือนเมื่อออเดอร์ถูกยกเลิก - ปรับตัวหนังสือให้เด่นขึ้น */}
           {order.orderStatus === Sd.Status_Cancelled && (
             <Alert
               severity="error"
               variant="filled"
-              icon={<CallIcon fontSize="inherit" />}
+              icon={<CallIcon sx={{ fontSize: "2rem" }} />}
               sx={{
-                borderRadius: 3,
+                borderRadius: 4,
+                fontSize: { xs: "1rem", sm: "1.1rem" },
                 fontWeight: 600,
+                alignItems: "center",
                 boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)",
               }}
             >
-              ออเดอร์นี้ถูกยกเลิกแล้ว กรุณาติดต่อพนักงานหากมีข้อสงสัย
+              ออเดอร์นี้ถูกยกเลิกแล้ว <br />
+              <Typography
+                variant="caption"
+                sx={{ opacity: 0.9, fontSize: "0.85rem" }}
+              >
+                กรุณาติดต่อพนักงานหากมีข้อสงสัย
+              </Typography>
             </Alert>
           )}
 
@@ -283,8 +279,8 @@ export default function OrderSuccess() {
             paymentMethod={order.paymentMethod}
           />
 
-          {/* 🔥 ส่วนของการชำระเงินและระบบยืนยันอัตโนมัติ */}
-          {/* {showPaymentSection && (
+          {/* ส่วนของการชำระเงิน */}
+          {showPaymentSection && (
             <Box sx={{ position: "relative" }}>
               <OrderPaymentSection
                 orderId={orderId}
@@ -297,27 +293,31 @@ export default function OrderSuccess() {
               {isVerifying && (
                 <Stack
                   direction="row"
-                  spacing={1.5}
+                  spacing={2}
                   alignItems="center"
                   justifyContent="center"
                   sx={{
                     mt: 2,
-                    p: 2,
+                    p: 2.5,
                     bgcolor: "primary.50",
-                    borderRadius: 2,
-                    border: "1px dashed",
+                    borderRadius: 3,
+                    border: "2px dashed",
                     borderColor: "primary.main",
                     color: "primary.main",
                   }}
                 >
-                  <CircularProgress size={20} thickness={5} />
-                  <Typography variant="body2" fontWeight={700}>
-                    กำลังรอการยืนยันยอดเงินจากเซิร์ฟเวอร์...
+                  <CircularProgress size={24} thickness={5} />
+                  <Typography
+                    variant="body1"
+                    fontWeight={700}
+                    sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}
+                  >
+                    กำลังรอการยืนยันยอดเงิน...
                   </Typography>
                 </Stack>
               )}
             </Box>
-          )} */}
+          )}
 
           {/* Timeline และรายการอาหาร */}
           <OrderTimeline
@@ -335,8 +335,8 @@ export default function OrderSuccess() {
             canCancel={canCancelOrder ?? false}
           />
 
-          {/* ปุ่มคำสั่งต่างๆ */}
-          <Stack spacing={2}>
+          {/* ปุ่มคำสั่งต่างๆ - ปรับขนาดให้กดง่าย (Touch Target) */}
+          <Stack spacing={2} sx={{ mt: 1 }}>
             {canCancelOrder && (
               <Button
                 fullWidth
@@ -346,9 +346,10 @@ export default function OrderSuccess() {
                 onClick={handleOpenCancelOrder}
                 disabled={isVerifying}
                 sx={{
-                  borderRadius: 3,
+                  borderRadius: 4,
                   borderWidth: 2,
-                  py: 1.5,
+                  py: { xs: 1.8, sm: 2 },
+                  fontSize: { xs: "1rem", sm: "1.1rem" },
                   fontWeight: 700,
                   "&:hover": { borderWidth: 2 },
                 }}
@@ -361,36 +362,48 @@ export default function OrderSuccess() {
               fullWidth
               variant="contained"
               size="large"
-              startIcon={<HomeIcon />}
+              startIcon={<HomeIcon sx={{ fontSize: "1.5rem" }} />}
               onClick={() => navigate("/")}
               sx={{
-                borderRadius: 3,
-                py: 1.8,
+                borderRadius: 4,
+                py: { xs: 2, sm: 2.5 },
                 fontWeight: 800,
-                fontSize: "1rem",
+                fontSize: { xs: "1.1rem", sm: "1.25rem" },
                 background: "linear-gradient(45deg, #FF9800 30%, #FF5722 90%)",
-                boxShadow: "0 4px 12px rgba(255, 87, 34, 0.3)",
+                boxShadow: "0 8px 16px rgba(255, 87, 34, 0.3)",
+                textTransform: "none", // ป้องกันตัวพิมพ์ใหญ่ทั้งหมดในภาษาอังกฤษ (ถ้ามี)
               }}
             >
-              กลับหน้าหลัก / สั่งรายการอื่นเพิ่ม
+              กลับหน้าหลัก / สั่งเพิ่ม
             </Button>
           </Stack>
 
-          {/* Footer ข้อมูลออเดอร์ */}
-          <Typography
-            variant="caption"
-            display="block"
-            textAlign="center"
-            color="text.secondary"
-            sx={{ mt: 2, opacity: 0.7 }}
-          >
-            Order ID: #{order.id} • สั่งเมื่อ{" "}
-            {new Date(order.createdAt).toLocaleTimeString("th-TH", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}{" "}
-            น.
-          </Typography>
+          {/* Footer ข้อมูลออเดอร์ - ปรับขนาดให้อ่านง่ายขึ้นเล็กน้อย */}
+          <Box sx={{ mt: 2, textAlign: "center", pb: 4 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                opacity: 0.8,
+                fontSize: { xs: "0.85rem", sm: "0.95rem" },
+                fontWeight: 500,
+              }}
+            >
+              Order ID: #{order.id}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ opacity: 0.6, fontSize: "0.8rem" }}
+            >
+              สั่งเมื่อ{" "}
+              {new Date(order.createdAt).toLocaleTimeString("th-TH", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}{" "}
+              น.
+            </Typography>
+          </Box>
         </Stack>
 
         <CancelDialog
@@ -407,13 +420,18 @@ export default function OrderSuccess() {
           open={toastOpen}
           autoHideDuration={4000}
           onClose={() => setToastOpen(false)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }} // ย้ายขึ้นข้างบนให้เห็นชัดในมือถือ
         >
           <Alert
             onClose={() => setToastOpen(false)}
             severity="info"
             variant="filled"
-            sx={{ width: "100%", borderRadius: 2 }}
+            sx={{
+              width: "100%",
+              borderRadius: 3,
+              fontSize: "1rem",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+            }}
           >
             {toastMsg}
           </Alert>

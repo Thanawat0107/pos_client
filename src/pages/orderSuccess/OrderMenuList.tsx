@@ -1,22 +1,21 @@
- import {
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import {
   Paper,
   Box,
   Stack,
   Typography,
   IconButton,
   Chip,
-  Grid,
+  Grid, // ใช้ Grid เพื่อการจัดการพื้นที่ที่แม่นยำขึ้น
   Avatar,
   Button,
   Divider,
-  Alert,
-  GlobalStyles, // ✅ เพิ่มเพื่อจัดการ Print Style ทั่วทั้งหน้า
+  GlobalStyles,
 } from "@mui/material";
 import LocalDiningIcon from "@mui/icons-material/LocalDining";
 import PrintIcon from "@mui/icons-material/Print";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { getItemStatusConfig } from "../../utility/OrderHelpers";
 import { Sd } from "../../helpers/SD";
 
@@ -24,7 +23,7 @@ interface OrderDetailOption {
   optionGroupName: string;
   optionValueName: string;
   extraPrice: number;
-  quantity: number; // ✅ เพิ่ม Field จำนวนของตัวเลือก
+  quantity: number;
 }
 
 interface OrderDetail {
@@ -58,7 +57,6 @@ export default function OrderMenuList({
   canCancel,
   onCancelItem,
 }: Props) {
-  // ✅ ตรวจสอบว่ารายการทั้งหมดถูกยกเลิกหรือไม่
   const isAllCancelled =
     orderDetails?.length > 0 && orderDetails.every((item) => item.isCancelled);
 
@@ -68,12 +66,11 @@ export default function OrderMenuList({
         p: 0,
         borderRadius: 4,
         overflow: "hidden",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
         mb: 3,
         position: "relative",
       }}
     >
-      {/* ✅ 1. Print Styles: ซ่อนสิ่งที่ไม่จำเป็นเวลาพิมพ์ออกกระดาษ */}
       <GlobalStyles
         styles={{
           "@media print": {
@@ -90,7 +87,13 @@ export default function OrderMenuList({
       />
 
       {/* Header */}
-      <Box sx={{ p: 2.5, bgcolor: "#fff", borderBottom: "1px solid #eee" }}>
+      <Box
+        sx={{
+          p: { xs: 2, sm: 2.5 },
+          bgcolor: "#fff",
+          borderBottom: "1px solid #eee",
+        }}
+      >
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -99,42 +102,33 @@ export default function OrderMenuList({
           <Typography
             variant="h6"
             fontWeight={800}
-            sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              fontSize: { xs: "1.1rem", sm: "1.25rem" },
+            }}
           >
             <LocalDiningIcon color="primary" /> รายการอาหาร
             <Chip
               label={`${orderDetails?.length || 0}`}
               size="small"
-              sx={{ fontWeight: 700, bgcolor: "#f5f5f5" }}
+              sx={{ fontWeight: 700, bgcolor: "#f5f5f5", fontSize: "0.9rem" }}
             />
           </Typography>
 
           <IconButton
-            className="no-print" // ✅ ใส่ class เพื่อซ่อนตอนพิมพ์
-            size="small"
+            className="no-print"
             onClick={() => window.print()}
-            sx={{ bgcolor: "#f5f5f5" }}
+            sx={{ bgcolor: "#f5f5f5", p: 1 }}
           >
             <PrintIcon fontSize="small" />
           </IconButton>
         </Stack>
       </Box>
 
-      {/* ✅ 2. Empty/All Cancelled State */}
-      {isAllCancelled && (
-        <Box sx={{ p: 3, textAlign: "center", bgcolor: "#FFF5F5" }}>
-          <ErrorOutlineIcon color="error" sx={{ fontSize: 40, mb: 1 }} />
-          <Typography variant="subtitle1" fontWeight={700} color="error.main">
-            รายการอาหารทั้งหมดถูกยกเลิกแล้ว
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            ยอดชำระคืนจะดำเนินการตามนโยบายของร้าน
-          </Typography>
-        </Box>
-      )}
-
       {/* Items List */}
-      <Stack spacing={0} sx={{ p: 2 }}>
+      <Stack spacing={0} sx={{ p: { xs: 1.5, sm: 2 } }}>
         {orderDetails?.map((item, index) => {
           const itemStatus = getItemStatusConfig(item.kitchenStatus);
           const isItemCancelable =
@@ -142,98 +136,139 @@ export default function OrderMenuList({
             item.kitchenStatus === Sd.KDS_None;
           const showCancelButton =
             canCancel && !item.isCancelled && isItemCancelable;
-          const opacity = item.isCancelled ? 0.4 : 1;
+          const opacity = item.isCancelled ? 0.45 : 1;
 
           return (
             <Box key={index} sx={{ opacity, transition: "opacity 0.3s" }}>
-              <Grid container spacing={2} alignItems="center" sx={{ py: 2 }}>
-                <Grid>
+              <Grid
+                container
+                spacing={2}
+                alignItems="flex-start"
+                sx={{ py: 2.5 }}
+              >
+                {/* รูปภาพอาหาร */}
+                <Grid size="auto">
                   <Avatar
                     src={item.menuItemImage}
                     variant="rounded"
                     sx={{
-                      width: 64,
-                      height: 64,
-                      bgcolor: "#f5f5f5",
-                      border: item.isCancelled ? "2px solid #ddd" : "none",
+                      width: { xs: 70, sm: 85 },
+                      height: { xs: 70, sm: 85 },
+                      bgcolor: "#f9f9f9",
+                      border: item.isCancelled
+                        ? "2px solid #ddd"
+                        : "1px solid #eee",
                     }}
                   >
-                    <RestaurantIcon color="disabled" />
+                    <RestaurantIcon color="disabled" sx={{ fontSize: 30 }} />
                   </Avatar>
                 </Grid>
 
-                <Grid size="grow">
+                {/* รายละเอียดอาหาร - เพิ่มพื้นที่ให้กางออก */}
+                <Grid size="grow" sx={{ minWidth: 0 }}>
                   <Typography
                     variant="subtitle1"
                     fontWeight={800}
-                    lineHeight={1.2}
+                    lineHeight={1.3}
                     sx={{
+                      fontSize: { xs: "1.05rem", sm: "1.1rem" },
                       textDecoration: item.isCancelled
                         ? "line-through"
                         : "none",
+                      mb: 0.5,
+                      wordBreak: "break-word",
                     }}
                   >
                     {item.quantity}x {item.menuItemName}
                   </Typography>
 
-                  {/* ✅ 3. ปรับปรุงการแสดง Options (เพิ่ม Quantity และผลรวมราคา) */}
+                  {/* ✅ ปรับแก้ส่วน Options: ให้เรียงแนวนอนซ้ายไปขวา */}
                   {item.orderDetailOptions?.length > 0 && (
-                    <Stack
-                      direction="row"
-                      flexWrap="wrap"
-                      gap={0.5}
-                      sx={{ mt: 0.8 }}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "row", // บังคับแนวขวาง
+                        flexWrap: "wrap", // ถ้าเต็มหน้าจอให้ตัดขึ้นแถวใหม่
+                        gap: 0.6, // ระยะห่างระหว่างตัวเลือก
+                        mt: 1,
+                        mb: 1,
+                      }}
                     >
                       {item.orderDetailOptions.map((o, i) => (
                         <Chip
                           key={i}
                           label={
-                            <>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
                               {o.quantity > 1 && (
-                                <strong>{o.quantity}x </strong>
+                                <Typography
+                                  component="span"
+                                  variant="caption"
+                                  sx={{ fontWeight: 900, mr: 0.3 }}
+                                >
+                                  {o.quantity}x
+                                </Typography>
                               )}
                               {o.optionValueName}
-                              {o.extraPrice > 0 &&
-                                ` (+${(o.extraPrice * o.quantity).toLocaleString()})`}
-                            </>
+                              {o.extraPrice > 0 && (
+                                <Typography
+                                  component="span"
+                                  variant="caption"
+                                  sx={{ ml: 0.4, opacity: 0.8 }}
+                                >
+                                  (+
+                                  {(o.extraPrice * o.quantity).toLocaleString()}
+                                  )
+                                </Typography>
+                              )}
+                            </Box>
                           }
                           size="small"
                           sx={{
-                            height: 22,
-                            fontSize: "0.72rem",
-                            bgcolor: item.isCancelled ? "#eee" : "#E8F5E9",
+                            height: "24px",
+                            bgcolor: item.isCancelled ? "#eee" : "#F1F8E9",
                             color: item.isCancelled ? "#999" : "#2E7D32",
                             border: "1px solid",
                             borderColor: item.isCancelled ? "#ddd" : "#C8E6C9",
+                            "& .MuiChip-label": {
+                              px: 1,
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                            },
                           }}
                         />
                       ))}
-                    </Stack>
+                    </Box>
                   )}
 
                   <Typography
-                    variant="subtitle2"
-                    fontWeight={700}
+                    variant="h6"
+                    fontWeight={800}
                     color={item.isCancelled ? "text.disabled" : "primary.main"}
-                    sx={{ mt: 0.5 }}
+                    sx={{ mt: 0.5, fontSize: { xs: "1.05rem", sm: "1.15rem" } }}
                   >
                     ฿{item.totalPrice.toLocaleString()}
                   </Typography>
                 </Grid>
 
-                <Grid sx={{ textAlign: "right", minWidth: 100 }}>
+                {/* สถานะและการยกเลิก */}
+                <Grid size="auto" sx={{ textAlign: "right", minWidth: 80 }}>
                   <Chip
                     label={item.isCancelled ? "ยกเลิกแล้ว" : itemStatus.label}
-                    icon={!item.isCancelled ? itemStatus.icon : undefined}
                     size="small"
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: 800,
+                      fontSize: "0.7rem",
                       bgcolor: item.isCancelled ? "#ffebee" : "transparent",
-                      border: `1px solid ${item.isCancelled ? "#ffcdd2" : itemStatus.border}`,
+                      border: `1.5px solid ${item.isCancelled ? "#ffcdd2" : itemStatus.border}`,
                       color: item.isCancelled ? "#d32f2f" : itemStatus.text,
                     }}
                   />
-
                   {showCancelButton && (
                     <Button
                       className="no-print"
@@ -242,76 +277,86 @@ export default function OrderMenuList({
                       variant="outlined"
                       onClick={() => onCancelItem(item.id, item.menuItemName)}
                       sx={{
-                        fontSize: "0.7rem",
-                        py: 0.3,
+                        fontSize: "0.75rem",
+                        py: 0.5,
                         width: "100%",
                         mt: 1,
                         borderRadius: 2,
-                        fontWeight: 700,
+                        fontWeight: 800,
                       }}
                     >
-                      ยกเลิกจานนี้
+                      ยกเลิก
                     </Button>
                   )}
                 </Grid>
               </Grid>
               {index < orderDetails.length - 1 && (
-                <Divider sx={{ borderStyle: "dashed", opacity: 0.5 }} />
+                <Divider sx={{ borderStyle: "dashed", my: 1, opacity: 0.6 }} />
               )}
             </Box>
           );
         })}
-
-        {/* Info Alert (ซ่อนเวลาพิมพ์) */}
-        {!canCancel && !isAllCancelled && (
-          <Alert
-            severity="info"
-            sx={{ mt: 2, fontSize: "0.85rem", borderRadius: 3 }}
-            className="no-print"
-          >
-            <Typography variant="caption" fontWeight={600}>
-              * ร้านกำลังเตรียมอาหารให้คุณแล้ว
-              หากต้องการแก้ไขกรุณาติดต่อพนักงานโดยตรง
-            </Typography>
-          </Alert>
-        )}
       </Stack>
 
-      {/* Summary Section */}
-      <Box sx={{ p: 2.5, bgcolor: "#FAFAFA", borderTop: "2px dashed #eee" }}>
-        <Stack spacing={1}>
+      {/* Summary Section - ปรับยอดสุทธิให้ "ตะโกน" ออกมา */}
+      <Box
+        sx={{
+          p: { xs: 2.5, sm: 3 },
+          bgcolor: "#F8F9FA",
+          borderTop: "3px dashed #eee",
+        }}
+      >
+        <Stack spacing={1.5}>
           <Stack direction="row" justifyContent="space-between">
-            <Typography color="text.secondary">ยอดรวมสินค้า</Typography>
-            <Typography fontWeight={600}>
+            <Typography variant="body1" color="text.secondary" fontWeight={500}>
+              ยอดรวมสินค้า
+            </Typography>
+            <Typography variant="body1" fontWeight={700}>
               ฿{subTotal?.toLocaleString()}
             </Typography>
           </Stack>
-
           {discount > 0 && (
-            <Stack direction="row" justifyContent="space-between">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
               <Typography
-                color="error"
-                sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                variant="body1"
+                color="error.main"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  fontWeight: 600,
+                }}
               >
-                <LocalOfferIcon fontSize="small" /> ส่วนลด{" "}
-                {appliedPromoCode && `(${appliedPromoCode})`}
+                <LocalOfferIcon sx={{ fontSize: 18 }} /> ส่วนลด
               </Typography>
-              <Typography fontWeight={700} color="error">
+              <Typography variant="h6" fontWeight={800} color="error.main">
                 -฿{discount.toLocaleString()}
               </Typography>
             </Stack>
           )}
-
-          <Divider sx={{ my: 1 }} />
+          <Divider sx={{ my: 1.5, borderColor: "rgba(0,0,0,0.05)" }} />
           <Stack
             direction="row"
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography variant="h6" fontWeight={800} color="text.secondary">
+            <Typography
+              variant="h6"
+              fontWeight={800}
+              sx={{ fontSize: { xs: "1.1rem", sm: "1.2rem" } }}
+            >
               ยอดสุทธิ
             </Typography>
-            <Typography variant="h4" fontWeight={900} color="primary.main">
+            <Typography
+              variant="h3"
+              fontWeight={1000}
+              color="primary.main"
+              sx={{ fontSize: { xs: "2.5rem", sm: "3rem" }, letterSpacing: -1 }}
+            >
               ฿{total.toLocaleString()}
             </Typography>
           </Stack>

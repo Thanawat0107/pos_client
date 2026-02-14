@@ -31,12 +31,8 @@ export default function CancelDialog({
   reason,
   setReason,
 }: Props) {
-  // ✅ Handle Enter Key
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !isCancelling) {
-      // ถ้าไม่มีเหตุผล และอยากจะบังคับ (Optional)
-      // if (reason.trim().length === 0) return;
-
       e.preventDefault();
       onConfirm();
     }
@@ -45,79 +41,86 @@ export default function CancelDialog({
   return (
     <Dialog
       open={open}
-      // ป้องกันการปิดโดยไม่ตั้งใจ (คลิกพื้นหลังหรือกด Esc) ขณะที่กำลังส่งข้อมูล
       onClose={isCancelling ? undefined : onClose}
       fullWidth
       maxWidth="xs"
       PaperProps={{
         sx: {
-          borderRadius: 4,
-          p: 1,
-          backgroundImage: "none", // สำหรับ Dark Mode
+          borderRadius: 5, // ปรับให้มนเท่ากับ Card ส่วนอื่น
+          p: { xs: 1, sm: 2 },
+          backgroundImage: "none",
         },
       }}
     >
-      <Box sx={{ textAlign: "center", pt: 3, px: 2 }}>
+      <Box sx={{ textAlign: "center", pt: 4, px: 2 }}>
         <Box
           sx={{
-            bgcolor: "#FFF4E5", // เปลี่ยนเป็นสีส้มอ่อนให้ดูเป็น Warning มากกว่า Error รุนแรง
-            width: 70,
-            height: 70,
+            bgcolor: "#FFF4E5",
+            width: { xs: 70, sm: 80 },
+            height: { xs: 70, sm: 80 },
             borderRadius: "50%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             mx: "auto",
-            mb: 2,
-            // เพิ่ม Animation เล็กน้อยตอนเปิด
+            mb: 2.5,
             transition: "transform 0.3s ease-in-out",
             "&:hover": { transform: "rotate(10deg)" },
           }}
         >
-          <WarningAmberRoundedIcon color="warning" sx={{ fontSize: 42 }} />
+          <WarningAmberRoundedIcon color="warning" sx={{ fontSize: { xs: 42, sm: 48 } }} />
         </Box>
 
         <DialogTitle
-          sx={{ p: 0, fontWeight: 900, fontSize: "1.4rem", color: "#333" }}
+          sx={{ 
+            p: 0, 
+            fontWeight: 900, 
+            fontSize: { xs: "1.5rem", sm: "1.7rem" }, // หัวข้อใหญ่ชัดเจน
+            color: "#1A1A1A",
+            lineHeight: 1.2
+          }}
         >
-          {targetItem ? "ลบรายการอาหาร?" : "ยกเลิกออเดอร์นี้?"}
+          {targetItem ? "ลบรายการอาหาร?" : "ยกเลิกออเดอร์?"}
         </DialogTitle>
       </Box>
 
-      <DialogContent sx={{ pb: 1, mt: 1 }}>
+      <DialogContent sx={{ pb: 1, mt: 2 }}>
         <DialogContentText
           sx={{
             textAlign: "center",
             mb: 3,
-            color: "text.secondary",
-            fontSize: "0.95rem",
+            color: "text.primary", // เปลี่ยนเป็นสีที่เข้มขึ้นเพื่อให้อ่านง่าย
+            fontSize: { xs: "1rem", sm: "1.1rem" },
+            lineHeight: 1.5
           }}
         >
           {targetItem ? (
             <>
-              ยืนยันที่จะลบรายการ{" "}
-              <Typography component="span" fontWeight={800} color="error.main">
-                {targetItem.name}
-              </Typography>{" "}
-              <br /> ออกจากรายการสั่งซื้อหรือไม่?
+              ยืนยันที่จะลบรายการ <br />
+              <Typography component="span" variant="inherit" fontWeight={900} color="error.main">
+                "{targetItem.name}"
+              </Typography>
+              <br /> ออกจากออเดอร์ใช่หรือไม่?
             </>
           ) : (
-            "รายการอาหารทั้งหมดจะถูกยกเลิก และระบบจะคืนสิทธิ์โปรโมชั่น (หากยังไม่หมดอายุ)"
+            "รายการอาหารทั้งหมดจะถูกยกเลิก และระบบจะคืนสิทธิ์โปรโมชั่นให้คุณโดยอัตโนมัติ"
           )}
         </DialogContentText>
 
         <TextField
           autoFocus
           margin="dense"
-          label="เหตุผลในการยกเลิก"
+          label="เหตุผลในการยกเลิก (ระบุหรือไม่ก็ได้)"
           placeholder={
             targetItem
               ? "เช่น สั่งผิด, ต้องการเปลี่ยนเมนู"
               : "เช่น รอนานเกินไป, เปลี่ยนใจ"
           }
           fullWidth
-          variant="filled" // เปลี่ยนเป็น Filled เพื่อให้ดูต่างจากหน้าสั่งอาหารปกติ
-          size="small"
+          variant="filled"
+          // ปรับขนาด Input ให้ใหญ่ขึ้นสำหรับมือถือ
+          InputProps={{ sx: { fontSize: "1rem", py: 1 } }}
+          InputLabelProps={{ sx: { fontWeight: 600 } }}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -125,15 +128,23 @@ export default function CancelDialog({
           sx={{
             mt: 1,
             "& .MuiFilledInput-root": {
-              borderRadius: "8px 8px 0 0",
-              bgcolor: "#f9f9f9",
+              borderRadius: "12px 12px 0 0",
+              bgcolor: "#F5F5F5",
+              "&:before, &:after": { borderBottom: "2px solid" }
             },
           }}
         />
       </DialogContent>
 
       <DialogActions
-        sx={{ px: 3, pb: 3, pt: 1, justifyContent: "space-between", gap: 2 }}
+        sx={{ 
+          px: 3, 
+          pb: 4, 
+          pt: 1, 
+          // ปรับเป็น Column บนมือถือ เพื่อให้ปุ่มมีขนาดกว้างและกดง่าย (Thumb reach)
+          flexDirection: { xs: "column-reverse", sm: "row" }, 
+          gap: { xs: 1.5, sm: 2 } 
+        }}
       >
         <Button
           onClick={onClose}
@@ -144,11 +155,13 @@ export default function CancelDialog({
           sx={{
             borderRadius: 3,
             fontWeight: 700,
-            color: "#999",
+            color: "#757575",
+            fontSize: "1rem",
             textTransform: "none",
+            py: 1.5 // เพิ่มความหนาปุ่ม
           }}
         >
-          กลับไป
+          ไม่ลบ / กลับไป
         </Button>
 
         <Button
@@ -159,17 +172,17 @@ export default function CancelDialog({
           disabled={isCancelling}
           sx={{
             borderRadius: 3,
-            py: 1.2,
-            fontWeight: 800,
-            boxShadow: "0 4px 12px rgba(211, 47, 47, 0.2)",
+            py: 1.8, // ปุ่มยืนยันต้องหนาและเด่น
+            fontWeight: 900,
+            boxShadow: "0 6px 16px rgba(211, 47, 47, 0.3)",
             textTransform: "none",
-            fontSize: "1rem",
+            fontSize: "1.1rem",
           }}
         >
           {isCancelling ? (
-            <CircularProgress size={24} color="inherit" />
+            <CircularProgress size={26} color="inherit" />
           ) : (
-            "ยืนยันยกเลิก"
+            "ใช่, ยืนยันยกเลิก"
           )}
         </Button>
       </DialogActions>

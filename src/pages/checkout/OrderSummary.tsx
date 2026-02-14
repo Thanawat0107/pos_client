@@ -11,9 +11,8 @@ import {
   CircularProgress,
 } from "@mui/material";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
 import PaymentIcon from "@mui/icons-material/Payment";
-import { paymentMethods } from "../../helpers/SD";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 
 interface OrderSummaryProps {
   cartItems: any[];
@@ -28,7 +27,7 @@ interface OrderSummaryProps {
   promoMessage: { text: string; type: string };
   handleConfirmOrder: () => void;
   isConfirming: boolean;
-  paymentMethod: string; // ✅ [เพิ่มใหม่] รับค่า Payment Method
+  paymentMethod: string;
 }
 
 export default function OrderSummary({
@@ -44,230 +43,264 @@ export default function OrderSummary({
   promoMessage,
   handleConfirmOrder,
   isConfirming,
-  paymentMethod, // ✅
 }: OrderSummaryProps) {
-    
   const calculateItemTotal = (item: any) => (item.price || 0) * item.quantity;
 
-  // ✅ Logic เลือกข้อความบนปุ่ม
   const getButtonLabel = () => {
     if (isConfirming) return "";
-    
-    // ถ้าเลือกจ่ายเงินสด -> ยืนยันคำสั่งซื้อ
-    if (paymentMethod === paymentMethods.paymentStatus_Cash) {
-        return `ยืนยันคำสั่งซื้อ • ฿${finalTotal.toLocaleString()}`;
-    }
-    
-    // ถ้าเลือกโอน/QR -> ชำระเงิน
-    return `ชำระเงิน • ฿${finalTotal.toLocaleString()}`;
+    return `สั่งซื้อและชำระเงิน • ฿${finalTotal.toLocaleString()}`;
   };
 
   return (
     <Card
       sx={{
-        p: 3,
-        borderRadius: 4,
-        position: "sticky",
-        top: 24,
-        border: "1px solid #eee",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.08)" // เพิ่มเงาให้นูนสวยขึ้นนิดนึง
+        p: { xs: 2.5, sm: 3, md: 4 }, // ปรับ Padding ตามขนาดหน้าจอ
+        borderRadius: 5,
+        position: { md: "sticky" },
+        top: { md: 24 },
+        border: "1px solid #e0e0e0",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
+        bgcolor: "#fff",
       }}
     >
-      <Typography variant="h6" fontWeight={800} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <ShoppingBagIcon color="primary" /> สรุปคำสั่งซื้อ
+      <Typography
+        variant="h5"
+        fontWeight={900}
+        gutterBottom
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          color: "#1a2a3a",
+          mb: 3,
+          fontSize: { xs: "1.25rem", sm: "1.5rem" }, // ปรับขนาดฟอนต์หัวข้อ
+        }}
+      >
+        <ReceiptLongIcon
+          color="primary"
+          sx={{ fontSize: { xs: 26, sm: 30 } }}
+        />{" "}
+        สรุปออเดอร์
       </Typography>
 
+      {/* รายการอาหาร */}
       <Stack
-        spacing={2}
-        sx={{ 
-            my: 3, 
-            maxHeight: "45vh", 
-            overflowY: "auto", 
-            pr: 1,
-            // ปรับ Scrollbar ให้สวยงาม (Webkit)
-            "&::-webkit-scrollbar": { width: "6px" },
-            "&::-webkit-scrollbar-track": { background: "#f1f1f1", borderRadius: "10px" },
-            "&::-webkit-scrollbar-thumb": { background: "#ccc", borderRadius: "10px" },
-            "&::-webkit-scrollbar-thumb:hover": { background: "#aaa" }
+        spacing={2.5}
+        sx={{
+          my: 3,
+          maxHeight: { xs: "none", md: "35vh" }, // มือถือให้แสดงไหลยาว คอมให้มี Scroll
+          overflowY: "auto",
+          pr: 1,
+          "&::-webkit-scrollbar": { width: "5px" },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#e0e0e0",
+            borderRadius: "10px",
+          },
         }}
       >
         {cartItems.map((item) => (
-          <Box
-            key={item.id}
-            sx={{
-              display: "flex",
-              gap: 2,
-              mb: 2,
-              pb: 2,
-              borderBottom: "1px dashed #eee",
-              "&:last-child": { borderBottom: "none", mb: 0, pb: 0 },
-            }}
-          >
+          <Box key={item.id} sx={{ display: "flex", gap: 2 }}>
             <Box
               component="img"
               src={
-                item.menuItemImage ||
-                "https://placehold.co/100x100?text=No+Image"
+                item.menuItemImage || "https://placehold.co/100x100?text=Food"
               }
               sx={{
-                width: 70,
-                height: 70,
-                borderRadius: 2,
+                width: { xs: 70, sm: 80 }, // ย่อขนาดรูปเล็กน้อยบนมือถือ
+                height: { xs: 70, sm: 80 },
+                borderRadius: 3,
                 objectFit: "cover",
-                bgcolor: "#f0f0f0",
+                border: "1px solid #f0f0f0",
               }}
             />
             <Box sx={{ flex: 1 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="flex-start"
+              <Typography
+                fontWeight={800}
+                lineHeight={1.2}
+                sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}
               >
-                <Box>
-                  <Typography
-                    variant="subtitle1"
-                    fontWeight={700}
-                    lineHeight={1.3}
-                    sx={{ mb: 0.5 }}
-                  >
-                    <Box
-                      component="span"
-                      sx={{
-                        color: "primary.main",
-                        mr: 1,
-                        bgcolor: "#e3f2fd",
-                        px: 0.8,
-                        py: 0.2,
-                        borderRadius: 1,
-                        fontSize: "0.85em",
-                      }}
-                    >
-                      {item.quantity}x
-                    </Box>
-                    {item.menuItemName}
-                  </Typography>
-                  {item.options?.map((opt: any, i: number) => (
-                    <Typography
-                      key={i}
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block" }}
-                    >
-                      • {opt.optionValueName}{" "}
-                      {opt.extraPrice > 0 && `(+฿${opt.extraPrice})`}
-                    </Typography>
-                  ))}
-                  {item.note && (
-                    <Typography
-                      variant="caption"
-                      color="error"
-                      sx={{ display: "block" }}
-                    >
-                      * {item.note}
-                    </Typography>
-                  )}
+                <Box component="span" sx={{ color: "primary.main", mr: 1 }}>
+                  {item.quantity}x
                 </Box>
-                <Typography variant="body2" fontWeight={700}>
-                  ฿{calculateItemTotal(item).toLocaleString()}
+                {item.menuItemName}
+              </Typography>
+
+              {item.options?.map((opt: any, i: number) => (
+                <Typography
+                  key={i}
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", fontSize: "0.85rem" }}
+                >
+                  + {opt.optionValueName}
                 </Typography>
-              </Stack>
+              ))}
+
+              <Typography
+                variant="body1"
+                fontWeight={700}
+                sx={{ mt: 0.5, color: "#2c3e50" }}
+              >
+                ฿{calculateItemTotal(item).toLocaleString()}
+              </Typography>
             </Box>
           </Box>
         ))}
       </Stack>
 
-      <Divider sx={{ mb: 2.5 }} />
+      <Divider sx={{ mb: 3, borderStyle: "dashed" }} />
 
-      {/* Promo Code Input */}
-      <TextField
-        fullWidth
-        size="small"
-        placeholder="โค้ดส่วนลด"
-        value={promoCode}
-        onChange={(e) => {
-          setPromoCode(e.target.value);
-          if (appliedDiscount > 0) setAppliedDiscount(0);
-        }}
-        error={
-          promoMessage.text !== "" && promoMessage.type === "error"
-        }
-        helperText={promoMessage.text}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <LocalOfferIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-            </InputAdornment>
-          ),
-          endAdornment: (
-            <Button
-              variant="text"
-              onClick={handleApplyPromo}
-              disabled={isVerifying || !promoCode.trim()}
-              sx={{ fontWeight: 700 }}
-            >
-              {isVerifying ? (
-                <CircularProgress size={20} />
-              ) : (
-                "ใช้โค้ด"
-              )}
-            </Button>
-          ),
-        }}
-        sx={{ mb: 3 }}
-      />
+      {/* ส่วนลด Promo */}
+      <Box sx={{ mb: 4 }}>
+        <TextField
+          fullWidth
+          placeholder="ใส่โค้ดส่วนลดที่นี่..."
+          value={promoCode}
+          onChange={(e) => {
+            setPromoCode(e.target.value);
+            if (appliedDiscount > 0) setAppliedDiscount(0);
+          }}
+          error={promoMessage.text !== "" && promoMessage.type === "error"}
+          helperText={promoMessage.text}
+          InputProps={{
+            sx: {
+              borderRadius: 3,
+              height: { xs: "50px", sm: "55px" }, // ลดความสูงเล็กน้อย
+              fontSize: { xs: "0.9rem", sm: "1rem" },
+              fontWeight: 600,
+            },
+            startAdornment: (
+              <InputAdornment position="start">
+                <LocalOfferIcon color="action" />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <Button
+                onClick={handleApplyPromo}
+                disabled={isVerifying || !promoCode.trim()}
+                sx={{
+                  fontWeight: 800,
+                  fontSize: { xs: "0.85rem", sm: "0.95rem" },
+                }}
+              >
+                {isVerifying ? <CircularProgress size={24} /> : "ใช้โค้ด"}
+              </Button>
+            ),
+          }}
+        />
+      </Box>
 
-      {/* Total Calculation */}
-      <Stack spacing={1.5} sx={{ mb: 4 }}>
+      {/* ตารางสรุปราคา */}
+      <Stack spacing={2} sx={{ mb: 4 }}>
         <Stack direction="row" justifyContent="space-between">
-          <Typography color="text.secondary">ยอดรวม</Typography>
-          <Typography fontWeight={700}>
+          <Typography
+            fontWeight={600}
+            color="text.secondary"
+            sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}
+          >
+            ยอดรวม
+          </Typography>
+          <Typography
+            fontWeight={700}
+            sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}
+          >
             ฿{totalAmount.toLocaleString()}
           </Typography>
         </Stack>
+
         {appliedDiscount > 0 && (
-          <Stack direction="row" justifyContent="space-between">
-            <Typography color="text.secondary">ส่วนลด</Typography>
-            <Typography fontWeight={700} color="error">
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            sx={{ bgcolor: "#fff3f3", p: 1, borderRadius: 2 }}
+          >
+            <Typography
+              fontWeight={600}
+              color="error"
+              sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}
+            >
+              ส่วนลด
+            </Typography>
+            <Typography
+              fontWeight={800}
+              color="error"
+              sx={{ fontSize: { xs: "1rem", sm: "1.1rem" } }}
+            >
               - ฿{appliedDiscount.toLocaleString()}
             </Typography>
           </Stack>
         )}
-        <Divider />
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6" fontWeight={800}>
-            ยอดรวมทั้งสิ้น
-          </Typography>
-          <Typography
-            variant="h5"
-            fontWeight={900}
-            color="primary.main"
+
+        <Box
+          sx={{
+            p: { xs: 1.5, sm: 2 },
+            bgcolor: "#f8f9fa",
+            borderRadius: 3,
+            mt: 1,
+          }}
+        >
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
           >
-            ฿{finalTotal.toLocaleString()}
-          </Typography>
-        </Stack>
+            <Typography
+              fontWeight={900}
+              color="#1a2a3a"
+              sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
+            >
+              ยอดสุทธิ
+            </Typography>
+            <Typography
+              fontWeight={1000}
+              color="primary.main"
+              sx={{ fontSize: { xs: "1.75rem", sm: "2.25rem" } }}
+            >
+              ฿{finalTotal.toLocaleString()}
+            </Typography>
+          </Stack>
+        </Box>
       </Stack>
 
+      {/* ปุ่มยืนยันขนาดใหญ่ */}
       <Button
         fullWidth
         variant="contained"
-        size="large"
-        sx={{ 
-            borderRadius: 3, 
-            py: 1.5, 
-            fontWeight: 800,
-            fontSize: '1.1rem',
-            boxShadow: '0 8px 16px rgba(25, 118, 210, 0.24)'
-        }}
         onClick={handleConfirmOrder}
-        disabled={isConfirming || cartItems.length === 0} // ✅ ป้องกันการกดเมื่อตะกร้าว่าง
-        startIcon={!isConfirming && (paymentMethod === "cash" ? <ShoppingBagIcon/> : <PaymentIcon/>)}
+        disabled={isConfirming || cartItems.length === 0}
+        sx={{
+          borderRadius: 4,
+          py: { xs: 2, sm: 2.5 },
+          fontSize: { xs: "1.05rem", sm: "1.25rem" }, // ลดขนาดฟอนต์บนปุ่มมือถือ
+          fontWeight: 900,
+          textTransform: "none",
+          boxShadow: "0 12px 24px rgba(25, 118, 210, 0.3)",
+          "&:hover": { boxShadow: "0 15px 30px rgba(25, 118, 210, 0.4)" },
+        }}
+        startIcon={
+          !isConfirming && <PaymentIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
+        }
       >
         {isConfirming ? (
-          <CircularProgress size={26} color="inherit" />
+          <CircularProgress size={30} color="inherit" />
         ) : (
-           getButtonLabel()
+          getButtonLabel()
         )}
       </Button>
+
+      <Typography
+        variant="caption"
+        sx={{
+          mt: 2,
+          display: "block",
+          textAlign: "center",
+          color: "text.secondary",
+          fontWeight: 500,
+          fontSize: { xs: "0.75rem", sm: "0.85rem" },
+        }}
+      >
+        🔒 ระบบชำระเงินมีความปลอดภัยสูง
+      </Typography>
     </Card>
   );
 }

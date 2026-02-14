@@ -1,4 +1,4 @@
- import {
+import {
   Paper,
   Typography,
   Box,
@@ -22,7 +22,6 @@ interface Props {
   estimatedPickUpTime: string | null;
 }
 
-// ✅ Animation สำหรับสถานะที่กำลังดำเนินการ
 const pulse = keyframes`
   0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4); }
   70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
@@ -35,20 +34,19 @@ export default function OrderTimeline({
   orderStatus,
   estimatedPickUpTime,
 }: Props) {
-  // 1. ✅ ปรับ Mapping Step ให้มีความก้าวหน้ามากขึ้น
   const getActiveStep = () => {
     switch (orderStatus) {
       case Sd.Status_PendingPayment:
       case Sd.Status_Pending:
-        return 0; // ช่วงรอ (เงิน/คน)
+        return 0;
       case Sd.Status_Approved:
       case Sd.Status_Paid:
       case Sd.Status_Preparing:
-        return 1; // เริ่มเข้าครัวหรือเตรียมของแล้ว
+        return 1;
       case Sd.Status_Ready:
-        return 2; // อาหารเสร็จแล้ว
+        return 2;
       case Sd.Status_Completed:
-        return 3; // จบงาน
+        return 3;
       default:
         return 0;
     }
@@ -56,17 +54,13 @@ export default function OrderTimeline({
 
   const activeStep = getActiveStep();
 
-  // ✅ ถ้าถูกยกเลิก ไม่แสดง Timeline (ตาม Logic เดิมที่ถูกต้อง)
   if (orderStatus === Sd.Status_Cancelled) return null;
 
-  // 2. ✅ ปรับ Logic การแสดงเวลาให้ดูเป็นมืออาชีพขึ้น
   const showTime =
     estimatedPickUpTime &&
     orderStatus !== Sd.Status_Completed &&
-    // ป้องกันการโชว์เวลา "มั่ว" ถ้าวันข้างหลังส่งมาเป็นค่าว่างหรือ Invalid
     !isNaN(Date.parse(estimatedPickUpTime));
 
-  // 3. ✅ Dynamic Label: สื่อสารกับลูกค้าให้ชัดเจนว่าอยู่จุดไหน
   const getStepLabel = (label: string, index: number) => {
     if (index === 0) {
       if (orderStatus === Sd.Status_PendingPayment) return "รอชำระเงิน";
@@ -77,24 +71,23 @@ export default function OrderTimeline({
       index === 1 &&
       (orderStatus === Sd.Status_Approved || orderStatus === Sd.Status_Paid)
     ) {
-      return "กำลังเตรียมจัดส่งเข้าครัว";
+      return "กำลังเตรียมจัดส่ง";
     }
     return label;
   };
 
-  // ✅ เลือกสี Alert ตามสถานะ
   const getAlertConfig = () => {
     if (orderStatus === Sd.Status_Ready) {
       return {
         severity: "success" as const,
-        icon: <CheckCircleIcon />,
-        text: "อาหารของคุณเสร็จเรียบร้อยแล้ว!",
+        icon: <CheckCircleIcon sx={{ fontSize: "1.8rem" }} />,
+        text: "อาหารของคุณเสร็จแล้ว!",
       };
     }
     return {
       severity: "info" as const,
-      icon: <AccessTimeFilledIcon />,
-      text: "คาดว่าจะได้รับอาหารเวลา:",
+      icon: <AccessTimeFilledIcon sx={{ fontSize: "1.8rem" }} />,
+      text: "เวลารับโดยประมาณ:",
     };
   };
 
@@ -103,7 +96,7 @@ export default function OrderTimeline({
   return (
     <Paper
       sx={{
-        p: 3,
+        p: { xs: 2.5, sm: 3 }, // ปรับ Padding ให้เหมาะกับมือถือ
         borderRadius: 4,
         boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
         mb: 3,
@@ -114,7 +107,13 @@ export default function OrderTimeline({
         variant="h6"
         fontWeight={800}
         gutterBottom
-        sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          mb: 2.5,
+          fontSize: { xs: "1.15rem", sm: "1.25rem" }, // ตัวหนังสือหัวข้อใหญ่ขึ้น
+        }}
       >
         <RestaurantIcon color="primary" />
         {orderStatus === Sd.Status_Completed
@@ -122,33 +121,43 @@ export default function OrderTimeline({
           : "สถานะออเดอร์ล่าสุด"}
       </Typography>
 
-      {/* ✅ ปรับปรุงส่วนแสดงเวลาให้เด่นชัดขึ้น */}
+      {/* ส่วนแสดงเวลา - ปรับให้ใหญ่อ่านง่ายมากบนมือถือ */}
       {showTime && (
         <Alert
           severity={alertConfig.severity}
           icon={alertConfig.icon}
           sx={{
-            mb: 4,
+            mb: { xs: 3, sm: 4 },
             borderRadius: 3,
-            fontWeight: 700,
             boxShadow:
               alertConfig.severity === "success"
                 ? "0 4px 12px rgba(76, 175, 80, 0.2)"
                 : "none",
-            "& .MuiAlert-message": { width: "100%" },
+            "& .MuiAlert-message": { width: "100%", py: 0.5 },
           }}
         >
           <Box
             sx={{
               display: "flex",
+              flexDirection: { xs: "row", sm: "row" }, // สามารถปรับเป็น column ได้ถ้าเวลาซ้อน
               justifyContent: "space-between",
               alignItems: "center",
+              gap: 1,
             }}
           >
-            <Typography variant="body2" fontWeight={600}>
+            <Typography
+              variant="body1"
+              fontWeight={700}
+              sx={{ fontSize: { xs: "0.95rem", sm: "1rem" } }}
+            >
               {alertConfig.text}
             </Typography>
-            <Typography variant="h6" fontWeight={900}>
+            <Typography
+              variant="h5"
+              fontWeight={900}
+              color="inherit"
+              sx={{ fontSize: { xs: "1.3rem", sm: "1.5rem" } }}
+            >
               {new Date(estimatedPickUpTime!).toLocaleTimeString("th-TH", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -159,7 +168,8 @@ export default function OrderTimeline({
         </Alert>
       )}
 
-      <Box sx={{ width: "100%", py: 2 }}>
+      {/* Stepper Timeline */}
+      <Box sx={{ width: "100%", py: { xs: 1, sm: 2 }, overflow: "visible" }}>
         <Stepper
           alternativeLabel
           activeStep={activeStep}
@@ -168,8 +178,6 @@ export default function OrderTimeline({
           {steps.map((label, index) => {
             const isActive = index === activeStep;
             const isCompleted = index < activeStep;
-
-            // ✅ Pulse animation เฉพาะ step ที่กำลังทำและยังไม่จบออเดอร์
             const shouldPulse = isActive && orderStatus !== Sd.Status_Completed;
 
             return (
@@ -186,7 +194,6 @@ export default function OrderTimeline({
                   }}
                 >
                   <Typography
-                    variant="caption"
                     sx={{
                       display: "block",
                       mt: 0.5,
@@ -196,7 +203,9 @@ export default function OrderTimeline({
                         : isCompleted
                           ? "text.primary"
                           : "text.disabled",
-                      fontSize: isActive ? "0.8rem" : "0.75rem",
+                      // ปรับขนาดตัวหนังสือ Step ให้ใหญ่ขึ้นจาก 0.75rem -> 0.85rem
+                      fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                      lineHeight: 1.2,
                       transition: "all 0.3s",
                     }}
                   >

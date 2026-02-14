@@ -1,22 +1,22 @@
 import { useEffect } from "react";
-import {
-  Paper,
-  Typography,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Box,
-  Alert
-} from "@mui/material";
+import { Paper, Typography, Box, Alert } from "@mui/material";
 import PaymentIcon from "@mui/icons-material/Payment";
-import MoneyIcon from '@mui/icons-material/Money';
-import QrCodeIcon from '@mui/icons-material/QrCode2';
+// import MoneyIcon from '@mui/icons-material/Money'; // ปิดไว้เพราะไม่ได้ใช้
+import QrCodeIcon from "@mui/icons-material/QrCode2";
 import { paymentMethods } from "../../helpers/SD";
 
-// แปลง object เป็น array สำหรับการแสดงผล
+// แปลง object เป็น array สำหรับการแสดงผล (คอมเมนต์เงินสดออก)
 const paymentMethodsList = [
-  { value: paymentMethods.paymentStatus_Cash, label: "เงินสด (Cash)", description: "ชำระที่เคาน์เตอร์เมื่อรับสินค้า" },
-  { value: paymentMethods.paymentStatus_PromptPay, label: "โอนเงิน / QR พร้อมเพย์", description: "สแกนจ่าย / แนบสลิป" }
+  /* { 
+      value: paymentMethods.paymentStatus_Cash, 
+      label: "เงินสด (Cash)", 
+      description: "ชำระที่เคาน์เตอร์เมื่อรับสินค้า" 
+  }, */
+  {
+    value: paymentMethods.paymentStatus_PromptPay,
+    label: "โอนเงิน / QR พร้อมเพย์",
+    description: "สแกนจ่าย / แนบสลิปผ่านระบบ",
+  },
 ];
 
 interface PaymentSectionProps {
@@ -25,99 +25,101 @@ interface PaymentSectionProps {
   finalTotal: number;
 }
 
-export default function PaymentSection({ 
-  paymentMethod, 
-  setPaymentMethod, 
-  finalTotal 
+export default function PaymentSection({
+  paymentMethod,
+  setPaymentMethod,
 }: PaymentSectionProps) {
-
-  // ✅ Logic: ถ้ายอดเกิน 200 แล้วเลือก Cash อยู่ -> ดีดไปเป็น Transfer ทันที
+  // ✅ Force Logic: บังคับให้เป็น PromptPay เสมอตั้งแต่หน้าจอโหลด
   useEffect(() => {
-    if (finalTotal > 200 && paymentMethod === paymentMethods.paymentStatus_Cash) {
+    // ไม่ว่าค่าเดิมจะเป็นอะไร หรือยอดเงินเท่าไหร่ ให้เลือก PromptPay เท่านั้น
+    if (paymentMethod !== paymentMethods.paymentStatus_PromptPay) {
       setPaymentMethod(paymentMethods.paymentStatus_PromptPay);
     }
-  }, [finalTotal, paymentMethod, setPaymentMethod]);
+  }, [paymentMethod, setPaymentMethod]);
 
   return (
-    <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
+    <Paper
+      sx={{
+        p: { xs: 2.5, sm: 4 }, // ปรับ Padding ตามขนาดหน้าจอ
+        borderRadius: 4,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+      }}
+    >
       <Typography
-        variant="h6"
-        fontWeight={700}
+        variant="h5"
+        fontWeight={800}
         gutterBottom
-        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          color: "#1a2a3a",
+          mb: { xs: 2.5, md: 3 },
+          fontSize: { xs: "1.25rem", sm: "1.5rem" }, // ปรับขนาดตัวอักษรหัวข้อ
+        }}
       >
-        <PaymentIcon color="primary" /> วิธีการชำระเงิน
+        <PaymentIcon sx={{ fontSize: { xs: 28, sm: 32 } }} color="primary" />{" "}
+        วิธีการชำระเงิน
       </Typography>
 
-      {/* ✅ แจ้งเตือนเมื่อยอดเกิน 200 */}
-      {finalTotal > 200 && (
-        <Alert severity="info" sx={{ mb: 2, fontSize: "0.85rem" }}>
-          ยอดชำระเกิน 200 บาท จำเป็นต้องชำระเงินผ่าน QR Code เพื่อยืนยันออเดอร์
-        </Alert>
-      )}
-
-      <RadioGroup
-        value={paymentMethod}
-        onChange={(e) => setPaymentMethod(e.target.value)}
+      <Alert
+        severity="success"
+        sx={{
+          mb: 3,
+          borderRadius: 3,
+          "& .MuiAlert-message": { fontSize: { xs: "0.9rem", sm: "1rem" } },
+        }}
       >
-        {paymentMethodsList.map((method) => {
-          // ตรวจสอบว่าเป็นวิธีชำระเงินสดหรือไม่
-          const isCash = method.value === paymentMethods.paymentStatus_Cash; 
-          
-          // ถ้าเป็นเงินสด และยอดเกิน 200 -> ให้ Disable
-          const isDisabled = isCash && finalTotal > 200;
+        ร้านรองรับ <strong>โอนเงิน / QR พร้อมเพย์</strong> เพื่อความรวดเร็ว
+      </Alert>
 
-          return (
-            <FormControlLabel
-              key={method.value}
-              value={method.value}
-              disabled={isDisabled} // 🚫 ล็อคปุ่ม
-              control={<Radio />}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  {/* Icon ประดับ */}
-                  <Box sx={{ mr: 1.5, color: isDisabled ? 'text.disabled' : 'primary.main' }}>
-                     {isCash ? <MoneyIcon /> : <QrCodeIcon />}
-                  </Box>
-                  
-                  <Box>
-                    <Typography 
-                        fontWeight={700} 
-                        color={isDisabled ? "text.disabled" : "text.primary"}
-                    >
-                      {method.label}
-                    </Typography>
-                    
-                    {/* คำอธิบายเพิ่มเติม */}
-                    <Typography variant="caption" color={isDisabled ? "error" : "text.secondary"}>
-                      {isDisabled ? "ไม่รองรับยอดเกิน 200 บาท" : method.description}
-                    </Typography>
-                  </Box>
-                </Box>
-              }
-              sx={{
-                mb: 1,
-                p: 1.5,
-                border: "1px solid",
-                borderColor: paymentMethod === method.value && !isDisabled 
-                    ? "primary.main" 
-                    : "#eee",
-                borderRadius: 2,
-                width: "100%",
-                ml: 0,
-                bgcolor: isDisabled 
-                    ? "#f5f5f5" // สีเทาเมื่อ Disabled
-                    : paymentMethod === method.value 
-                        ? "#f5f9ff" 
-                        : "transparent",
-                opacity: isDisabled ? 0.7 : 1,
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                transition: "all 0.2s"
-              }}
-            />
-          );
-        })}
-      </RadioGroup>
+      {/* ✅ กลับมาใช้ .map() แต่ใส่ Style ชุดใหญ่เข้าไปข้างใน */}
+      {paymentMethodsList.map((method) => (
+        <Box
+          key={method.value}
+          sx={{
+            p: { xs: 2, sm: 3 }, // ปรับ Padding ของการ์ด
+            border: "3px solid #2e7d32",
+            bgcolor: "#f1f8e9",
+            borderRadius: 3,
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: 1.5, sm: 2 },
+            cursor: "pointer",
+          }}
+        >
+          <QrCodeIcon sx={{ fontSize: { xs: 35, sm: 45 }, color: "#2e7d32" }} />
+          <Box>
+            <Typography
+              fontWeight={800}
+              color="#1b5e20"
+              sx={{ fontSize: { xs: "1.1rem", sm: "1.3rem" } }}
+            >
+              {method.label}
+            </Typography>
+            <Typography
+              fontWeight={600}
+              color="#4caf50"
+              sx={{ fontSize: { xs: "0.85rem", sm: "1rem" } }}
+            >
+              {method.description}
+            </Typography>
+          </Box>
+        </Box>
+      ))}
+
+      <Typography
+        variant="body1"
+        fontWeight={600}
+        color="text.secondary"
+        sx={{
+          mt: 3,
+          textAlign: "center",
+          fontSize: { xs: "0.9rem", sm: "1.1rem" },
+        }}
+      >
+        * ระบบจะแสดง QR Code ให้หลังจากกดสั่งซื้อ
+      </Typography>
     </Paper>
   );
 }
