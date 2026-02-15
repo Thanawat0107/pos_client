@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CssBaseline, ThemeProvider, useMediaQuery } from "@mui/material";
+import { CssBaseline, StyledEngineProvider, ThemeProvider, useMediaQuery } from "@mui/material";
 import { buildMuiTheme } from "./components/layouts/theme";
 import { ColorModeProvider, useColorMode } from "./contexts/color-mode";
 import { Provider } from "react-redux";
@@ -15,10 +15,12 @@ function ThemedApp({ children }: { children: React.ReactNode }) {
   const theme = React.useMemo(() => buildMuiTheme(resolvedMode), [resolvedMode]);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {children}
-    </ThemeProvider>
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
+    </StyledEngineProvider>
   );
 }
 

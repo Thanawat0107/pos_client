@@ -17,6 +17,7 @@
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
     "@reduxjs/toolkit": "^2.11.0",
+    "@tailwindcss/vite": "^4.1.18",
     "apexcharts": "^5.4.0",
     "formik": "^2.4.9",
     "framer-motion": "^12.34.0",
@@ -28,6 +29,7 @@
     "react-draggable": "^4.5.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.4",
+    "tailwindcss": "^4.1.18",
     "yup": "^1.7.1"
   },
   "devDependencies": {

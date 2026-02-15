@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 *{
     margin: 0;
     padding: 0;
@@ -23,4 +25,10 @@ a{
 
 .animate-slideDown {
   animation: slideDown 0.3s ease-out;
+}
+
+/* ถ้าอยากตั้งค่าสีเพิ่ม (Theme) ให้เขียนในนี้ได้เลย ไม่ต้องมีไฟล์ config แยก */
+@theme {
+  --color-noodle-soup: #f3f4f6;
+  --font-poppins: "Poppins", sans-serif;
 }
