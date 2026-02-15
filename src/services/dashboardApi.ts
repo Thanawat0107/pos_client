@@ -34,7 +34,10 @@ export const dashboardApi = createApi({
       providesTags: ["Dashboard"],
     }),
 
-    getRevenueReport: builder.query<RevenueChartData[], { start: string; end: string; viewType?: string }>({
+    getRevenueReport: builder.query<
+      RevenueChartData[],
+      { start: string; end: string; viewType?: string }
+    >({
       query: (params) => ({
         url: "dashboards/revenue-report",
         params,
