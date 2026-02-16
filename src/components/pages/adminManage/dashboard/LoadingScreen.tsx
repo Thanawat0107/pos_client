@@ -1,29 +1,34 @@
-import { Box, CircularProgress, Typography, Stack } from "@mui/material";
+import { Box, Grid, Skeleton, Stack, Container } from "@mui/material";
 
-const LoadingScreen = () => {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "80vh",
-        width: "100%",
-      }}
-    >
-      <Stack spacing={2} alignItems="center">
-        <CircularProgress
-          size={40}
-          thickness={4}
-          sx={{ color: "primary.main" }}
-        />
-        <Typography variant="body1" color="text.secondary" fontWeight="medium">
-          กำลังโหลดข้อมูลแดชบอร์ด...
-        </Typography>
-      </Stack>
-    </Box>
-  );
-};
+const LoadingScreen = () => (
+  <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Stack spacing={4}>
+      {/* Skeleton สำหรับ Header */}
+      <Box>
+        <Skeleton variant="text" width={300} height={60} />
+        <Skeleton variant="text" width={200} height={30} />
+      </Box>
+
+      {/* Skeleton สำหรับ KPI Cards */}
+      <Grid container spacing={4}>
+        {[1, 2, 3, 4].map((i) => (
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={i}>
+            <Skeleton variant="rounded" height={140} sx={{ borderRadius: 3 }} />
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Skeleton สำหรับ Main Content */}
+      <Grid container spacing={4}>
+        <Grid size={{ xs: 12, lg: 8 }}>
+          <Skeleton variant="rounded" height={450} sx={{ borderRadius: 4 }} />
+        </Grid>
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Skeleton variant="rounded" height={450} sx={{ borderRadius: 4 }} />
+        </Grid>
+      </Grid>
+    </Stack>
+  </Container>
+);
 
 export default LoadingScreen;

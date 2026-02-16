@@ -7,6 +7,7 @@ import type {
   RevenueChartData,
   TopItem,
 } from "../@types/dto/AdminDashboard";
+import type { DetailedOrderReport } from "../@types/dto/DetailedOrderReport";
 // dashboardApi.ts
 
 // 1. สร้าง Local Helper ไว้ใช้เฉพาะในไฟล์นี้ (เพื่อความปลอดภัย)
@@ -24,16 +25,27 @@ export const dashboardApi = createApi({
   reducerPath: "dashboardApi",
   baseQuery: fetchBaseQuery({
     baseUrl: baseUrlAPI,
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("token"); // หรือดึงจาก Auth State
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
   }),
   tagTypes: ["Dashboard"],
   endpoints: (builder) => ({
-    getFullDashboard: builder.query<AdminDashboard, void>({
-      query: () => "dashboards/full",
-      // เปลี่ยนมาใช้ Local Helper แทน
+    getFullDashboard: builder.query<
+      AdminDashboard,
+      { start?: string; end?: string } | void
+    >({
+      query: (params) => ({
+        url: "dashboards/full",
+        params: params || {},
+      }),
       transformResponse: (res) => unwrapDashboard<AdminDashboard>(res),
       providesTags: ["Dashboard"],
     }),
-
     getRevenueReport: builder.query<
       RevenueChartData[],
       { start: string; end: string; viewType?: string }
@@ -47,13 +59,35 @@ export const dashboardApi = createApi({
       providesTags: ["Dashboard"],
     }),
 
-    getTopSellingItems: builder.query<TopItem[], number | void>({
-      query: (count = 5) => ({
+    getTopSellingItems: builder.query<
+      TopItem[],
+      { count?: number; start?: string; end?: string } | void
+    >({
+      query: (params) => ({
         url: "dashboards/top-selling",
-        params: { count },
+        params: {
+          count: params?.count ?? 5,
+          start: params?.start,
+          end: params?.end,
+        },
       }),
-      // เปลี่ยนมาใช้ Local Helper แทน
       transformResponse: (res) => unwrapDashboard<TopItem[]>(res),
+      providesTags: ["Dashboard"],
+    }),
+
+    getDetailedReport: builder.query<
+      DetailedOrderReport[],
+      { start: string; end: string; search?: string }
+    >({
+      query: (params) => ({
+        url: "dashboards/detailed-report",
+        params: {
+          start: params.start,
+          end: params.end,
+          search: params.search || "",
+        },
+      }),
+      transformResponse: (res) => unwrapDashboard<DetailedOrderReport[]>(res),
       providesTags: ["Dashboard"],
     }),
   }),
@@ -63,4 +97,5 @@ export const {
   useGetFullDashboardQuery,
   useGetRevenueReportQuery,
   useGetTopSellingItemsQuery,
+  useGetDetailedReportQuery,
 } = dashboardApi;
