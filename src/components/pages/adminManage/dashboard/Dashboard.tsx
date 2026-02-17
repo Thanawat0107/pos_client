@@ -165,6 +165,8 @@ const Dashboard = () => {
                   endDate={filters.endDate}
                   viewType={filters.viewType}
                   onDateChange={handleFilterChange}
+                  data={dashboard}
+                  detailedData={detailedData}
                 />
               </Paper>
             </motion.div>

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Grid } from "@mui/material";
 import StatCard from "./StatCard";
 

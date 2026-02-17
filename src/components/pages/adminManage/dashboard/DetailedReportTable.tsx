@@ -75,11 +75,19 @@ const DetailedReportTable = ({
       field: "orderHeaderId",
       headerName: "รหัสออเดอร์",
       width: 140,
-      renderCell: (params) => (
-        <Stack direction="row" alignItems="center" spacing={1}>
+      // แก้ไข: ดึงเฉพาะ { value } ออกมา
+      renderCell: ({ value }) => (
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{ height: "100%" }}
+        >
           <Box
             sx={{
               p: 0.5,
+              display: "flex",
+              alignItems: "center",
               bgcolor: "#f1f5f9",
               borderRadius: "6px",
               color: "#64748b",
@@ -91,7 +99,7 @@ const DetailedReportTable = ({
             variant="body2"
             sx={{ fontWeight: 800, color: "primary.main" }}
           >
-            {params.value}
+            {value}
           </Typography>
         </Stack>
       ),
@@ -100,12 +108,19 @@ const DetailedReportTable = ({
       field: "createdAt",
       headerName: "วันที่และเวลา",
       width: 180,
-      renderCell: (params) => (
+      // แก้ไข: ดึงเฉพาะ { value } ออกมา
+      renderCell: ({ value }) => (
         <Typography
           variant="body2"
-          sx={{ color: "text.secondary", fontWeight: 600 }}
+          sx={{
+            color: "text.secondary",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            height: "100%",
+          }}
         >
-          {new Date(params.value).toLocaleString("th-TH", {
+          {new Date(value).toLocaleString("th-TH", {
             dateStyle: "short",
             timeStyle: "short",
           })}
@@ -117,8 +132,14 @@ const DetailedReportTable = ({
       headerName: "เมนูที่สั่ง",
       flex: 1,
       minWidth: 250,
-      renderCell: (params) => (
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ py: 1.5 }}>
+      // แก้ไข: ดึงเฉพาะ { value, row } ออกมา
+      renderCell: ({ value, row }) => (
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={2}
+          sx={{ py: 1.5, height: "100%" }}
+        >
           <Avatar
             variant="rounded"
             sx={{
@@ -136,9 +157,9 @@ const DetailedReportTable = ({
               variant="body2"
               sx={{ fontWeight: 800, color: "text.primary" }}
             >
-              {params.value}
+              {value}
             </Typography>
-            {params.row.note && (
+            {row.note && (
               <Box
                 sx={{
                   display: "flex",
@@ -157,7 +178,7 @@ const DetailedReportTable = ({
                 <Typography
                   sx={{ fontSize: "11px", fontWeight: 700, color: "#e11d48" }}
                 >
-                  หมายเหตุ: {params.row.note}
+                  หมายเหตุ: {row.note}
                 </Typography>
               </Box>
             )}
@@ -171,19 +192,29 @@ const DetailedReportTable = ({
       width: 100,
       align: "center",
       headerAlign: "center",
-      renderCell: (params) => (
-        <Typography
+      // แก้ไข: ดึงเฉพาะ { value } ออกมา
+      renderCell: ({ value }) => (
+        <Box
           sx={{
-            fontWeight: 900,
-            px: 2,
-            py: 0.5,
-            bgcolor: "#f8fafc",
-            borderRadius: "10px",
-            border: "1px solid #e2e8f0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
           }}
         >
-          {params.value}
-        </Typography>
+          <Typography
+            sx={{
+              fontWeight: 900,
+              px: 2,
+              py: 0.5,
+              bgcolor: "#f8fafc",
+              borderRadius: "10px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            {value}
+          </Typography>
+        </Box>
       ),
     },
     {
@@ -192,12 +223,21 @@ const DetailedReportTable = ({
       width: 150,
       headerAlign: "right",
       align: "right",
-      renderCell: (params) => (
+      // แก้ไข: ดึงเฉพาะ { value } ออกมา
+      renderCell: ({ value }) => (
         <Typography
-          sx={{ fontWeight: 900, color: "text.primary", fontSize: "1rem" }}
+          sx={{
+            fontWeight: 900,
+            color: "text.primary",
+            fontSize: "1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            height: "100%",
+          }}
         >
           ฿
-          {params.value?.toLocaleString(undefined, {
+          {value?.toLocaleString(undefined, {
             minimumFractionDigits: 2,
           })}
         </Typography>
@@ -209,37 +249,46 @@ const DetailedReportTable = ({
       width: 180,
       headerAlign: "center",
       align: "center",
-      renderCell: (params) => {
-        const style = getStatusStyles(params.value);
+      renderCell: ({ value }) => {
+        const style = getStatusStyles(value);
         return (
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1.5,
-              px: 2,
-              py: 0.8,
-              borderRadius: "12px",
-              bgcolor: style.bg,
-              color: style.text,
-              border: "1px solid",
-              borderColor: alpha(style.text, 0.1),
+              justifyContent: "center",
+              height: "100%",
             }}
           >
             <Box
               sx={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                bgcolor: style.glow,
-                boxShadow: `0 0 8px ${alpha(style.glow, 0.6)}`,
-                animation:
-                  style.glow !== "transparent" ? "pulse 2s infinite" : "none",
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                px: 2,
+                py: 0.8,
+                borderRadius: "12px",
+                bgcolor: style.bg,
+                color: style.text,
+                border: "1px solid",
+                borderColor: alpha(style.text, 0.1),
               }}
-            />
-            <Typography sx={{ fontSize: "12px", fontWeight: 800 }}>
-              {style.label}
-            </Typography>
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  bgcolor: style.glow,
+                  boxShadow: `0 0 8px ${alpha(style.glow, 0.6)}`,
+                  animation:
+                    style.glow !== "transparent" ? "pulse 2s infinite" : "none",
+                }}
+              />
+              <Typography sx={{ fontSize: "12px", fontWeight: 800 }}>
+                {style.label}
+              </Typography>
+            </Box>
           </Box>
         );
       },
@@ -274,6 +323,9 @@ const DetailedReportTable = ({
                 color: "white",
                 borderRadius: "18px",
                 boxShadow: `0 10px 20px ${alpha("#4f46e5", 0.2)}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <ClipboardList size={28} />
@@ -355,8 +407,6 @@ const DetailedReportTable = ({
             },
             "& .MuiDataGrid-cell": {
               borderBottom: "1px solid #f1f5f9",
-              display: "flex",
-              alignItems: "center",
             },
             "& .MuiDataGrid-row:hover": {
               bgcolor: "#f8fafc",
@@ -369,6 +419,17 @@ const DetailedReportTable = ({
           }}
         />
       </Box>
+
+      {/* CSS สำหรับ Animation Pulse */}
+      <style>
+        {`
+          @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+          }
+        `}
+      </style>
     </Paper>
   );
 };
