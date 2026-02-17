@@ -2,7 +2,6 @@
 import { Grid } from "@mui/material";
 import StatCard from "./StatCard";
 
-// กำหนด Interface ให้ชัดเจนเพื่อให้แก้ไขง่ายในอนาคต
 export interface KPIItem {
   label: string;
   val: number | undefined;
@@ -12,6 +11,7 @@ export interface KPIItem {
   suffix: string;
   trend?: string;
   trendColor?: string;
+  subLabel?: string;
 }
 
 interface StatsGridProps {
@@ -19,7 +19,8 @@ interface StatsGridProps {
 }
 
 const StatsGrid = ({ kpis }: StatsGridProps) => (
-  <Grid container spacing={4}>
+  // เพิ่มช่องว่างเป็น 5 (40px) เพื่อความโปร่งระดับพรีเมียม
+  <Grid container spacing={5}>
     {kpis.map((item, i) => (
       <Grid key={i} size={{ xs: 12, sm: 6, lg: 3 }}>
         <StatCard item={item} index={i} />
