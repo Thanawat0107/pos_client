@@ -29,6 +29,7 @@ import OrderTimeline from "./OrderTimeline";
 import OrderMenuList from "./OrderMenuList";
 import CancelDialog from "./CancelDialog";
 import OrderPaymentSection from "./OrderPaymentSection";
+import ThermalReceipt from "../../utility/reports/ThermalReceipt";
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -415,6 +416,8 @@ export default function OrderSuccess() {
           reason={cancelReason}
           setReason={setCancelReason}
         />
+
+        <ThermalReceipt order={order} />
 
         <Snackbar
           open={toastOpen}

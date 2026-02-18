@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import {
+ import {
   Paper,
   Box,
   Stack,
@@ -10,7 +9,6 @@ import {
   Avatar,
   Button,
   Divider,
-  GlobalStyles,
 } from "@mui/material";
 import LocalDiningIcon from "@mui/icons-material/LocalDining";
 import PrintIcon from "@mui/icons-material/Print";
@@ -60,6 +58,24 @@ export default function OrderMenuList({
   // const isAllCancelled =
   //   orderDetails?.length > 0 && orderDetails.every((item) => item.isCancelled);
 
+  const handlePrint = () => {
+    // 1. เก็บชื่อ Title เดิมไว้ก่อน (เช่น "My Website")
+    const originalTitle = document.title;
+
+    // 2. ตั้งชื่อไฟล์ที่ต้องการ (เบราว์เซอร์จะเติม .pdf ให้เอง)
+    // สมมติชื่อไฟล์คือ Receipt_# ตามด้วย ID ออเดอร์
+    document.title = `Receipt_Order_#${orderDetails[0]?.id || "New"}`;
+
+    // 3. สั่งพิมพ์
+    window.print();
+
+    // 4. เปลี่ยน Title กลับเป็นเหมือนเดิมหลังจากหน้าต่างพิมพ์เปิดขึ้นมาแล้ว
+    // ใช้ setTimeout เล็กน้อยเพื่อให้เบราว์เซอร์ดึงชื่อ Title ไปใช้ทัน
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 100);
+  };
+
   return (
     <Paper
       sx={{
@@ -71,21 +87,6 @@ export default function OrderMenuList({
         position: "relative",
       }}
     >
-      <GlobalStyles
-        styles={{
-          "@media print": {
-            "button, .no-print, .MuiIconButton-root, .MuiAlert-root": {
-              display: "none !important",
-            },
-            body: { backgroundColor: "#fff !important" },
-            ".MuiPaper-root": {
-              boxShadow: "none !important",
-              border: "1px solid #eee",
-            },
-          },
-        }}
-      />
-
       {/* Header */}
       <Box
         sx={{
@@ -119,7 +120,7 @@ export default function OrderMenuList({
 
           <IconButton
             className="no-print"
-            onClick={() => window.print()}
+            onClick={handlePrint}
             sx={{ bgcolor: "#f5f5f5", p: 1 }}
           >
             <PrintIcon fontSize="small" />
