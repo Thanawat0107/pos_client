@@ -1,9 +1,9 @@
 export interface UpdateManual {
-  content?: string | null;
-  category?: string | null;
-  targetRole?: string | null;
-  fileUrl?: string | null;
-  isUsed?: boolean | null;
+  title?: string;     // เพิ่มใหม่
+  content?: string;
+  location?: string;   // เพิ่มใหม่
+  category?: string;
+  targetRole?: string;
+  isUsed?: boolean;
   file?: File | null;
-  // UpdateAt จะไป Set วันที่ปัจจุบันใน Controller หรือ AutoMapper
 }

@@ -6,6 +6,7 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import AnnouncementOutlinedIcon from "@mui/icons-material/AnnouncementOutlined";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 
 // กำหนดโครงสร้างข้อมูลให้ชัดเจน
 export interface NavItem {
@@ -30,6 +31,11 @@ export const MAIN_NAV: NavItem[] = [
     text: "ออเดอร์ของฉัน",
     path: "/my-orders",
     icon: <ReceiptLongOutlinedIcon />,
+  },
+  {
+    text: "จุดบริการตนเอง",
+    path: "/customer-manual",
+    icon: <MenuBookOutlinedIcon />,
   },
 ];
 

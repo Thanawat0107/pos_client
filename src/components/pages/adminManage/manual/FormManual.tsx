@@ -15,6 +15,7 @@ import {
   Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import DescriptionIcon from "@mui/icons-material/Description"; // เพิ่มไอคอนสำหรับ PDF
 import { FormikProvider, useFormik } from "formik";
 import { useEffect, useRef, useState } from "react";
 import type { Manual } from "../../../../@types/dto/Manual";
@@ -41,14 +42,17 @@ export default function FormManual({
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [isPdf, setIsPdf] = useState(false);
 
   const formik = useFormik({
     enableReinitialize: true,
     validationSchema: manualSchema,
     initialValues: {
+      title: initial?.title ?? "", // [เพิ่ม] หัวข้อ
+      location: initial?.location ?? "", // [เพิ่ม] สถานที่
       content: initial?.content ?? "",
       category: initial?.category ?? "",
-      targetRole: initial?.targetRole ?? "All",
+      targetRole: initial?.targetRole ?? "Customer",
       fileUrl: initial?.fileUrl ?? "",
       file: undefined as File | undefined,
       isUsed: initial ? initial.isUsed : true,
@@ -80,9 +84,11 @@ export default function FormManual({
   useEffect(() => {
     if (open) {
       setFilePreview(initial?.fileUrl || null);
+      setIsPdf(initial?.fileUrl?.toLowerCase().endsWith(".pdf") || false);
     } else {
       resetForm();
       setFilePreview(null);
+      setIsPdf(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [open, initial, resetForm]);
@@ -91,11 +97,12 @@ export default function FormManual({
     const file = e.target.files?.[0];
     if (file) {
       setFieldValue("file", file);
-      // ถ้าเป็นรูปให้โชว์ Preview ถ้าไม่ใช่ให้โชว์ชื่อไฟล์
       if (file.type.startsWith("image/")) {
         setFilePreview(URL.createObjectURL(file));
-      } else {
-        setFilePreview(null); // กรณีเป็น PDF หรืออื่นๆ อาจจะไม่โชว์รูป
+        setIsPdf(false);
+      } else if (file.type === "application/pdf") {
+        setFilePreview(file.name);
+        setIsPdf(true);
       }
     }
   };
@@ -104,6 +111,7 @@ export default function FormManual({
     setFieldValue("file", undefined);
     setFieldValue("fileUrl", "");
     setFilePreview(null);
+    setIsPdf(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -125,48 +133,66 @@ export default function FormManual({
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            sx={{ p: 2 }}
+            sx={{ p: 2, bgcolor: "primary.main", color: "white" }}
           >
             <Typography variant="h6" fontWeight={800}>
               {initial ? "แก้ไขคู่มือ" : "เพิ่มคู่มือใหม่"}
             </Typography>
-            <IconButton onClick={onClose} disabled={isSubmitting}>
+            <IconButton onClick={onClose} disabled={isSubmitting} sx={{ color: "white" }}>
               <CloseIcon />
             </IconButton>
           </Stack>
           <Divider />
 
           {/* Body */}
-          <Stack spacing={2.5} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+          <Stack spacing={2.5} sx={{ p: 3, flex: 1, overflowY: "auto" }}>
             {Object.keys(errors).length > 0 && submitCount > 0 && (
-              <Alert severity="error">
-                กรุณากรอกข้อมูลให้ครบถ้วน (ตรวจสอบช่องสีแดง)
-              </Alert>
+              <Alert severity="error">กรุณากรอกข้อมูลให้ครบถ้วน</Alert>
             )}
 
-            {/* 1. File Upload */}
-            <Box textAlign="center">
+            {/* 1. File Upload Section */}
+            <Box>
+              <Typography variant="subtitle2" gutterBottom fontWeight={700}>
+                รูปภาพหรือไฟล์คู่มือ (Image/PDF)
+              </Typography>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*, .pdf" // รับรูปและ PDF
+                accept="image/*, .pdf"
                 hidden
                 onChange={handleFileChange}
               />
               {filePreview ? (
-                <Box position="relative">
-                  <Box
-                    component="img"
-                    src={filePreview}
-                    sx={{
-                      width: "100%",
-                      height: 200,
-                      objectFit: "contain",
-                      bgcolor: "#f5f5f5",
-                      borderRadius: 2,
-                      border: "1px solid #eee",
-                    }}
-                  />
+                <Box position="relative" sx={{ mt: 1 }}>
+                  {isPdf ? (
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 4,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        bgcolor: "#f9f9f9",
+                        borderStyle: "dashed",
+                      }}
+                    >
+                      <DescriptionIcon sx={{ fontSize: 48, color: "error.main" }} />
+                      <Typography variant="caption" sx={{ mt: 1 }}>{values.file?.name || "ไฟล์ PDF"}</Typography>
+                    </Paper>
+                  ) : (
+                    <Box
+                      component="img"
+                      src={filePreview}
+                      sx={{
+                        width: "100%",
+                        height: 200,
+                        objectFit: "contain",
+                        bgcolor: "#f5f5f5",
+                        borderRadius: 2,
+                        border: "1px solid #eee",
+                      }}
+                    />
+                  )}
                   <IconButton
                     onClick={handleRemoveFile}
                     size="small"
@@ -175,6 +201,7 @@ export default function FormManual({
                       top: 8,
                       right: 8,
                       bgcolor: "white",
+                      boxShadow: 2,
                       "&:hover": { bgcolor: "#f5f5f5" },
                     }}
                   >
@@ -186,55 +213,86 @@ export default function FormManual({
                   variant="outlined"
                   fullWidth
                   sx={{
-                    height: 100,
+                    height: 120,
                     borderStyle: "dashed",
                     color: "text.secondary",
+                    flexDirection: "column",
+                    gap: 1,
                   }}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  {values.file
-                    ? `เลือกไฟล์: ${values.file.name}`
-                    : "คลิกเพื่ออัปโหลดรูปภาพหรือไฟล์"}
+                  <Typography variant="body2">คลิกเพื่ออัปโหลดรูปภาพหรือ PDF</Typography>
+                  <Typography variant="caption" color="text.disabled">รองรับ .jpg, .png, .pdf</Typography>
                 </Button>
               )}
             </Box>
 
-            {/* 2. Basic Info */}
+            {/* 2. Title Field - [เพิ่มใหม่] */}
             <TextField
-              label="หมวดหมู่ (Category)"
-              name="category"
-              value={values.category}
+              label="หัวข้อคู่มือ (Title)"
+              name="title"
+              value={values.title}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={touched.category && !!errors.category}
-              helperText={touched.category && errors.category}
+              error={touched.title && !!errors.title}
+              helperText={touched.title && errors.title}
               fullWidth
-              placeholder="เช่น การใช้งานระบบ, การแก้ไขปัญหา"
+              placeholder="เช่น จุดบริการน้ำดื่มสะอาด, ขั้นตอนการล้างจาน"
             />
 
+            <Stack direction="row" spacing={2}>
+              {/* Category */}
+              <TextField
+                label="หมวดหมู่ (Category)"
+                name="category"
+                value={values.category}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.category && !!errors.category}
+                helperText={touched.category && errors.category}
+                fullWidth
+                placeholder="เช่น Service, SOP"
+              />
+
+              {/* Target Role */}
+              <TextField
+                select
+                label="กลุ่มเป้าหมาย"
+                name="targetRole"
+                value={values.targetRole}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.targetRole && !!errors.targetRole}
+                helperText={touched.targetRole && errors.targetRole}
+                fullWidth
+              >
+                {ROLES.map((role) => (
+                  <MenuItem key={role.value} value={role.value}>
+                    {role.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+
+            {/* 3. Location Field - [เพิ่มใหม่] */}
             <TextField
-              select
-              label="ผู้มีสิทธิ์ใช้งาน (Target Role)"
-              name="targetRole"
-              value={values.targetRole}
+              label="สถานที่ (Location)"
+              name="location"
+              value={values.location}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={touched.targetRole && !!errors.targetRole}
-              helperText={touched.targetRole && errors.targetRole}
+              error={touched.location && !!errors.location}
+              helperText={touched.location && errors.location}
               fullWidth
-            >
-              {ROLES.map((role) => (
-                <MenuItem key={role.value} value={role.value}>
-                  {role.label}
-                </MenuItem>
-              ))}
-            </TextField>
+              placeholder="เช่น โซน A ชั้น 1, หลังเคาน์เตอร์"
+            />
 
+            {/* Content Area */}
             <TextField
               label="เนื้อหา / รายละเอียด"
               name="content"
               multiline
-              rows={4}
+              rows={5}
               value={values.content}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -243,7 +301,7 @@ export default function FormManual({
               fullWidth
             />
 
-            {/* 3. Status Switch */}
+            {/* Status Switch */}
             {initial && (
               <Paper
                 variant="outlined"
@@ -253,17 +311,15 @@ export default function FormManual({
                   justifyContent: "space-between",
                   alignItems: "center",
                   borderColor: values.isUsed ? "success.main" : "divider",
-                  bgcolor: values.isUsed ? "success.lighter" : "transparent",
+                  bgcolor: values.isUsed ? "rgba(76, 175, 80, 0.04)" : "transparent",
                 }}
               >
                 <Box>
                   <Typography variant="body2" fontWeight="bold">
-                    {values.isUsed ? "สถานะ: ใช้งาน (Active)" : "สถานะ: ปิดการใช้งาน"}
+                    {values.isUsed ? "เปิดการใช้งาน (Public)" : "ปิดการใช้งาน (Hidden)"}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {values.isUsed
-                      ? "ผู้ใช้ในบทบาทที่ระบุจะเห็นคู่มือนี้"
-                      : "ซ่อนคู่มือนี้จากผู้ใช้"}
+                    กำหนดว่าผู้ใช้ทั่วไปจะเห็นคู่มือนี้หรือไม่
                   </Typography>
                 </Box>
                 <Switch
@@ -286,6 +342,7 @@ export default function FormManual({
               onClick={onClose}
               fullWidth
               variant="outlined"
+              color="inherit"
               disabled={isSubmitting}
             >
               ยกเลิก
@@ -296,11 +353,7 @@ export default function FormManual({
               fullWidth
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "บันทึกข้อมูล"
-              )}
+              {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "บันทึกข้อมูล"}
             </Button>
           </Stack>
         </Box>

@@ -24,7 +24,11 @@ export const manualApi = createApi({
   endpoints: (builder) => ({
     getManuals: builder.query<
       { result: Manual[]; meta: PaginationMeta },
-      { pageNumber?: number; pageSize?: number }
+      {
+        pageNumber?: number;
+        pageSize?: number;
+        category?: string;
+      }
     >({
       query: (params) => ({
         url: "manuals/getall",

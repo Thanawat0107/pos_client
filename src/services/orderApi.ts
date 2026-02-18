@@ -175,35 +175,36 @@ export const orderApi = createApi({
           await cacheDataLoaded;
           await signalRService.startConnection();
 
-          // 1. ถ้าเป็น User (ง่าย)
+          // --- Logic การ Join Group แบบใหม่ (รองรับทั้งคู่พร้อมกัน) ---
+
+          // 1. ถ้ามี UserId ให้ Join ห้องของ User
           if (arg.userId) {
             const userRoom = `User_${arg.userId}`;
             await signalRService.invoke("JoinUserGroup", userRoom);
-            console.log(`🔌 [History] Joined: ${userRoom}`);
+            console.log(`🔌 [History] Joined User Room: ${userRoom}`);
           }
-          // 2. ถ้าเป็น Guest (ต้องแยก Token)
-          else if (arg.guestToken) {
-            // แยก string ด้วย comma (,)
-            const tokens = arg.guestToken.split(",");
 
-            // วนลูป Join ทุกห้อง
+          // 2. ถ้ามี GuestToken (ไม่ว่าจะ Login หรือไม่) ให้ Join ห้อง Guest ไว้ด้วย
+          // เพราะออเดอร์ที่ "กำลังทำ" อาจจะยังใช้ Token เดิมในการส่ง SignalR มาจากหลังบ้าน
+          if (arg.guestToken) {
+            const tokens = arg.guestToken.split(",").map((t) => t.trim());
             for (const t of tokens) {
-              const cleanToken = t.trim(); // กันเหนียวเผื่อมีเว้นวรรค
-              if (cleanToken) {
-                const guestRoom = `Guest_${cleanToken}`;
+              if (t) {
+                const guestRoom = `Guest_${t}`;
                 await signalRService.invoke("JoinUserGroup", guestRoom);
-                console.log(`🔌 [History] Joined: ${guestRoom}`);
+                console.log(`🔌 [History] Joined Guest Room: ${guestRoom}`);
               }
             }
           }
 
-          // --- Define Handler ---
+          // --- Define Handler (เหมือนเดิม) ---
           const handleUpdateList = (updatedOrder: OrderHeader) => {
             updateCachedData((draft) => {
               const index = draft.findIndex((o) => o.id === updatedOrder.id);
               if (index !== -1) {
                 draft[index] = updatedOrder;
               } else {
+                // ถ้าเป็นออเดอร์ใหม่ที่พึ่งเกิดขึ้น ให้เอาไว้บนสุด
                 draft.unshift(updatedOrder);
               }
             });
@@ -212,13 +213,10 @@ export const orderApi = createApi({
           // --- Subscribe Events ---
           signalRService.on("OrderStatusUpdated", handleUpdateList);
           signalRService.on("NewOrderReceived", handleUpdateList);
-          // ✅ ADDED: Listen for employee updates
           signalRService.on("UpdateEmployeeOrderList", handleUpdateList);
 
           // --- Cleanup ---
           await cacheEntryRemoved;
-
-          // ✅ FIXED: Pass callbacks
           signalRService.off("OrderStatusUpdated", handleUpdateList);
           signalRService.off("NewOrderReceived", handleUpdateList);
           signalRService.off("UpdateEmployeeOrderList", handleUpdateList);
@@ -227,6 +225,18 @@ export const orderApi = createApi({
         }
       },
       providesTags: ["Order"],
+    }),
+
+    linkGuestOrders: builder.mutation<
+      void,
+      { userId: string; guestToken: string }
+    >({
+      query: (body) => ({
+        url: "orders/link-guest-orders",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Order"],
     }),
 
     confirmCart: builder.mutation<OrderHeader, CreateOrder>({
@@ -313,5 +323,6 @@ export const {
   useGetOrderByPickUpCodeQuery,
   useConfirmPaymentMutation,
   useGetOrderHistoryQuery,
+  useLinkGuestOrdersMutation,
   useDeleteOrderMutation,
 } = orderApi;

@@ -18,6 +18,7 @@ import OrderSuccess from "../pages/orderSuccess/OrderSuccess";
 import ActiveOrderFloating from "../pages/activeOrder/ActiveOrderFloating";
 import MyOrders from "../pages/order/MyOrders";
 import Dashboard from "../components/pages/adminManage/dashboard/Dashboard";
+import CustomerManual from "../pages/CustomerManual";
 
 export default function Routers() {
   return (
@@ -32,6 +33,7 @@ export default function Routers() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/customer-manual" element={<CustomerManual />} />
         <Route path="/order-success/:id" element={<OrderSuccess />} />
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/manage-menuItem" element={<ManageMenuItem />} />

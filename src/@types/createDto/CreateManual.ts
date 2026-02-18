@@ -1,9 +1,8 @@
 export interface CreateManual {
-  content: string;
+  title: string;      // เพิ่มใหม่
+  content?: string;
+  location?: string;   // เพิ่มใหม่
   category: string;
   targetRole: string;
-  // ส่งมาเป็น URL (กรณีอัปโหลดไฟล์แยกแล้วเอา Link มาแปะ)
-  fileUrl?: string | null;
   file?: File | null;
-  // UserId ดึงจาก Token ใน Controller เอาครับ ปลอดภัยกว่า
 }

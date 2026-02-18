@@ -1,177 +1,320 @@
- import { useEffect, useMemo } from "react";
-import { 
-  Box, Container, Typography, Card, CardContent, Chip, Button, Stack, CircularProgress 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useMemo } from "react";
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Chip,
+  Button,
+  Stack,
+  CircularProgress,
+  Avatar,
+  AvatarGroup,
+  Divider,
+  useTheme,
+  alpha,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import FastfoodIcon from "@mui/icons-material/Fastfood";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import { motion } from "framer-motion";
 
 import { useGetOrderHistoryQuery } from "../../services/orderApi";
 import { Sd } from "../../helpers/SD";
 import { useAppSelector } from "../../hooks/useAppHookState";
 
 export default function MyOrders() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const userId = useAppSelector((state) => state.auth?.userId);
+  const guestToken = localStorage.getItem("guestToken") || "";
 
-  // -------------------------------------------------------------
-  // 1. Security Guard: ถ้าไม่ใช่สมาชิก ให้ดีดออกทันที
-  // -------------------------------------------------------------
   useEffect(() => {
-    if (!userId) {
-      // ถ้าไม่มี User ID ให้กลับไปหน้า Login หรือหน้าแรก
-      navigate("/login"); 
-    }
+    if (!userId) navigate("/login");
   }, [userId, navigate]);
 
-  // -------------------------------------------------------------
-  // 2. ดึงข้อมูลสมาชิก (API Member)
-  //    * Real-time จะทำงานอัตโนมัติผ่าน onCacheEntryAdded ใน orderApi ที่เราทำไว้
-  // -------------------------------------------------------------
-  const { 
-    data: apiOrders = [], 
-    isLoading, 
-    // isError, refetch ก็ใช้ได้ถ้าต้องการปุ่ม Refresh
-  } = useGetOrderHistoryQuery(
-    { userId }, 
-    { 
-      skip: !userId, // ถ้าไม่มี User ไม่ต้องยิง (กัน Error)
-      refetchOnMountOrArgChange: true 
-    }
+  const { data: apiOrders = [], isLoading } = useGetOrderHistoryQuery(
+    { userId, guestToken },
+    { skip: !userId, refetchOnMountOrArgChange: true },
   );
 
-  // -------------------------------------------------------------
-  // 3. จัดเตรียมข้อมูล (Sorting & Mapping)
-  // -------------------------------------------------------------
   const orders = useMemo(() => {
     if (!apiOrders) return [];
-    
-    // Copy array เพื่อ Sort (ป้องกัน Mutation error)
-    return [...apiOrders]
-      .map(o => ({
-        ...o,
-        // Map field ให้ชัวร์ (เผื่อ Backend ส่งมาไม่ครบ)
-        orderStatus: o.orderStatus || o.orderStatus,
-        createdAt: o.createdAt || new Date().toISOString(),
-        total: o.total || o.orderTotal || 0,
-        orderDetails: o.orderDetails || []
-      }))
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return [...apiOrders].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
   }, [apiOrders]);
 
-  // -------------------------------------------------------------
-  // Helper: สีของ Status Chip
-  // -------------------------------------------------------------
-  const getStatusColor = (status: string): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
+  const getStatusStyles = (status: string) => {
     switch (status) {
-      case Sd.Status_PendingPayment: return "warning";
-      case Sd.Status_Paid: return "info";
-      case Sd.Status_Preparing: return "secondary";
-      case Sd.Status_Ready: return "success";
-      case Sd.Status_Completed: return "default";
-      case Sd.Status_Cancelled: return "error";
-      default: return "default";
+      case Sd.Status_PendingPayment:
+        return { color: "warning", label: "รอชำระเงิน" };
+      case Sd.Status_Paid:
+        return { color: "info", label: "ชำระเงินแล้ว" };
+      case Sd.Status_Preparing:
+        return { color: "secondary", label: "กำลังปรุง" };
+      case Sd.Status_Ready:
+        return { color: "success", label: "พร้อมรับอาหาร" };
+      case Sd.Status_Completed:
+        return { color: "default", label: "เสร็จสิ้น" };
+      case Sd.Status_Cancelled:
+        return { color: "error", label: "ยกเลิก" };
+      default:
+        return { color: "default", label: status };
     }
   };
 
-  // -------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------
-
-  // ถ้ากำลัง Redirect หรือไม่มี User ไม่ต้อง Render อะไร (ป้องกันหน้าจอกระพริบ)
   if (!userId) return null;
 
   if (isLoading) {
     return (
-      <Box p={4} display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-        <CircularProgress />
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="80vh"
+      >
+        <CircularProgress
+          thickness={5}
+          size={60}
+          sx={{ color: theme.palette.primary.main }}
+        />
+        <Typography mt={2} color="text.secondary" fontWeight={600}>
+          กำลังโหลดประวัติความอร่อย...
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5", py: 4 }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#FAFAFA", py: { xs: 4, sm: 6 } }}>
       <Container maxWidth="sm">
-        <Typography variant="h5" fontWeight={800} mb={3}>
-          รายการคำสั่งซื้อของฉัน
-        </Typography>
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 1.5, sm: 2 }}
+            mb={{ xs: 3, sm: 5 }}
+          >
+            <Box
+              sx={{
+                p: { xs: 1, sm: 1.5 },
+                bgcolor: "primary.main",
+                borderRadius: 3,
+                boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.3)}`,
+              }}
+            >
+              <ReceiptLongIcon
+                sx={{ color: "#fff", fontSize: { xs: 24, sm: 32 } }}
+              />
+            </Box>
+            <Box>
+              <Typography
+                variant="h4"
+                fontWeight={900}
+                sx={{
+                  letterSpacing: -0.5,
+                  fontSize: { xs: "1.5rem", sm: "2.125rem" },
+                }}
+              >
+                ออเดอร์ของฉัน
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                fontWeight={600}
+              >
+                ทั้งหมด {orders.length} รายการ
+              </Typography>
+            </Box>
+          </Stack>
+        </motion.div>
 
         {orders.length > 0 ? (
-          <Stack spacing={2}>
-            {orders.map((order) => (
-              <Card
-                key={order.id}
-                sx={{ 
-                  borderRadius: 3, 
-                  cursor: "pointer", 
-                  transition: '0.2s', 
-                  '&:hover': { transform: 'scale(1.01)', boxShadow: 4 } 
-                }}
-                onClick={() => navigate(`/order-success/${order.id}`)}
-              >
-                <CardContent
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
+          <Stack spacing={{ xs: 2, sm: 3 }}>
+            {orders.map((order, index) => {
+              const status = getStatusStyles(order.orderStatus);
+              return (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                      {/* แสดงเลข Order Code หรือ Pickup Code */}
-                      #{order.pickUpCode || (order.orderCode ? order.orderCode.slice(-5) : '...')}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {new Date(order.createdAt).toLocaleString("th-TH")}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight={600}
-                      color="primary"
-                      mt={1}
-                    >
-                      {order.orderDetails?.length || 0} รายการ • ฿
-                      {order.total?.toLocaleString() || "0"}
-                    </Typography>
-                  </Box>
-                  
-                  <Box textAlign="right">
-                    <Chip
-                      label={order.orderStatus}
-                      color={getStatusColor(order.orderStatus)}
-                      size="small"
-                      variant={order.orderStatus === Sd.Status_Ready ? "filled" : "outlined"}
-                      sx={{ mb: 1, fontWeight: 700 }}
-                    />
-                    <Box display="flex" justifyContent="flex-end">
-                       <NavigateNextIcon color="action" />
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            ))}
+                  <Card
+                    elevation={0}
+                    onClick={() => navigate(`/order-success/${order.id}`)}
+                    sx={{
+                      borderRadius: { xs: 4, sm: 5 },
+                      cursor: "pointer",
+                      border: "1px solid",
+                      borderColor: alpha(theme.palette.divider, 0.1),
+                      background: "#fff",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        transform: "translateY(-6px)",
+                        boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
+                        borderColor: theme.palette.primary.main,
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
+                      {/* Top Row */}
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mb={{ xs: 2, sm: 3 }}
+                      >
+                        <Typography
+                          variant="h6"
+                          fontWeight={900}
+                          color="primary"
+                          sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
+                        >
+                          #{order.pickUpCode || order.orderCode?.slice(-5)}
+                        </Typography>
+                        <Chip
+                          label={status.label}
+                          color={status.color as any}
+                          size="small"
+                          sx={{
+                            fontWeight: 900,
+                            fontSize: "0.75rem",
+                            px: 0.5,
+                            borderRadius: 1.5,
+                          }}
+                        />
+                      </Stack>
+
+                      {/* Middle Row */}
+                      <Stack
+                        direction="row"
+                        spacing={{ xs: 2, sm: 3 }}
+                        alignItems="center"
+                        mb={{ xs: 2, sm: 3 }}
+                      >
+                        <AvatarGroup
+                          max={3}
+                          sx={{
+                            "& .MuiAvatar-root": {
+                              width: { xs: 40, sm: 50 },
+                              height: { xs: 40, sm: 50 },
+                              border: "2px solid #fff",
+                            },
+                          }}
+                        >
+                          {order.orderDetails?.map((item: any, i: number) => (
+                            <Avatar key={i} src={item.menuItemImage} />
+                          ))}
+                        </AvatarGroup>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography
+                            variant="h4"
+                            fontWeight={900}
+                            sx={{ fontSize: { xs: "1.5rem", sm: "2.125rem" } }}
+                          >
+                            ฿{order.total?.toLocaleString()}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            fontWeight={700}
+                          >
+                            {order.orderDetails?.length || 0} รายการ
+                          </Typography>
+                        </Box>
+                      </Stack>
+
+                      <Divider
+                        sx={{ my: { xs: 1.5, sm: 2.5 }, opacity: 0.6 }}
+                      />
+
+                      {/* Bottom Row */}
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                          color="text.secondary"
+                        >
+                          <AccessTimeIcon sx={{ fontSize: 14 }} />
+                          <Typography variant="caption" fontWeight={700}>
+                            {new Date(order.createdAt).toLocaleDateString(
+                              "th-TH",
+                              { day: "numeric", month: "short" },
+                            )}{" "}
+                            •{" "}
+                            {new Date(order.createdAt).toLocaleTimeString(
+                              "th-TH",
+                              { hour: "2-digit", minute: "2-digit" },
+                            )}
+                          </Typography>
+                        </Stack>
+
+                        <Button
+                          variant="text"
+                          size="small"
+                          endIcon={<NavigateNextIcon />}
+                          sx={{ fontWeight: 900, p: 0 }}
+                        >
+                          เพิ่มเติม
+                        </Button>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </Stack>
         ) : (
-          <Box textAlign="center" py={5} sx={{ opacity: 0.7 }}>
-            <Typography variant="h6" color="text.secondary" mb={1}>
-              ไม่มีรายการคำสั่งซื้อ
+          <Box
+            textAlign="center"
+            py={{ xs: 6, sm: 12 }}
+            sx={{
+              bgcolor: alpha("#fff", 0.5),
+              borderRadius: 10,
+              border: "3px dashed #E0E0E0",
+            }}
+          >
+            <FastfoodIcon
+              sx={{
+                fontSize: { xs: 60, sm: 100 },
+                color: alpha(theme.palette.text.disabled, 0.2),
+                mb: 3,
+              }}
+            />
+            <Typography
+              variant="h6"
+              fontWeight={900}
+              color="text.secondary"
+              mb={1}
+            >
+              ยังไม่มีประวัติการสั่งซื้อ
             </Typography>
-            <Typography variant="body2" color="text.secondary" mb={3}>
-              คุณยังไม่ได้สั่งอาหารเลย สั่งสักหน่อยไหม?
-            </Typography>
-            <Button variant="contained" onClick={() => navigate("/")}>
-                ไปหน้าเมนู
+            <Button
+              variant="contained"
+              onClick={() => navigate("/")}
+              sx={{ mt: 2, px: 4, borderRadius: 3, fontWeight: 900 }}
+            >
+              ไปที่หน้าเมนู
             </Button>
           </Box>
         )}
-
-        <Button
-          fullWidth
-          variant="outlined"
-          sx={{ mt: 4 }}
-          onClick={() => navigate("/")}
-        >
-          กลับหน้าหลัก
-        </Button>
       </Container>
     </Box>
   );

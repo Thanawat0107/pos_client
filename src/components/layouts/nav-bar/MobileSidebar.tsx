@@ -71,6 +71,7 @@ export const MobileSidebar = ({
       </Box>
 
       <List sx={{ px: 2 }}>
+        {/* แก้ไขส่วนการแสดงผล MAIN_NAV */}
         {MAIN_NAV.map((item) => (
           <ListItemButton
             key={item.path}

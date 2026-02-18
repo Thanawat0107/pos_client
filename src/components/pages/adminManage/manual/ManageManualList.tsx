@@ -59,6 +59,7 @@ export default function ManageManualList() {
     data: null,
   });
 
+  // เรียกข้อมูลทั้งหมด (ใช้ pageSize เยอะๆ เพื่อมา Filter Client-side ตามโครงเดิม)
   const {
     data: manualData,
     isLoading,
@@ -83,16 +84,20 @@ export default function ManageManualList() {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  // --- ปรับปรุง Logic การกรองข้อมูล ---
   const filteredSorted = useMemo(() => {
     const { q, role, status } = filters;
     const searchLower = q.trim().toLowerCase();
 
     return rows
       .filter((r) => {
+        // [แก้ไข] ให้ค้นหาครอบคลุม Title และ Location ด้วย
         const matchesQ =
           !q ||
-          r.content.toLowerCase().includes(searchLower) ||
-          r.category.toLowerCase().includes(searchLower);
+          r.title?.toLowerCase().includes(searchLower) || // เพิ่มใหม่
+          r.content?.toLowerCase().includes(searchLower) ||
+          r.category.toLowerCase().includes(searchLower) ||
+          r.location?.toLowerCase().includes(searchLower); // เพิ่มใหม่
 
         const matchesRole = role === "all" || r.targetRole === role;
 
@@ -121,7 +126,7 @@ export default function ManageManualList() {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm("ยืนยันลบข้อมูลนี้?")) {
+    if (confirm("ยืนยันลบข้อมูลนี้? ข้อมูลจะถูกลบแบบ Soft Delete")) {
       await deleteManual(id)
         .unwrap()
         .catch((err) => console.error(err));
@@ -133,6 +138,7 @@ export default function ManageManualList() {
     if (!item) return;
 
     try {
+      // ส่งข้อมูลครบถ้วนตามความต้องการของ Backend
       await updateManual({
         id,
         data: { ...item, isUsed: next } as UpdateManual,
@@ -145,7 +151,7 @@ export default function ManageManualList() {
 
   const handleSubmit = async (
     data: CreateManual | UpdateManual,
-    id?: number
+    id?: number,
   ) => {
     try {
       if (id) {
@@ -167,7 +173,12 @@ export default function ManageManualList() {
 
   if (isLoading)
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -183,7 +194,7 @@ export default function ManageManualList() {
             </Button>
           }
         >
-          ไม่สามารถโหลดข้อมูล Manual ได้
+          ไม่สามารถโหลดข้อมูลคู่มือได้
         </Alert>
       </Box>
     );
@@ -199,9 +210,18 @@ export default function ManageManualList() {
           spacing={2}
           sx={{ mb: 2 }}
         >
-          <Typography variant={isSmUp ? "h5" : "h6"} fontWeight={800}>
-            จัดการคู่มือ (Manuals)
-          </Typography>
+          <Box>
+            <Typography
+              variant={isSmUp ? "h5" : "h6"}
+              fontWeight={800}
+              color="primary"
+            >
+              จัดการคู่มือ & จุดบริการ
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              สร้างและแก้ไขคู่มือการทำงานสำหรับพนักงาน หรือจุดบริการสำหรับลูกค้า
+            </Typography>
+          </Box>
           <Stack direction="row" spacing={1}>
             <Button
               variant="outlined"
@@ -217,12 +237,12 @@ export default function ManageManualList() {
               onClick={() => handleOpenForm()}
               disabled={isBusy}
             >
-              เพิ่มคู่มือ
+              เพิ่มคู่มือใหม่
             </Button>
           </Stack>
         </Stack>
 
-        {/* 3. Filter Bar */}
+        {/* Filter Bar */}
         <ManualFilterBar
           q={filters.q}
           role={filters.role}
@@ -232,54 +252,92 @@ export default function ManageManualList() {
           onStatusChange={(v) => handleFilterChange("status", v)}
         />
 
-        {/* 4. Chips แสดงสถานะการกรอง (เหมือน MenuList) */}
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            พบ {filteredSorted.length} รายการ
+        {/* Filter Chips */}
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}
+        >
+          <Typography variant="body2" color="text.secondary" fontWeight="bold">
+            ทั้งหมด {filteredSorted.length} รายการ
           </Typography>
           {filters.role !== "all" && (
             <Chip
               size="small"
-              variant="outlined"
-              label={`Role: ${filters.role}`}
+              label={`กลุ่มเป้าหมาย: ${filters.role}`}
               onDelete={() => handleFilterChange("role", "all")}
+              color="primary"
+              variant="outlined"
             />
           )}
           {filters.status !== "all" && (
             <Chip
               size="small"
-              variant="outlined"
-              label={`Status: ${filters.status === "active" ? "ใช้งาน" : "ปิด"}`}
+              label={`สถานะ: ${filters.status === "active" ? "ใช้งาน" : "ปิด"}`}
               onDelete={() => handleFilterChange("status", "all")}
+              color="primary"
+              variant="outlined"
             />
           )}
           {filters.q && (
             <Chip
               size="small"
-              variant="outlined"
-              label={`ค้นหา: "${filters.q}"`}
+              label={`คำค้น: "${filters.q}"`}
               onDelete={() => handleFilterChange("q", "")}
+              color="primary"
+              variant="outlined"
             />
           )}
         </Stack>
 
-        {/* Content Table / List */}
+        {/* Table Content */}
         {isSmUp ? (
           <Paper
             variant="outlined"
-            sx={{ borderRadius: 2, overflow: "hidden" }}
+            sx={{
+              borderRadius: 3,
+              overflow: "hidden",
+              border: "1px solid #eee",
+            }}
           >
             <TableContainer>
               <Table size="medium">
-                <TableHead>
+                <TableHead sx={{ bgcolor: "#f8f9fa" }}>
                   <TableRow>
-                    <TableCell width={60} align="center">#</TableCell>
-                    <TableCell width={100}>ไฟล์</TableCell>
-                    <TableCell>รายละเอียด</TableCell>
-                    <TableCell width={140}>สิทธิ์เข้าถึง</TableCell>
-                    <TableCell width={140}>สถานะ</TableCell>
-                    <TableCell width={180}>อัปเดตล่าสุด</TableCell>
-                    <TableCell width={120} align="right">การทำงาน</TableCell>
+                    <TableCell
+                      width={60}
+                      align="center"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      #
+                    </TableCell>
+                    <TableCell width={100} sx={{ fontWeight: "bold" }}>
+                      ไฟล์
+                    </TableCell>
+                    {/* [แก้ไข] เพิ่ม Header หัวข้อและสถานที่ */}
+                    <TableCell sx={{ fontWeight: "bold" }}>
+                      หัวข้อ / สถานที่
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>
+                      รายละเอียด
+                    </TableCell>
+                    <TableCell width={130} sx={{ fontWeight: "bold" }}>
+                      กลุ่มเป้าหมาย
+                    </TableCell>
+                    <TableCell width={120} sx={{ fontWeight: "bold" }}>
+                      สถานะ
+                    </TableCell>
+                    <TableCell width={150} sx={{ fontWeight: "bold" }}>
+                      อัปเดตล่าสุด
+                    </TableCell>
+                    <TableCell
+                      width={110}
+                      align="right"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      จัดการ
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -295,10 +353,10 @@ export default function ManageManualList() {
                   ))}
                   {pageRows.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7}>
-                        <Box sx={{ py: 6, textAlign: "center" }}>
+                      <TableCell colSpan={8}>
+                        <Box sx={{ py: 10, textAlign: "center" }}>
                           <Typography color="text.secondary">
-                            {isLoading ? "กำลังโหลด..." : "ไม่พบข้อมูลตามเงื่อนไข"}
+                            ไม่พบข้อมูลคู่มือที่คุณค้นหา
                           </Typography>
                         </Box>
                       </TableCell>
@@ -308,7 +366,14 @@ export default function ManageManualList() {
               </Table>
             </TableContainer>
 
-            <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+            <Box
+              sx={{
+                p: 2,
+                borderTop: "1px solid",
+                borderColor: "divider",
+                bgcolor: "#fcfcfc",
+              }}
+            >
               <PaginationBar
                 page={page}
                 pageSize={pageSize}
@@ -320,12 +385,14 @@ export default function ManageManualList() {
             </Box>
           </Paper>
         ) : (
-          <Stack spacing={1.25}>
+          /* Mobile View */
+          <Stack spacing={1.5}>
             {pageRows.length === 0 ? (
-              <Paper sx={{ p: 4, textAlign: "center" }} variant="outlined">
-                <Typography color="text.secondary">
-                  {isLoading ? "กำลังโหลด..." : "ไม่พบข้อมูลตามเงื่อนไข"}
-                </Typography>
+              <Paper
+                sx={{ p: 6, textAlign: "center", borderRadius: 3 }}
+                variant="outlined"
+              >
+                <Typography color="text.secondary">ไม่พบข้อมูล</Typography>
               </Paper>
             ) : (
               pageRows.map((r, i) => (
@@ -354,6 +421,7 @@ export default function ManageManualList() {
           </Stack>
         )}
 
+        {/* Modal Form */}
         <FormManual
           open={formState.open}
           onClose={handleCloseForm}
