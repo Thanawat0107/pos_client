@@ -35,7 +35,7 @@ export const categoriesApi = createApi({
     getCategoryById: builder.query<MenuCategory, number>({
       query: (id) => `menucategories/getby/${id}`,
       transformResponse: unwrapResult<MenuCategory>,
-      providesTags: (result, error, id) => [{ type: "Category", id }],
+      providesTags: (_result, _error, id) => [{ type: "Category", id }],
     }),
 
     createCategory: builder.mutation<MenuCategory, CreateMenuCategory>({

@@ -43,7 +43,7 @@ export const contentApi = createApi({
 
       // --- ส่วนของ SignalR Real-time Update ---
       async onCacheEntryAdded(
-        arg,
+        _arg,
         { updateCachedData, cacheDataLoaded, cacheEntryRemoved },
       ) {
         try {

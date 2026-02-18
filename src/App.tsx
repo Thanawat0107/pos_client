@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect } from "react";
 import Footer from "./components/layouts/Footer";
 import Navber from "./components/layouts/Navber";
@@ -23,7 +24,7 @@ function App() {
       await signalRService.startConnection();
 
       // ลงทะเบียน Listeners
-      signalRService.on("NewOrderReceived", (newOrder) => {
+      signalRService.on("NewOrderReceived", (_newOrder) => {
         dispatch(orderApi.util.invalidateTags(["Order"]));
         dispatch(dashboardApi.util.invalidateTags(["Dashboard"]));
       });

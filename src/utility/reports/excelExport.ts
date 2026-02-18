@@ -43,7 +43,7 @@ export const exportToExcel = async (data: any, detailedData: any[], filters: any
   });
 
   // ใส่ข้อมูลลงในตาราง
-  detailedData.forEach((item, index) => {
+  detailedData.forEach((item, _index) => {
     const row = worksheet.addRow([
       item.createdAt || item.date,
       item.orderNumber || item.id,

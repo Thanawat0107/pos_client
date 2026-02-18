@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Box, Button, Card, CardContent, Container, Divider, IconButton,
-  Stack, Typography, useMediaQuery, CircularProgress, Alert, Paper
+  Stack, Typography, useMediaQuery, CircularProgress, Paper
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import DeleteSweepRoundedIcon from "@mui/icons-material/DeleteSweepRounded";
@@ -21,7 +21,7 @@ export default function Cart() {
   const { cartItems, totalAmount } = useAppSelector((state) => state.shoppingCart);
   const cartToken = localStorage.getItem("cartToken");
 
-  const { isLoading, isError, refetch } = useGetCartQuery(cartToken, { skip: !cartToken });
+  const { isLoading, refetch } = useGetCartQuery(cartToken, { skip: !cartToken });
   const [clearCart] = useClearCartMutation();
 
   const handleClear = async () => {

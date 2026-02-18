@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Container,
   Stack,
@@ -5,7 +6,6 @@ import {
   Typography,
   Card,
   CardMedia,
-  CardContent,
   Grid,
   Button,
   useTheme,
@@ -17,53 +17,53 @@ import type { Content } from "../../../@types/dto/Content";
 import { baseUrl } from "../../../helpers/SD";
 
 // --- ชิ้นข่าวปกติ (Standard Card) ---
-function NewsCard({ item }: { item: Content }) {
-  const rawImage = item.imageUrl || "https://placehold.co/600x400?text=News";
-  const displayImage = rawImage.startsWith("http") ? rawImage : baseUrl + rawImage;
-  const isEvent = item.contentType === ContentType.EVENT;
+// function NewsCard({ item }: { item: Content }) {
+//   const rawImage = item.imageUrl || "https://placehold.co/600x400?text=News";
+//   const displayImage = rawImage.startsWith("http") ? rawImage : baseUrl + rawImage;
+//   const isEvent = item.contentType === ContentType.EVENT;
 
-  return (
-    <Card
-      elevation={0}
-      sx={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        borderRadius: 5,
-        bgcolor: "background.paper",
-        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-        border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-        "&:hover": {
-          transform: "translateY(-8px)",
-          boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
-          "& img": { transform: "scale(1.1)" },
-        },
-      }}
-    >
-      <Box sx={{ position: "relative", borderRadius: 5, overflow: "hidden", height: 200 }}>
-        <CardMedia
-          component="img"
-          image={displayImage}
-          alt={item.title}
-          sx={{ height: "100%", transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)" }}
-        />
-        <TypeTag isEvent={isEvent} />
-      </Box>
+//   return (
+//     <Card
+//       elevation={0}
+//       sx={{
+//         height: "100%",
+//         display: "flex",
+//         flexDirection: "column",
+//         borderRadius: 5,
+//         bgcolor: "background.paper",
+//         transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+//         border: (theme) => `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+//         "&:hover": {
+//           transform: "translateY(-8px)",
+//           boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+//           "& img": { transform: "scale(1.1)" },
+//         },
+//       }}
+//     >
+//       <Box sx={{ position: "relative", borderRadius: 5, overflow: "hidden", height: 200 }}>
+//         <CardMedia
+//           component="img"
+//           image={displayImage}
+//           alt={item.title}
+//           sx={{ height: "100%", transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)" }}
+//         />
+//         <TypeTag isEvent={isEvent} />
+//       </Box>
 
-      <CardContent sx={{ p: 3 }}>
-        <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
-          {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
-        </Typography>
-        <Typography variant="h6" sx={{ fontWeight: 800, mt: 1, mb: 1, lineHeight: 1.3, fontSize: "1.1rem" }}>
-          {item.title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-          {item.description}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
-}
+//       <CardContent sx={{ p: 3 }}>
+//         <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
+//           {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
+//         </Typography>
+//         <Typography variant="h6" sx={{ fontWeight: 800, mt: 1, mb: 1, lineHeight: 1.3, fontSize: "1.1rem" }}>
+//           {item.title}
+//         </Typography>
+//         <Typography variant="body2" color="text.secondary" sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+//           {item.description}
+//         </Typography>
+//       </CardContent>
+//     </Card>
+//   );
+// }
 
 // --- ชิ้นข่าวเด่น (Featured Card) ---
 function FeaturedNewsCard({ item }: { item: Content }) {

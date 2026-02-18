@@ -1,4 +1,5 @@
 export const baseUrl = "https://localhost:7061";
+// export const baseUrl = "/cs66/s07/cnmswep";
 export const baseUrlAPI = baseUrl + "/api/";
 
 export const ROLES = [

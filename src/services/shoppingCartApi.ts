@@ -34,7 +34,7 @@ export const shoppingCartApi = createApi({
         return response.result!;
       },
       // 🔥 หัวใจหลัก: ดักฟัง SignalR และอัปเดต Cache ของตัวเอง
-      async onCacheEntryAdded(arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+      async onCacheEntryAdded(_arg, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
         try {
           // รอจนกว่าการยิง API ครั้งแรกจะสำเร็จ
           await cacheDataLoaded;

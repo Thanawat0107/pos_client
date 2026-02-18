@@ -53,12 +53,12 @@ export default function OrderMenuList({
   subTotal,
   discount,
   total,
-  appliedPromoCode,
+  // appliedPromoCode,
   canCancel,
   onCancelItem,
 }: Props) {
-  const isAllCancelled =
-    orderDetails?.length > 0 && orderDetails.every((item) => item.isCancelled);
+  // const isAllCancelled =
+  //   orderDetails?.length > 0 && orderDetails.every((item) => item.isCancelled);
 
   return (
     <Paper

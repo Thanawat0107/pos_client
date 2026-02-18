@@ -7,7 +7,7 @@ import HomeMenu from "../../components/pages/home/HomeMenu";
 import HomeNews from "../../components/pages/home/HomeNews";
 
 export default function Home() {
-  const { menuItems, banners, promotions, news, isLoading, menuError } = useHomeData();
+  const { menuItems, banners, promotions, news, menuError } = useHomeData();
 
   // if (isLoading) return <LoadingScreen />; // แยก Loading ออกไปเพื่อความสะอาด
 

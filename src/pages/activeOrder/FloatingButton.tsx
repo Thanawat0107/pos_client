@@ -46,7 +46,7 @@ export default function FloatingButton({ activeOrders, onClick }: Props) {
     (o) => o.orderStatus === Sd.Status_Ready,
   );
 
-  const handleStart: DraggableEventHandler = (e, data) => {
+  const handleStart: DraggableEventHandler = (_e, data) => {
     startPosRef.current = { x: data.x, y: data.y };
   };
 

@@ -53,7 +53,6 @@ export default function OrderPaymentSection({
   const {
     data: qrData,
     isLoading: isQrLoading,
-    error: qrError,
   } = useGetPaymentQRQuery(orderId);
 
   const [confirmPayment, { isLoading: isUploading }] =
