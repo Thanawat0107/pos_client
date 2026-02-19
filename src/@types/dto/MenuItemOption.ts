@@ -8,8 +8,5 @@ export interface MenuItemOption {
     isUsed: boolean;
     isDeleted: boolean;
 
-    menuItemId: number;
-    MenuItemName: string;
-
     menuOptionDetails: MenuOptionDetail[];
 }

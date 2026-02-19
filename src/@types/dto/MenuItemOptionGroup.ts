@@ -1,13 +1,11 @@
 import type { MenuItemOption } from "./MenuItemOption";
 
 export interface MenuItemOptionGroup {
-    id: number;
-
     menuItemId: number;
     menuItemName: string;
 
     menuItemOptionId: number;
-    menuItemOptionName: string;
+    sequence: number;
 
     menuItemOption: MenuItemOption;
 }

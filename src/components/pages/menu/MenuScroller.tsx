@@ -1,12 +1,14 @@
 import * as React from "react";
-import { useMemo, useRef, useEffect } from "react";
-import { Box, useMediaQuery, useTheme, alpha, IconButton } from "@mui/material";
+import { useMemo, useRef, useEffect, useState } from "react";
+import { Box, useMediaQuery, useTheme, alpha, IconButton, Snackbar, Alert } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useNavigate } from "react-router-dom";
 
 import MenuCard from "./MenuCard";
 import type { MenuItemDto } from "../../../@types/dto/MenuItem";
+import { useAddtoCartMutation } from "../../../services/shoppingCartApi";
+import { useAppSelector } from "../../../hooks/useAppHookState";
 
 type Props = {
   items: MenuItemDto[];
@@ -32,6 +34,31 @@ export default function MenuScroller({
   const ref = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const upMd = useMediaQuery(theme.breakpoints.up("md"));
+
+  // --- Cart ---
+  const [addtoCart] = useAddtoCartMutation();
+  const { userId } = useAppSelector((state) => state.auth);
+  const [snackMsg, setSnackMsg] = useState<string | null>(null);
+
+  // ✅ Quick Add: ไม่ส่ง optionIds → backend เลือก IsDefault ให้เอง
+  const handleAddToCart = async (m: MenuItemDto) => {
+    if (onAddToCart) { onAddToCart(m); return; } // เผื่อ backward compat
+    const cartToken = localStorage.getItem("cartToken") || undefined;
+    try {
+      const result = await addtoCart({
+        menuItemId: m.id,
+        quantity: 1,
+        userId: userId?.toString(),
+        cartToken,
+      }).unwrap();
+      if (result.cartToken && !cartToken) {
+        localStorage.setItem("cartToken", result.cartToken);
+      }
+      setSnackMsg(`เพิ่ม "${m.name}" ลงตะกร้าแล้ว`);
+    } catch {
+      setSnackMsg(`เกิดข้อผิดพลาด ไม่สามารถเพิ่ม "${m.name}" ได้`);
+    }
+  };
 
   const cols = upMd ? 3 : 2;
   const rows = 1;
@@ -158,7 +185,7 @@ export default function MenuScroller({
               <MenuCard
                 key={`${p.id}-${i}`}
                 menu={p}
-                onAddToCart={onAddToCart}
+                onAddToCart={handleAddToCart}
                 currency={currency}
                 // ✅ ส่ง onClick ไปให้ MenuCard
                 onClick={() => handleItemClick(p.id)}
@@ -172,6 +199,21 @@ export default function MenuScroller({
           </Box>
         ))}
       </Box>
-    </Box>
+      {/* Feedback Snackbar */}
+      <Snackbar
+        open={!!snackMsg}
+        autoHideDuration={2500}
+        onClose={() => setSnackMsg(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackMsg(null)}
+          severity={snackMsg?.startsWith("เกิด") ? "error" : "success"}
+          variant="filled"
+          sx={{ width: "100%", borderRadius: 3 }}
+        >
+          {snackMsg}
+        </Alert>
+      </Snackbar>    </Box>
   );
 }

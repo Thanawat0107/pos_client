@@ -86,8 +86,7 @@ export default function ManageCategoryList() {
     return rows.filter((r) => {
       const matchQ =
         !search ||
-        r.name.toLowerCase().includes(search) ||
-        (r.slug ?? "").toLowerCase().includes(search);
+        r.name.toLowerCase().includes(search);
       const matchStatus =
         filters.status === "all" || (filters.status === "active") === r.isUsed;
       return matchQ && matchStatus;

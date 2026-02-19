@@ -6,21 +6,10 @@ import {
   FormControl,
   Select,
   MenuItem,
-  useMediaQuery,
+  Typography,
+  Box,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
-import type { MenuCategory } from "../../../@types/dto/MenuCategory";
-
-type Props = {
-  q: string;
-  cat: string;
-  status: "all" | "active" | "inactive";
-  categories: MenuCategory[];
-  onSearch: (val: string) => void;
-  onCategoryChange: (val: string) => void;
-  onStatusChange: (val: "all" | "active" | "inactive") => void;
-};
 
 export default function MenuFilterBar({
   q,
@@ -30,74 +19,169 @@ export default function MenuFilterBar({
   onSearch,
   onCategoryChange,
   onStatusChange,
-}: Props) {
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up("md")); // มือถือ < md
-
+}: any) {
   return (
     <Stack
-      direction={isMdUp ? "row" : "column"}
-      spacing={1.25}
-      sx={{
-        mb: 2,
-        width: "100%",
-      }}
+      direction={{ xs: "column", md: "row" }}
+      spacing={3}
+      alignItems={{ xs: "stretch", md: "flex-end" }}
     >
-      {/* ค้นหา */}
-      <TextField
-        size={isMdUp ? "medium" : "small"}
-        placeholder="ค้นหาชื่อเมนู / คำอธิบาย"
-        value={q}
-        onChange={(e) => onSearch(e.target.value)}
-        fullWidth
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon fontSize="small" />
-            </InputAdornment>
-          ),
-        }}
-        sx={{
-          "& input": { fontSize: isMdUp ? 14 : 13 },
-        }}
-      />
-
-      {/* หมวดหมู่ */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 180 : "100%" }}>
-        <Select
-          size={isMdUp ? "medium" : "small"}
-          value={cat}
-          onChange={(e) => onCategoryChange(String(e.target.value))}
-          displayEmpty
+      {/* 1. ช่องค้นหา */}
+      <Box sx={{ flex: { md: 2 } }}>
+        <Typography
+          variant="caption"
           sx={{
-            fontSize: isMdUp ? 14 : 13,
+            fontSize: { xs: "0.875rem", md: "1rem" },
+            fontWeight: 700,
+            color: "text.secondary",
+            ml: 0.5,
+            mb: 0.75,
+            display: "block",
           }}
         >
-          <MenuItem value="all">หมวดหมู่ทั้งหมด</MenuItem>
-          {categories.map((c) => (
-            <MenuItem key={c.id} value={c.id}>
-              {c.name}
+          ค้นหาเมนู
+        </Typography>
+        <TextField
+          placeholder="พิมพ์ชื่อเมนูเพื่อค้นหา..."
+          value={q}
+          onChange={(e) => onSearch(e.target.value)}
+          fullWidth
+          variant="outlined"
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "14px",
+              backgroundColor: "background.paper",
+              height: { xs: 48, md: 56 },
+              fontSize: { xs: "0.9rem", md: "1.05rem" },
+              px: 1,
+              "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+              "&:hover fieldset": { borderColor: "#E63946" },
+              "&.Mui-focused fieldset": { borderColor: "#E63946" },
+            },
+            "& .MuiOutlinedInput-input": {
+              paddingLeft: "8px",
+              paddingRight: "16px",
+              fontSize: { xs: "0.9rem", md: "1.05rem" },
+            },
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start" sx={{ ml: 0.5 }}>
+                <SearchIcon sx={{ color: "text.disabled", fontSize: { xs: "1.3rem", md: "1.6rem" } }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
+      <Stack
+        direction="row"
+        spacing={{ xs: 1.5, md: 2.5 }}
+        sx={{ flex: { md: 1.3 } }}
+      >
+        {/* 2. หมวดหมู่ */}
+        <FormControl fullWidth>
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: { xs: "0.875rem", md: "1rem" },
+              fontWeight: 700,
+              color: "text.secondary",
+              ml: 0.5,
+              mb: 0.75,
+              display: "block",
+            }}
+          >
+            หมวดหมู่
+          </Typography>
+          <Select
+            value={cat}
+            onChange={(e) => onCategoryChange(String(e.target.value))}
+            displayEmpty
+            sx={{
+              borderRadius: "14px",
+              backgroundColor: "background.paper",
+              height: { xs: 48, md: 56 },
+              fontSize: { xs: "0.9rem", md: "1.05rem" },
+              "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+              "&:hover fieldset": { borderColor: "#E63946" },
+              "&.Mui-focused fieldset": { borderColor: "#E63946" },
+              "& .MuiSelect-select": {
+                paddingLeft: { xs: "12px !important", md: "18px !important" },
+                paddingRight: { xs: "32px !important", md: "44px !important" },
+                fontSize: { xs: "0.9rem", md: "1.05rem" },
+              },
+              "& .MuiSvgIcon-root": {
+                right: { xs: "6px", md: "14px" },
+                fontSize: { xs: "1.25rem", md: "1.6rem" },
+              },
+            }}
+          >
+            <MenuItem value="all" sx={{ py: 1.25, fontSize: "1.05rem" }}>
+              ทั้งหมด
             </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+            {categories.map((c: any) => (
+              <MenuItem
+                key={c.id}
+                value={c.id}
+                sx={{ py: 1.25, fontSize: "1.05rem" }}
+              >
+                {c.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      {/* สถานะ */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
-        <Select
-          size={isMdUp ? "medium" : "small"}
-          value={status}
-          onChange={(e) => onStatusChange(e.target.value as any)}
-          displayEmpty
-          sx={{
-            fontSize: isMdUp ? 14 : 13,
-          }}
-        >
-          <MenuItem value="all">สถานะทั้งหมด</MenuItem>
-          <MenuItem value="active">พร้อมขาย</MenuItem>
-          <MenuItem value="inactive">ปิดขาย</MenuItem>
-        </Select>
-      </FormControl>
+        {/* 3. สถานะการขาย */}
+        <FormControl fullWidth>
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: { xs: "0.875rem", md: "1rem" },
+              fontWeight: 700,
+              color: "text.secondary",
+              ml: 0.5,
+              mb: 0.75,
+              display: "block",
+            }}
+          >
+            สถานะการขาย
+          </Typography>
+          <Select
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value as any)}
+            displayEmpty
+            sx={{
+              borderRadius: "14px",
+              backgroundColor: "background.paper",
+              height: { xs: 48, md: 56 },
+              fontSize: { xs: "0.9rem", md: "1.05rem" },
+              "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+              "&:hover fieldset": { borderColor: "#E63946" },
+              "&.Mui-focused fieldset": { borderColor: "#E63946" },
+              "& .MuiSelect-select": {
+                paddingLeft: { xs: "12px !important", md: "18px !important" },
+                paddingRight: { xs: "32px !important", md: "44px !important" },
+                fontSize: { xs: "0.9rem", md: "1.05rem" },
+              },
+              "& .MuiSvgIcon-root": {
+                right: { xs: "6px", md: "14px" },
+                fontSize: { xs: "1.25rem", md: "1.6rem" },
+              },
+            }}
+          >
+            <MenuItem value="all" sx={{ py: 1.25, fontSize: "1.05rem" }}>
+              ทุกสถานะ
+            </MenuItem>
+            <MenuItem value="active" sx={{ py: 1.25, fontSize: "1.05rem" }}>
+              พร้อมขาย
+            </MenuItem>
+            <MenuItem value="inactive" sx={{ py: 1.25, fontSize: "1.05rem" }}>
+              ปิดขาย
+            </MenuItem>
+          </Select>
+        </FormControl>
+      </Stack>
     </Stack>
   );
 }

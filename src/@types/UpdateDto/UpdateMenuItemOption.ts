@@ -1,11 +1,12 @@
 import type { UpdateMenuOptionDetails } from "./UpdateMenuOptionDetails";
 
 export interface UpdateMenuItemOption {
-  id?: number;
+  id: number;
   name?: string;
   isRequired?: boolean;
   isMultiple?: boolean;
   isUsed?: boolean;
+  isDeleted?: boolean;
 
   menuOptionDetails?: UpdateMenuOptionDetails[];
 }

@@ -4,7 +4,7 @@ export interface CreateMenuItemOption {
   name: string;
   isRequired: boolean;
   isMultiple: boolean;
+  isUsed: boolean;
 
-  // menuItemId: number;
   menuOptionDetails: CreateMenuOptionDetail[];
 }

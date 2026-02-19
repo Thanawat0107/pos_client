@@ -5,9 +5,9 @@ import {
   FormControl,
   Select,
   MenuItem,
-  useMediaQuery,
+  Typography,
+  Box,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 
 type StatusType = "all" | "active" | "inactive";
@@ -25,6 +25,28 @@ type Props = {
   onMultipleChange: (val: MultipleType) => void;
 };
 
+const labelSx = {
+  fontSize: { xs: "0.875rem", md: "1rem" },
+  fontWeight: 700,
+  color: "text.secondary",
+  ml: 0.5,
+  mb: 0.75,
+  display: "block",
+};
+
+const selectSx = {
+  borderRadius: "14px",
+  height: { xs: 48, md: 56 },
+  fontSize: { xs: "0.9rem", md: "1.05rem" },
+  bgcolor: "background.paper",
+  "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+  "&:hover fieldset": { borderColor: "#E63946 !important" },
+  "&.Mui-focused fieldset": { borderColor: "#E63946 !important" },
+  "& .MuiSelect-select": { px: 2 },
+};
+
+const menuItemSx = { fontSize: { xs: "0.9rem", md: "1rem" }, py: 1.2 };
+
 export default function MenuItemOptionFilterBar({
   q,
   status,
@@ -35,87 +57,90 @@ export default function MenuItemOptionFilterBar({
   onRequiredChange,
   onMultipleChange,
 }: Props) {
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up("md")); // เดสก์ท็อป
-
   return (
-    <Stack
-      direction={isMdUp ? "row" : "column"}
-      spacing={1.25}
-      sx={{
-        mb: 2,
-        width: "100%",
-      }}
-    >
+    <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems={{ xs: "stretch", md: "flex-end" }}>
+
       {/* ค้นหา */}
-      <TextField
-        size={isMdUp ? "medium" : "small"}
-        placeholder="ค้นหาชื่อกลุ่ม / เมนู"
-        value={q}
-        onChange={(e) => onSearch(e.target.value)}
-        fullWidth
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon fontSize="small" />
-            </InputAdornment>
-          ),
-        }}
-        sx={{
-          "& input": { fontSize: isMdUp ? 14 : 13 },
-        }}
-      />
-
-      {/* สถานะ */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
-        <Select
-          size={isMdUp ? "medium" : "small"}
-          value={status}
-          onChange={(e) => onStatusChange(e.target.value as StatusType)}
-          displayEmpty
+      <Box sx={{ flex: { md: 2 } }}>
+        <Typography sx={labelSx}>ค้นหากลุ่มตัวเลือก</Typography>
+        <TextField
+          placeholder="พิมพ์ชื่อกลุ่ม / เมนูเพื่อค้นหา..."
+          value={q}
+          onChange={(e) => onSearch(e.target.value)}
+          fullWidth
           sx={{
-            fontSize: isMdUp ? 14 : 13,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "14px",
+              bgcolor: "background.paper",
+              height: { xs: 48, md: 56 },
+              fontSize: { xs: "0.9rem", md: "1.05rem" },
+              px: 1,
+              "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+              "&:hover fieldset": { borderColor: "#E63946" },
+              "&.Mui-focused fieldset": { borderColor: "#E63946" },
+            },
+            "& .MuiOutlinedInput-input": { pl: 1, pr: 2 },
           }}
-        >
-          <MenuItem value="all">สถานะทั้งหมด</MenuItem>
-          <MenuItem value="active">พร้อมใช้</MenuItem>
-          <MenuItem value="inactive">ปิดใช้งาน</MenuItem>
-        </Select>
-      </FormControl>
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start" sx={{ ml: 0.5 }}>
+                  <SearchIcon sx={{ color: "text.disabled", fontSize: { xs: "1.3rem", md: "1.6rem" } }} />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+      </Box>
 
-      {/* ประเภทการเลือก (บังคับ/ไม่บังคับ) */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ?  160 : "100%" }}>
-        <Select
-          size={isMdUp ? "medium" : "small"}
-          value={required}
-          onChange={(e) => onRequiredChange(e.target.value as RequiredType)}
-          displayEmpty
-          sx={{
-            fontSize: isMdUp ? 14 : 13,
-          }}
-        >
-          <MenuItem value="all">ทุกประเภท</MenuItem>
-          <MenuItem value="required">บังคับเลือก</MenuItem>
-          <MenuItem value="optional">ไม่บังคับ</MenuItem>
-        </Select>
-      </FormControl>
+      <Stack direction="row" spacing={{ xs: 1.5, md: 2.5 }} sx={{ flex: { md: 1.8 } }}>
+        {/* สถานะ */}
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={labelSx}>สถานะ</Typography>
+          <FormControl fullWidth>
+            <Select value={status} onChange={(e) => onStatusChange(e.target.value as StatusType)} displayEmpty sx={selectSx}>
+              <MenuItem value="all" sx={menuItemSx}>ทุกสถานะ</MenuItem>
+              <MenuItem value="active" sx={menuItemSx}>
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                  พร้อมใช้งาน
+                </span>
+              </MenuItem>
+              <MenuItem value="inactive" sx={menuItemSx}>
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
+                  ปิดใช้งาน
+                </span>
+              </MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
 
-      {/* รูปแบบการเลือก (หลายรายการ/รายการเดียว) */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
-        <Select
-          size={isMdUp ? "medium" : "small"}
-          value={multiple}
-          onChange={(e) => onMultipleChange(e.target.value as MultipleType)}
-          displayEmpty
-          sx={{
-            fontSize: isMdUp ? 14 : 13,
-          }}
-        >
-          <MenuItem value="all">รูปแบบทั้งหมด</MenuItem>
-          <MenuItem value="multiple">เลือกได้หลายรายการ</MenuItem>
-          <MenuItem value="single">เลือกได้ 1 รายการ</MenuItem>
-        </Select>
-      </FormControl>
+        {/* ประเภทการเลือก */}
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={labelSx}>ประเภท</Typography>
+          <FormControl fullWidth>
+            <Select value={required} onChange={(e) => onRequiredChange(e.target.value as RequiredType)} displayEmpty sx={selectSx}>
+              <MenuItem value="all" sx={menuItemSx}>ทุกประเภท</MenuItem>
+              <MenuItem value="required" sx={menuItemSx}>บังคับเลือก</MenuItem>
+              <MenuItem value="optional" sx={menuItemSx}>ไม่บังคับเลือก</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+
+        {/* รูปแบบ */}
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={labelSx}>รูปแบบ</Typography>
+          <FormControl fullWidth>
+            <Select value={multiple} onChange={(e) => onMultipleChange(e.target.value as MultipleType)} displayEmpty sx={selectSx}>
+              <MenuItem value="all" sx={menuItemSx}>ทุกรูปแบบ</MenuItem>
+              <MenuItem value="multiple" sx={menuItemSx}>หลายรายการ</MenuItem>
+              <MenuItem value="single" sx={menuItemSx}>1 รายการ</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </Stack>
+
     </Stack>
   );
 }

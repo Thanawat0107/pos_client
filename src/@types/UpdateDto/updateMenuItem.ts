@@ -6,6 +6,7 @@ export interface UpdateMenuItem {
   basePrice?: number;
   imageUrl?: string;
   isUsed?: boolean;
+  isDeleted?: boolean;
   imageFile?: File;
 
   menuCategoryId?: number | null;

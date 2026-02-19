@@ -52,14 +52,6 @@ export default function ManageCategoryItem({
           <Typography fontWeight={700} noWrap>
             {row.name}
           </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            noWrap
-            sx={{ fontVariantNumeric: "tabular-nums" }}
-          >
-            /{row.slug}
-          </Typography>
         </Stack>
       </TableCell>
 

@@ -129,7 +129,6 @@ export default function HomeMenu({ items, isError }: HomeMenuProps) {
             <MenuScroller
               items={items}
               currency="THB"
-              onAddToCart={(p) => console.log("Add:", p)}
               maxWidth="xl"
             />
           </Box>

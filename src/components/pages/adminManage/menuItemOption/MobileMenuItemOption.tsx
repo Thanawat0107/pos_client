@@ -1,14 +1,15 @@
-import {
+ import {
   Paper,
   Stack,
   Typography,
   Chip,
   Switch,
   IconButton,
-  Tooltip,
+  Divider,
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import ChecklistIcon from "@mui/icons-material/Checklist";
 import type { MenuItemOption } from "../../../../@types/dto/MenuItemOption";
 
 type Props = {
@@ -27,77 +28,122 @@ export default function MobileMenuItemOption({
   onToggleActive,
 }: Props) {
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 2, p: 1.5 }}>
-      <Stack spacing={1}>
-        {/* ชื่อ + สถานะ */}
+    <Paper
+      variant="outlined"
+      sx={{
+        borderRadius: 3,
+        p: 2,
+        bgcolor: "background.paper",
+        borderColor: row.isUsed ? "divider" : "action.disabledBackground",
+        transition: "0.2s",
+        "&:active": { bgcolor: "action.hover" },
+      }}
+    >
+      <Stack spacing={1.5}>
+        {/* ส่วนที่ 1: หัวข้อและลำดับ */}
         <Stack
           direction="row"
-          alignItems="flex-start"
           justifyContent="space-between"
-          spacing={1}
+          alignItems="flex-start"
         >
-          <Stack spacing={0.5} minWidth={0}>
-            <Typography variant="subtitle1" fontWeight={800} noWrap>
+          <Stack spacing={0.5} sx={{ minWidth: 0 }}>
+            <Typography
+              variant="subtitle1"
+              fontWeight={800}
+              sx={{ lineHeight: 1.2 }}
+            >
               {row.name}
             </Typography>
-            <Stack direction="row" spacing={0.5} flexWrap="wrap">
-              {row.isRequired && (
-                <Chip size="small" label="บังคับ" color="error" />
-              )}
-              {row.isMultiple && (
-                <Chip size="small" label="หลายรายการ" color="info" />
-              )}
-            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              ID: {row.id} • ลำดับที่ {index}
+            </Typography>
           </Stack>
 
           <Chip
             size="small"
-            label={row.isUsed ? "พร้อมใช้" : "ปิดใช้งาน"}
-            color={row. isUsed ? "success" : "default"}
-            sx={{
-              height: 24,
-              ml: 1,
-              "& .MuiChip-label": { px: 0.75, fontSize: 12 },
-            }}
+            label={row.isUsed ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+            color={row.isUsed ? "success" : "default"}
+            variant={row.isUsed ? "filled" : "outlined"}
+            sx={{ fontWeight: 700, height: 24 }}
           />
         </Stack>
 
-        {/* ข้อมูล */}
-        <Stack direction="row" alignItems="center" flexWrap="wrap" sx={{ rowGap: 0.5, columnGap: 0.75 }}>
-          <Chip size="small" variant="outlined" label={`ลำดับ ${index}`} />
-          <Chip size="small" label={`${row.menuOptionDetails?.length ??  0} ตัวเลือก`} />
+        {/* ส่วนที่ 2: คุณสมบัติ (Badges) */}
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          {row.isRequired && (
+            <Chip
+              label="บังคับเลือก"
+              size="small"
+              color="error"
+              variant="filled"
+              sx={{ fontSize: "0.7rem" }}
+            />
+          )}
+          <Chip
+            label={row.isMultiple ? "เลือกได้หลายอย่าง" : "เลือกได้ชิ้นเดียว"}
+            size="small"
+            color="info"
+            variant="filled"
+            sx={{ fontSize: "0.7rem" }}
+          />
+          <Chip
+            icon={<ChecklistIcon style={{ fontSize: 14 }} />}
+            label={`${row.menuOptionDetails?.length ?? 0} รายการ`}
+            size="small"
+            variant="outlined"
+            sx={{ fontSize: "0.7rem" }}
+          />
         </Stack>
 
-        {row.MenuItemName && (
-          <Typography variant="caption" color="text.secondary">
-            ใช้กับเมนู: {row.MenuItemName}
-          </Typography>
-        )}
+        <Divider sx={{ borderStyle: "dashed" }} />
 
-        {/* สวิตช์ + ปุ่ม */}
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" spacing={0.75}>
+        {/* ส่วนที่ 3: ปุ่มควบคุมและ Actions */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Stack direction="row" alignItems="center" spacing={1}>
             <Switch
               size="small"
               checked={row.isUsed}
               onChange={(_, v) => onToggleActive(row.id, v)}
+              color="success"
             />
-            <Typography variant="body2" color="text.secondary">
-              {row. isUsed ? "เปิดใช้งานอยู่" : "ปิดการใช้งาน"}
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color={row.isUsed ? "success.main" : "text.disabled"}
+            >
+              {row.isUsed ? "พร้อมขาย" : "ปิดชั่วคราว"}
             </Typography>
           </Stack>
 
-          <Stack direction="row" alignItems="center" spacing={0.5}>
-            <Tooltip title="แก้ไข">
-              <IconButton size="small" onClick={() => onEdit(row)}>
-                <EditOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="ลบ">
-              <IconButton size="small" color="error" onClick={() => onDelete(row.id)}>
-                <DeleteOutlineIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+          <Stack direction="row" spacing={1}>
+            <IconButton
+              size="medium"
+              onClick={() => onEdit(row)}
+              sx={{
+                bgcolor: "primary.50",
+                color: "primary.main",
+                "&:hover": { bgcolor: "primary.100" },
+              }}
+            >
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+
+            <IconButton
+              size="medium"
+              color="error"
+              onClick={() => onDelete(row.id)}
+              sx={{
+                bgcolor: "error.50",
+                color: "error.main",
+                "&:hover": { bgcolor: "error.100" },
+              }}
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
           </Stack>
         </Stack>
       </Stack>

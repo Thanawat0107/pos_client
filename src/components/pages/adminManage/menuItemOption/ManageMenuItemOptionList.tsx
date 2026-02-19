@@ -14,17 +14,24 @@ import {
   TableContainer,
   Paper,
   useMediaQuery,
-  Chip,
+  IconButton,
+  Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+
+// --- Components & Layouts ---
 import ManageMenuItemOptionItem from "./ManageMenuItemOptionItem";
 import MobileMenuItemOption from "./MobileMenuItemOption";
-import type { MenuItemOption } from "../../../../@types/dto/MenuItemOption";
-import { useEffect, useMemo, useState } from "react";
+import FormMenuItemOption from "./FromMenuItemOption"; // ตรวจสอบชื่อไฟล์ From หรือ Form
+import MenuItemOptionFilterBar from "../MenuItemOptionFilterBar";
 import PaginationBar from "../../../layouts/PaginationBar";
+
+// --- Hooks & Services ---
 import { useDebounced } from "../../../../hooks/useDebounced";
 import {
   useCreateMenuItemOptionMutation,
@@ -32,17 +39,18 @@ import {
   useGetMenuItemOptionsQuery,
   useUpdateMenuItemOptionMutation,
 } from "../../../../services/menuItemOptionApi";
+
+// --- Types ---
+import type { MenuItemOption } from "../../../../@types/dto/MenuItemOption";
 import type { CreateMenuItemOption } from "../../../../@types/createDto/CreateMenuItemOption";
 import type { UpdateMenuItemOption } from "../../../../@types/UpdateDto/UpdateMenuItemOption";
-import FormMenuItemOption from "./FromMenuItemOption";
-import MenuItemOptionFilterBar from "../MenuItemOptionFilterBar";
-import { Link } from "react-router-dom";
+import type { UpdateMenuOptionDetails } from "../../../../@types/UpdateDto/UpdateMenuOptionDetails";
 
 export default function ManageMenuItemOptionList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
-  // 1. รวม Filter State ไว้ก้อนเดียวกัน เพื่อความสะอาด
+  // 1. Filter State: รวม State การกรองไว้ที่เดียว
   const [filters, setFilters] = useState({
     q: "",
     status: "all" as "all" | "active" | "inactive",
@@ -50,13 +58,13 @@ export default function ManageMenuItemOptionList() {
     multiple: "all" as "all" | "multiple" | "single",
   });
 
-  const dq = useDebounced(filters.q, 300);
+  const dq = useDebounced(filters.q, 400);
 
-  // Pagination State
+  // 2. Pagination State
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(isSmUp ? 8 : 6);
+  const [pageSize, setPageSize] = useState(isSmUp ? 10 : 6);
 
-  // Form State
+  // 3. Form Drawer State
   const [formState, setFormState] = useState<{
     open: boolean;
     data: MenuItemOption | null;
@@ -65,362 +73,316 @@ export default function ManageMenuItemOptionList() {
     data: null,
   });
 
-  // API Call: แนะนำให้ดึงมาทั้งหมดถ้าจะ Filter หน้าบ้าน (pageSize เยอะๆ)
+  // 4. API Operations
   const { data, isLoading, refetch } = useGetMenuItemOptionsQuery({
     pageNumber: 1,
-    pageSize: 100,
+    pageSize: 500, // ดึงข้อมูลมาจำนวนมากเพื่อทำ Filter และ Search ฝั่ง Client
   });
+
   const [createOption, { isLoading: isCreating }] = useCreateMenuItemOptionMutation();
   const [updateOption, { isLoading: isUpdating }] = useUpdateMenuItemOptionMutation();
-  const [deleteOption, { isLoading: isDeleting }] = useDeleteMenuItemOptionMutation();
+  const [deleteOption] = useDeleteMenuItemOptionMutation();
 
   const rows: MenuItemOption[] = data?.result ?? [];
 
-  // Reset page เมื่อ Filter เปลี่ยน
+  // Reset หน้าปัจจุบันเมื่อมีการเปลี่ยนเงื่อนไขการกรอง
   useEffect(() => {
     setPage(1);
   }, [dq, filters.status, filters.required, filters.multiple, pageSize]);
 
-  // 2. Logic การกรองที่สั้นและอ่านง่ายขึ้น
-  const filtered = useMemo(() => {
+  // 5. Search & Filter Logic (Client-side)
+  const filteredRows = useMemo(() => {
     const search = dq.trim().toLowerCase();
 
     return rows.filter((r) => {
-      // Helper check function
       const matchesSearch =
         !search ||
         r.name.toLowerCase().includes(search) ||
-        (r.MenuItemName ?? "").toLowerCase().includes(search);
-      const matchesStatus =
-        filters.status === "all" || (filters.status === "active") === r.isUsed;
-      const matchesRequired =
-        filters.required === "all" ||
-        (filters.required === "required") === r.isRequired;
-      const matchesMultiple =
-        filters.multiple === "all" ||
-        (filters.multiple === "multiple") === r.isMultiple;
+        r.menuOptionDetails?.some((d) => d.name.toLowerCase().includes(search));
 
-      return (
-        matchesSearch && matchesStatus && matchesRequired && matchesMultiple
-      );
+      const matchesStatus =
+        filters.status === "all" || (filters.status === "active" ? r.isUsed : !r.isUsed);
+
+      const matchesRequired =
+        filters.required === "all" || (filters.required === "required" ? r.isRequired : !r.isRequired);
+
+      const matchesMultiple =
+        filters.multiple === "all" || (filters.multiple === "multiple" ? r.isMultiple : !r.isMultiple);
+
+      return matchesSearch && matchesStatus && matchesRequired && matchesMultiple;
     });
   }, [rows, dq, filters]);
 
-  // Pagination Logic
-  const totalCount = filtered.length;
-  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+  // Pagination คำนวณแถวที่จะแสดง
+  const totalCount = filteredRows.length;
+  const pageRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
 
-  // Handlers
-  const handleOpenForm = (r: MenuItemOption | null = null) =>
-    setFormState({ open: true, data: r });
-  const handleCloseForm = () => setFormState({ open: false, data: null });
+  // --- Handlers ---
 
-  const handleDelete = async (id: number) => {
-    if (confirm("ยืนยันลบตัวเลือกนี้?")) {
-      await deleteOption(id)
-        .unwrap()
-        .catch((err) => console.error("delete failed", err));
-    }
-  };
-
-  // 3. ปรับ Toggle ให้สั้นลง (ใช้ Spread Operator)
-  const handleToggleActive = async (id: number, next: boolean) => {
-    const target = rows.find((r) => r.id === id);
-    if (!target) return;
-
-    try {
-      // ใช้ ...target เพื่อ copy ข้อมูลเดิม แล้วทับด้วยค่าใหม่
-      // หมายเหตุ: เช็คว่า Backend รับ field ที่เกินมาได้ไหม ถ้าไม่ได้ค่อย map กรองออก
-      await updateOption({
-        id,
-        data: { ...target, isUsed: next },
-      }).unwrap();
-    } catch (err) {
-      console.error("toggle failed", err);
-    }
-  };
-
-  const handleSubmit = async (
-    formData: CreateMenuItemOption | UpdateMenuItemOption
-  ) => {
-    try {
-      const isUpdate = "id" in formData && !!formData.id;
-      const action = isUpdate
-        ? updateOption({
-            id: formData.id!,
-            data: formData as UpdateMenuItemOption,
-          })
-        : createOption(formData as CreateMenuItemOption);
-
-      await action.unwrap();
-      handleCloseForm();
-    } catch (err) {
-      console.error("save failed", err);
-    }
-  };
-
-  // 1. เพิ่มฟังก์ชันนี้ไว้ใน Component ก่อน return เพื่อลดการเขียน setFilters ซ้ำๆ
   const handleFilterChange = (key: keyof typeof filters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleOpenForm = (r: MenuItemOption | null = null) => {
+    setFormState({ open: true, data: r });
+  };
+
+  const handleCloseForm = () => {
+    setFormState({ open: false, data: null });
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm("คุณต้องการลบกลุ่มตัวเลือกนี้ใช่หรือไม่? การลบจะมีผลกับเมนูอาหารที่ใช้กลุ่มนี้อยู่")) {
+      try {
+        await deleteOption(id).unwrap();
+      } catch (err) {
+        console.error("Delete Error:", err);
+      }
+    }
+  };
+
+  const handleToggleActive = async (id: number, nextStatus: boolean) => {
+    const target = rows.find((r) => r.id === id);
+    if (!target) return;
+
+    try {
+      // สร้าง Payload ตาม UpdateMenuItemOption Interface
+      const payload: UpdateMenuItemOption = {
+        id: target.id,
+        name: target.name,
+        isRequired: target.isRequired,
+        isMultiple: target.isMultiple,
+        isUsed: nextStatus, // เปลี่ยนสถานะที่นี่
+        menuOptionDetails: target.menuOptionDetails?.map((d): UpdateMenuOptionDetails => ({
+          id: d.id,
+          name: d.name,
+          extraPrice: d.extraPrice,
+          isDefault: d.isDefault,
+          isUsed: d.isUsed,
+          isDeleted: false,
+        })),
+      };
+
+      await updateOption({ id, data: payload }).unwrap();
+    } catch (err) {
+      console.error("Toggle Active Error:", err);
+    }
+  };
+
+  const handleSubmit = async (formData: any) => {
+    try {
+      if (formData.id && formData.id !== 0) {
+        // Mode: Update
+        await updateOption({
+          id: formData.id,
+          data: formData as UpdateMenuItemOption,
+        }).unwrap();
+      } else {
+        // Mode: Create
+        await createOption(formData as CreateMenuItemOption).unwrap();
+      }
+      handleCloseForm();
+    } catch (err) {
+      console.error("Submit Error:", err);
+    }
+  };
+
   return (
-    <Box sx={{ py: { xs: 2, md: 4 } }}>
-      <Container maxWidth="xl">
-        {/* Header */}
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ mb: 2 }}
-        >
-          <Typography variant={isSmUp ? "h5" : "h6"} fontWeight={800}>
-            จัดการตัวเลือกเมนู
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIcon />}
-              component={Link}
-              to="/manage-menuItem"
+    <Box className="min-h-screen bg-[#F5F6F8] pb-28 md:pb-12 font-sans">
+      <Container maxWidth="xl" disableGutters={!isSmUp} className="px-6 md:px-12 pt-8 md:pt-12">
+        <Stack spacing={{ xs: 3, md: 5 }}>
+
+          {/* =========================================
+              1. Header & Buttons
+             ========================================= */}
+          <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" className="mb-4">
+              <Box>
+                <Typography
+                  sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", md: "2.75rem" }, letterSpacing: "-0.02em" }}
+                  className="text-gray-900"
+                >
+                  กลุ่มตัวเลือกเมนู
+                </Typography>
+                <Typography className="text-gray-500" sx={{ fontSize: { xs: "0.95rem", md: "1.25rem" }, mt: 0.5 }}>
+                  จัดการตัวเลือกเสริม เช่น ความหวาน, ท็อปปิ้ง — นำไปผูกกับรายการอาหาร
+                </Typography>
+              </Box>
+
+              {isSmUp && (
+                <Tooltip title="รีเฟรชข้อมูล">
+                  <IconButton
+                    onClick={() => refetch()}
+                    className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
+                    sx={{ p: 1.5, borderRadius: "50%" }}
+                  >
+                    <RefreshIcon sx={{ fontSize: "1.75rem", color: "text.secondary" }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Stack>
+
+            <Stack direction="row" spacing={1.5} alignItems="center" className="mt-4 overflow-x-auto pb-1 no-scrollbar" sx={{ flexWrap: "nowrap" }}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: { xs: "1.25rem !important", md: "1.75rem !important" } }} />}
+                onClick={() => handleOpenForm()}
+                disabled={isLoading || isCreating}
+                className="bg-[#E63946] hover:bg-[#D32F2F] shadow-md hover:shadow-lg whitespace-nowrap"
+                sx={{ borderRadius: "50px", px: { xs: 2, md: 4 }, py: { xs: 1, md: 1.5 }, fontSize: { xs: "0.9rem", md: "1.25rem" }, fontWeight: 700, flexShrink: 0 }}
+              >
+                เพิ่มกลุ่มตัวเลือก
+              </Button>
+              <Button
+                component={Link}
+                to="/manage-menuItem"
+                variant="outlined"
+                className="bg-white border-[#E63946] text-[#E63946] hover:bg-red-50 shadow-sm whitespace-nowrap"
+                sx={{ borderRadius: "50px", px: { xs: 2, md: 3 }, py: { xs: 1, md: 1.25 }, fontSize: { xs: "0.85rem", md: "1.15rem" }, fontWeight: 600, borderWidth: "1.5px", flexShrink: 0, "&:hover": { borderWidth: "1.5px" } }}
+              >
+                กลับหน้าเมนูอาหาร
+              </Button>
+
+              {!isSmUp && (
+                <IconButton onClick={() => refetch()} className="bg-white border border-gray-200 shadow-sm" sx={{ p: 1.5, borderRadius: "50%" }}>
+                  <RefreshIcon sx={{ color: "text.secondary" }} />
+                </IconButton>
+              )}
+            </Stack>
+          </Box>
+
+          {/* =========================================
+              2. Filter Section
+             ========================================= */}
+          <Paper elevation={0} className="bg-white rounded-3xl shadow-sm border border-gray-200" sx={{ px: { xs: 2.5, md: 5 }, py: { xs: 2.5, md: 4 } }}>
+            <MenuItemOptionFilterBar
+              q={filters.q}
+              status={filters.status}
+              required={filters.required}
+              multiple={filters.multiple}
+              onSearch={(v) => handleFilterChange("q", v)}
+              onStatusChange={(v) => handleFilterChange("status", v)}
+              onRequiredChange={(v) => handleFilterChange("required", v)}
+              onMultipleChange={(v) => handleFilterChange("multiple", v)}
+            />
+            <Typography
+              className="text-[#E63946] font-bold mt-4 flex items-center gap-2"
+              sx={{ fontSize: { xs: "1.1rem", md: "1.2rem" }, fontWeight: 700 }}
             >
-              ย้อนกลับ
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={() => refetch()} // หรือใช้ฟังก์ชัน refresh เดิม
-              disabled={isLoading}
-            >
-              รีเฟรช
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenForm()} // แก้เป็น handleOpenForm
-              disabled={isCreating || isUpdating || isDeleting}
-            >
-              เพิ่มตัวเลือก
-            </Button>
-          </Stack>
-        </Stack>
+              <span className="h-2 w-2 rounded-full bg-[#E63946]" />
+              รายการที่พบทั้งหมด: {totalCount} รายการ
+            </Typography>
+          </Paper>
 
-        {/* FilterBar: ดึงค่าจาก filters object และใช้ handler กลาง */}
-        <MenuItemOptionFilterBar
-          q={filters.q}
-          status={filters.status}
-          required={filters.required}
-          multiple={filters.multiple}
-          onSearch={(v) => handleFilterChange("q", v)}
-          onStatusChange={(v) => handleFilterChange("status", v)}
-          onRequiredChange={(v) => handleFilterChange("required", v)}
-          onMultipleChange={(v) => handleFilterChange("multiple", v)}
-        />
-
-        {/* Active Filters Chips */}
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          sx={{ mb: 1 }}
-          flexWrap="wrap"
-        >
-          <Typography variant="body2" color="text.secondary">
-            พบ {filtered.length} รายการ
-          </Typography>
-
-          {filters.status !== "all" && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={filters.status === "active" ? "พร้อมใช้" : "ปิดใช้งาน"}
-              onDelete={() => handleFilterChange("status", "all")}
-            />
-          )}
-
-          {filters.required !== "all" && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={
-                filters.required === "required" ? "บังคับเลือก" : "ไม่บังคับ"
-              }
-              onDelete={() => handleFilterChange("required", "all")}
-            />
-          )}
-
-          {filters.multiple !== "all" && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={
-                filters.multiple === "multiple"
-                  ? "เลือกได้หลายรายการ"
-                  : "เลือกได้ 1 รายการ"
-              }
-              onDelete={() => handleFilterChange("multiple", "all")}
-            />
-          )}
-
-          {filters.q && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={`ค้นหา: "${filters.q}"`}
-              onDelete={() => handleFilterChange("q", "")}
-            />
-          )}
-        </Stack>
-
-        {/* Table Section (Desktop) */}
-        {isSmUp ? (
-          <Paper
-            variant="outlined"
-            sx={{ borderRadius: 2, overflow: "hidden" }}
-          >
-            <TableContainer>
-              <Table size="medium" sx={{ tableLayout: "fixed" }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell
-                      width="10%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      ลำดับ
-                    </TableCell>
-                    <TableCell
-                      width="25%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      ชื่อกลุ่ม
-                    </TableCell>
-                    <TableCell
-                      width="15%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      จำนวนตัวเลือก
-                    </TableCell>
-                    <TableCell
-                      width="20%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      เมนูที่ใช้งาน
-                    </TableCell>
-                    <TableCell
-                      width="15%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      สถานะ
-                    </TableCell>
-                    <TableCell
-                      width="15%"
-                      align="center"
-                      sx={{ fontWeight: 700 }}
-                    >
-                      การทำงาน
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-
-                <TableBody>
-                  {pageRows.map((r, i) => (
-                    <ManageMenuItemOptionItem
-                      key={r.id}
+          {/* =========================================
+              3. Content
+             ========================================= */}
+          <Box>
+            {isLoading ? (
+              <Box className="flex flex-col justify-center items-center min-h-100 gap-4">
+                <CircularProgress size={60} thickness={4} sx={{ color: "#D32F2F" }} />
+                <Typography variant="h6" className="text-gray-600 font-bold text-xl">
+                  กำลังโหลดข้อมูล...
+                </Typography>
+              </Box>
+            ) : isSmUp ? (
+              <Paper elevation={0} className="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm">
+                <TableContainer>
+                  <Table sx={{ minWidth: 800 }}>
+                    <TableHead className="bg-[#F8FAFC]">
+                      <TableRow>
+                        <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, pl: 4, width: 80 }}>ลำดับ</TableCell>
+                        <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>ชื่อกลุ่มตัวเลือก</TableCell>
+                        <TableCell align="center" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>รูปแบบ</TableCell>
+                        <TableCell align="center" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>บังคับเลือก</TableCell>
+                        <TableCell align="center" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>ตัวเลือกย่อย</TableCell>
+                        <TableCell align="center" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>สถานะ</TableCell>
+                        <TableCell align="right" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, pr: 4 }}>จัดการ</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {pageRows.map((r, i) => (
+                        <ManageMenuItemOptionItem
+                          key={r.id}
+                          row={r}
+                          index={(page - 1) * pageSize + i + 1}
+                          onEdit={() => handleOpenForm(r)}
+                          onDelete={handleDelete}
+                          onToggleActive={handleToggleActive}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                {pageRows.length === 0 && <EmptyState />}
+                <Box className="px-6 py-5 bg-gray-50/50 border-t border-gray-100">
+                  <PaginationBar
+                    page={page}
+                    pageSize={pageSize}
+                    totalCount={totalCount}
+                    onPageChange={setPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                    showSummary
+                    showPageSizeSelect
+                  />
+                </Box>
+              </Paper>
+            ) : (
+              <Stack spacing={2}>
+                {pageRows.length > 0 ? pageRows.map((r, i) => (
+                  <Box key={r.id} className="bg-white rounded-3xl p-2 shadow-sm border border-gray-200">
+                    <MobileMenuItemOption
                       row={r}
-                      index={(page - 1) * pageSize + i + 1} // คำนวณ index แบบใหม่
-                      onEdit={() => handleOpenForm(r)} // ส่ง row เข้าไปใน handleOpenForm
+                      index={(page - 1) * pageSize + i + 1}
+                      onEdit={() => handleOpenForm(r)}
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
                     />
-                  ))}
+                  </Box>
+                )) : <EmptyState />}
+              </Stack>
+            )}
+          </Box>
 
-                  {pageRows.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6}>
-                        <Box sx={{ py: 6, textAlign: "center" }}>
-                          <Typography color="text.secondary">
-                            ไม่พบตัวเลือกเมนู
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+        </Stack>
 
-            <Box sx={{ px: 2, py: 1.5 }}>
+        {/* Mobile Pagination */}
+        {!isSmUp && pageRows.length > 0 && (
+          <Box className="fixed bottom-6 left-4 right-4 z-1200">
+            <Paper elevation={16} className="rounded-[30px] px-2 py-2 border border-gray-200 bg-white/95 backdrop-blur-md shadow-2xl">
               <PaginationBar
                 page={page}
                 pageSize={pageSize}
                 totalCount={totalCount}
                 onPageChange={setPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size);
-                  setPage(1); // Reset ไปหน้า 1 เสมอเมื่อเปลี่ยน size
-                }}
+                showPageSizeSelect={false}
                 showSummary
-                showPageSizeSelect
               />
-            </Box>
-          </Paper>
-        ) : (
-          /* Mobile View */
-          <>
-            <Stack spacing={1.25}>
-              {pageRows.length === 0 ? (
-                <Paper
-                  variant="outlined"
-                  sx={{ p: 4, borderRadius: 2, textAlign: "center" }}
-                >
-                  <Typography color="text.secondary">
-                    ไม่พบตัวเลือกเมนู
-                  </Typography>
-                </Paper>
-              ) : (
-                pageRows.map((r, i) => (
-                  <MobileMenuItemOption
-                    key={r.id}
-                    row={r}
-                    index={(page - 1) * pageSize + i + 1}
-                    onEdit={() => handleOpenForm(r)} // แก้เป็น handleOpenForm
-                    onDelete={handleDelete}
-                    onToggleActive={handleToggleActive}
-                  />
-                ))
-              )}
-            </Stack>
-
-            <PaginationBar
-              page={page}
-              pageSize={pageSize}
-              totalCount={totalCount}
-              onPageChange={setPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setPage(1);
-              }}
-              showSummary
-              showPageSizeSelect
-            />
-          </>
+            </Paper>
+          </Box>
         )}
       </Container>
 
-      {/* Drawer Form: ใช้ formState แทน openForm/editing */}
       <FormMenuItemOption
         open={formState.open}
-        onClose={handleCloseForm} // ใช้ handler ปิดฟอร์ม
-        initial={formState.data ?? undefined} // ส่ง data ไป (ถ้ามี)
+        onClose={handleCloseForm}
+        initial={formState.data ?? undefined}
         onSubmit={handleSubmit}
         isLoading={isCreating || isUpdating}
       />
+    </Box>
+  );
+}
+
+function EmptyState() {
+  return (
+    <Box className="text-center py-16">
+      <Typography variant="h6" className="text-gray-500 font-bold">
+        ไม่พบรายการที่ค้นหา
+      </Typography>
+      <Typography className="text-gray-400 text-sm mt-1">
+        ลองปรับเปลี่ยนคำค้นหาหรือตัวกรองใหม่
+      </Typography>
     </Box>
   );
 }

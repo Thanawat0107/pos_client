@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -51,6 +50,22 @@ export default function MenuDetails() {
   // --- Local State ---
   const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number[]>>({});
+
+  // ✅ Pre-select ค่า IsDefault เมื่อโหลดเมนูเสร็จ (ให้ตรงกับ Quick Add ของ Backend)
+  useEffect(() => {
+    if (!menu) return;
+    const defaults: Record<number, number[]> = {};
+    menu.menuItemOptionGroups.forEach((group) => {
+      const opt = group.menuItemOption;
+      const defaultIds = opt.menuOptionDetails
+        .filter((d) => d.isDefault && !d.isDeleted && d.isUsed)
+        .map((d) => d.id);
+      if (defaultIds.length > 0) {
+        defaults[opt.id] = defaultIds;
+      }
+    });
+    setSelectedOptions(defaults);
+  }, [menu]);
   const [note, setNote] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -280,7 +295,7 @@ export default function MenuDetails() {
                 {menu.menuItemOptionGroups.map((group) => {
                   const opt = group.menuItemOption;
                   return (
-                    <Box key={group.id}>
+                    <Box key={group.menuItemOptionId}>
                       <Stack
                         direction="row"
                         justifyContent="space-between"

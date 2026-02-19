@@ -5,6 +5,7 @@ export interface MenuItemDto {
   name: string;
   description: string;
   basePrice: number;
+  defaultTotalPrice: number;
   imageUrl?: string;
   createdAt: string;
   updatedAt: string;

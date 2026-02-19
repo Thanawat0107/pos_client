@@ -13,6 +13,7 @@ import {
   Paper,
   CircularProgress,
   Alert,
+  Chip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
@@ -34,7 +35,7 @@ type Props = {
   optionList: MenuItemOption[];
   onSubmit: (
     data: CreateMenuItem | UpdateMenuItem,
-    id?: number
+    id?: number,
   ) => Promise<void> | void;
 };
 
@@ -58,12 +59,14 @@ export default function FormMenu({
       basePrice: initial?.basePrice ?? 0,
       imageUrl: initial?.imageUrl ?? "",
       imageFile: undefined as File | undefined,
-      // ป้องกันค่า 0 ตอน Create เพื่อให้ Validation ทำงานถูกต้อง
-      menuCategoryId: initial?.menuCategoryId ?? (categories.length > 0 ? categories[0].id : ""),
+      menuCategoryId:
+        initial?.menuCategoryId ??
+        (categories.length > 0 ? categories[0].id : ""),
       isUsed: initial ? initial.isUsed && !initial.isDeleted : true,
       menuItemOptionGroups:
         initial?.menuItemOptionGroups?.map((g) => ({
-          id: g.id,
+          // ใช้ id ของ group ถ้ามี (กรณี update)
+          id: (g as any).id,
           menuItemOptionId: g.menuItemOptionId,
         })) ?? [],
     },
@@ -71,7 +74,7 @@ export default function FormMenu({
       try {
         const { isUsed, menuItemOptionGroups, ...rest } = values;
 
-        // กรอง Option ที่เป็นค่าว่างทิ้งไป
+        // กรอง Option ที่เป็นค่าว่างทิ้งไป และแปลง id เป็น number
         const formattedGroups = menuItemOptionGroups
           .filter((g) => g.menuItemOptionId)
           .map((g) => ({
@@ -86,8 +89,8 @@ export default function FormMenu({
         };
 
         if (!payload.menuCategoryId) {
-            alert("กรุณาเลือกหมวดหมู่สินค้า");
-            return;
+          alert("กรุณาเลือกหมวดหมู่สินค้า");
+          return;
         }
 
         await onSubmit(payload as any, initial?.id);
@@ -109,7 +112,7 @@ export default function FormMenu({
     setFieldValue,
     isSubmitting,
     resetForm,
-    submitCount
+    submitCount,
   } = formik;
 
   // Reset Form เมื่อเปิด/ปิด
@@ -138,12 +141,17 @@ export default function FormMenu({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Helper สำหรับหาข้อมูล MenuItemOption เพื่อแสดงผล Details
+  const getSelectedOptionInfo = (optionId: number | string) => {
+    return optionList.find((opt) => opt.id === Number(optionId));
+  };
+
   return (
     <Drawer
       anchor="right"
       open={open}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: 1, sm: 500 } } }}
+      PaperProps={{ sx: { width: { xs: 1, sm: 600 } } }}
     >
       <FormikProvider value={formik}>
         <Box
@@ -156,25 +164,23 @@ export default function FormMenu({
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            sx={{ p: 2 }}
+            sx={{ px: 3, py: 2.5 }}
           >
-            <Typography variant="h6" fontWeight={800}>
+            <Typography sx={{ fontSize: "1.4rem", fontWeight: 800 }}>
               {initial ? "แก้ไขเมนู" : "เพิ่มเมนูใหม่"}
             </Typography>
-            <IconButton onClick={onClose} disabled={isSubmitting}>
-              <CloseIcon />
+            <IconButton onClick={onClose} disabled={isSubmitting} size="medium">
+              <CloseIcon sx={{ fontSize: "1.5rem" }} />
             </IconButton>
           </Stack>
           <Divider />
 
           {/* Body */}
-          <Stack spacing={2.5} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-            
-            {/* Alert แจ้งเตือนเมื่อกดบันทึกแล้วมี Error */}
+          <Stack spacing={3} sx={{ px: 3, py: 3, flex: 1, overflowY: "auto" }}>
             {Object.keys(errors).length > 0 && submitCount > 0 && (
-                <Alert severity="error">
-                    กรุณากรอกข้อมูลให้ครบถ้วน (ตรวจสอบช่องสีแดง)
-                </Alert>
+              <Alert severity="error">
+                กรุณากรอกข้อมูลให้ครบถ้วน (ตรวจสอบช่องสีแดง)
+              </Alert>
             )}
 
             {/* 1. Image Upload */}
@@ -193,31 +199,39 @@ export default function FormMenu({
                     src={imagePreview}
                     sx={{
                       width: "100%",
-                      height: 200,
+                      height: 220,
                       objectFit: "cover",
-                      borderRadius: 2,
-                      border: "1px solid #eee"
+                      borderRadius: 3,
+                      border: "1.5px solid",
+                      borderColor: "divider",
                     }}
                   />
                   <IconButton
                     onClick={handleRemoveImage}
-                    size="small"
                     sx={{
                       position: "absolute",
-                      top: 8,
-                      right: 8,
+                      top: 10,
+                      right: 10,
                       bgcolor: "white",
+                      boxShadow: 2,
                       "&:hover": { bgcolor: "#f5f5f5" },
                     }}
                   >
-                    <CloseIcon fontSize="small" />
+                    <CloseIcon sx={{ fontSize: "1.2rem" }} />
                   </IconButton>
                 </Box>
               ) : (
                 <Button
                   variant="outlined"
                   fullWidth
-                  sx={{ height: 100, borderStyle: "dashed", color: "text.secondary" }}
+                  sx={{
+                    height: 120,
+                    borderStyle: "dashed",
+                    borderWidth: "2px",
+                    borderRadius: 3,
+                    fontSize: "1rem",
+                    color: "text.secondary",
+                  }}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   คลิกเพื่ออัปโหลดรูปภาพ
@@ -235,11 +249,13 @@ export default function FormMenu({
               error={touched.name && !!errors.name}
               helperText={touched.name && errors.name}
               fullWidth
+              InputProps={{ sx: { fontSize: "1rem", borderRadius: 2 } }}
+              InputLabelProps={{ sx: { fontSize: "1rem" } }}
             />
 
-            <Stack direction="row" spacing={2}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
-                label="ราคา"
+                label="ราคาเริ่มต้น (บาท)"
                 name="basePrice"
                 type="number"
                 value={values.basePrice}
@@ -247,7 +263,8 @@ export default function FormMenu({
                 onBlur={handleBlur}
                 error={touched.basePrice && !!errors.basePrice}
                 fullWidth
-                InputProps={{ inputProps: { min: 0 } }}
+                InputProps={{ inputProps: { min: 0 }, sx: { fontSize: "1rem", borderRadius: 2 } }}
+                InputLabelProps={{ sx: { fontSize: "1rem" } }}
               />
               <TextField
                 select
@@ -259,9 +276,11 @@ export default function FormMenu({
                 error={touched.menuCategoryId && !!errors.menuCategoryId}
                 helperText={touched.menuCategoryId && errors.menuCategoryId}
                 fullWidth
+                InputProps={{ sx: { fontSize: "1rem", borderRadius: 2 } }}
+                InputLabelProps={{ sx: { fontSize: "1rem" } }}
               >
                 {categories.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
+                  <MenuItem key={c.id} value={c.id} sx={{ fontSize: "1rem", py: 1.25 }}>
                     {c.name}
                   </MenuItem>
                 ))}
@@ -269,80 +288,152 @@ export default function FormMenu({
             </Stack>
 
             <TextField
-              label="รายละเอียด"
+              label="รายละเอียดเมนู"
               name="description"
               multiline
-              rows={2}
+              rows={3}
               value={values.description}
               onChange={handleChange}
               onBlur={handleBlur}
               fullWidth
+              InputProps={{ sx: { fontSize: "1rem", borderRadius: 2 } }}
+              InputLabelProps={{ sx: { fontSize: "1rem" } }}
             />
 
-            {/* 3. Option Groups (FieldArray) */}
+            {/* 3. Option Groups (Dynamic Fields) */}
             <Box>
               <Stack
                 direction="row"
                 justifyContent="space-between"
                 alignItems="center"
-                mb={1}
+                mb={1.5}
               >
-                <Typography variant="subtitle2" fontWeight="bold">
-                  ตัวเลือกเพิ่มเติม (Options)
+                <Typography sx={{ fontSize: "1rem", fontWeight: 700 }}>
+                  ตัวเลือกเพิ่มเติม
                 </Typography>
                 <Button
                   startIcon={<AddIcon />}
-                  size="small"
                   onClick={() =>
                     setFieldValue("menuItemOptionGroups", [
                       ...values.menuItemOptionGroups,
                       { menuItemOptionId: "" },
                     ])
                   }
+                  sx={{ fontSize: "0.9rem", fontWeight: 600 }}
                 >
-                  เพิ่ม
+                  เพิ่มกลุ่มตัวเลือก
                 </Button>
               </Stack>
 
               <FieldArray name="menuItemOptionGroups">
                 {({ remove }) => (
-                  <Stack spacing={1}>
-                    {values.menuItemOptionGroups.map((group, index) => (
-                      <Stack
-                        key={index}
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                      >
-                        <TextField
-                          select
-                          size="small"
-                          fullWidth
-                          label={`ตัวเลือกที่ ${index + 1}`}
-                          name={`menuItemOptionGroups.${index}.menuItemOptionId`}
-                          value={group.menuItemOptionId}
-                          onChange={handleChange}
-                          error={touched.menuItemOptionGroups?.[index]?.menuItemOptionId && !!(errors.menuItemOptionGroups as any)?.[index]?.menuItemOptionId}
+                  <Stack spacing={2}>
+                    {values.menuItemOptionGroups.map((group, index) => {
+                      const selectedOpt = getSelectedOptionInfo(
+                        group.menuItemOptionId,
+                      );
+                      return (
+                        <Paper
+                          key={index}
+                          variant="outlined"
+                          sx={{ p: 2.5, borderRadius: 2, position: "relative" }}
                         >
-                          {optionList.map((opt) => (
-                            <MenuItem key={opt.id} value={opt.id}>
-                              {opt.name}{" "}
-                              <Typography variant="caption" color="text.secondary" ml={1}>
-                                {opt.isMultiple ? "(เลือกได้หลาย)" : "(เลือกได้ 1)"}
-                              </Typography>
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                        <IconButton color="error" onClick={() => remove(index)}>
-                          <DeleteOutlineIcon />
-                        </IconButton>
-                      </Stack>
-                    ))}
-                    
+                          <Stack spacing={2}>
+                            <Stack
+                              direction="row"
+                              spacing={1.5}
+                              alignItems="flex-start"
+                            >
+                              <TextField
+                                select
+                                fullWidth
+                                label={`กลุ่มตัวเลือกที่ ${index + 1}`}
+                                name={`menuItemOptionGroups.${index}.menuItemOptionId`}
+                                value={group.menuItemOptionId}
+                                onChange={handleChange}
+                                error={
+                                  touched.menuItemOptionGroups?.[index]
+                                    ?.menuItemOptionId &&
+                                  !!(errors.menuItemOptionGroups as any)?.[
+                                    index
+                                  ]?.menuItemOptionId
+                                }
+                                InputProps={{ sx: { fontSize: "0.95rem", borderRadius: 2 } }}
+                                InputLabelProps={{ sx: { fontSize: "0.95rem" } }}
+                              >
+                                {optionList.map((opt) => (
+                                  <MenuItem key={opt.id} value={opt.id} sx={{ fontSize: "0.95rem", py: 1.25 }}>
+                                    {opt.name}{" "}
+                                    {opt.isRequired ? "(บังคับ)" : "(ไม่บังคับ)"}
+                                  </MenuItem>
+                                ))}
+                              </TextField>
+                              <IconButton
+                                color="error"
+                                onClick={() => remove(index)}
+                                sx={{ mt: 0.5 }}
+                              >
+                                <DeleteOutlineIcon sx={{ fontSize: "1.4rem" }} />
+                              </IconButton>
+                            </Stack>
+
+                            {/* แสดงส่วนรายละเอียดของ Option ที่เลือก */}
+                            {selectedOpt && (
+                              <Box
+                                sx={{
+                                  pl: 1.5,
+                                  borderLeft: "3px solid",
+                                  borderColor: "primary.main",
+                                  py: 0.75,
+                                }}
+                              >
+                                <Typography
+                                  sx={{ fontSize: "0.875rem" }}
+                                  color="text.secondary"
+                                  display="block"
+                                  gutterBottom
+                                >
+                                  รูปแบบ:{" "}
+                                  {selectedOpt.isMultiple
+                                    ? "เลือกได้หลายอย่าง"
+                                    : "เลือกได้เพียง 1 อย่าง"}
+                                </Typography>
+                                <Stack direction="row" flexWrap="wrap" gap={1}>
+                                  {selectedOpt.menuOptionDetails.map(
+                                    (detail) => (
+                                      <Chip
+                                        key={detail.id}
+                                        label={`${detail.name} (+${detail.extraPrice})`}
+                                        size="small"
+                                        variant="outlined"
+                                        color={
+                                          detail.isDefault ? "primary" : "default"
+                                        }
+                                        sx={{ fontSize: "0.8rem", height: 26 }}
+                                      />
+                                    ),
+                                  )}
+                                </Stack>
+                              </Box>
+                            )}
+                          </Stack>
+                        </Paper>
+                      );
+                    })}
+
                     {values.menuItemOptionGroups.length === 0 && (
-                      <Paper variant="outlined" sx={{ p: 2, textAlign: "center", borderStyle: "dashed" }}>
-                        <Typography variant="caption" color="text.secondary">
-                          ยังไม่มีตัวเลือก (เช่น ระดับความหวาน, ขนาดแก้ว)
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 3.5,
+                          textAlign: "center",
+                          borderStyle: "dashed",
+                          borderRadius: 2,
+                          bgcolor: "grey.50",
+                        }}
+                      >
+                        <Typography sx={{ fontSize: "0.95rem" }} color="text.secondary">
+                          ยังไม่มีการตั้งค่าตัวเลือกเพิ่มเติม
                         </Typography>
                       </Paper>
                     )}
@@ -351,31 +442,34 @@ export default function FormMenu({
               </FieldArray>
             </Box>
 
-            {/* 4. Status Switch (แสดงเฉพาะตอนแก้ไข) */}
+            {/* 4. Status Switch */}
             {initial && (
               <Paper
                 variant="outlined"
                 sx={{
-                  p: 2,
+                  p: 2.5,
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  borderRadius: 2,
+                  borderWidth: "1.5px",
                   borderColor: values.isUsed ? "success.main" : "divider",
-                  bgcolor: values.isUsed ? "success.lighter" : "transparent"
+                  bgcolor: values.isUsed ? "success.lighter" : "transparent",
                 }}
               >
                 <Box>
-                    <Typography variant="body2" fontWeight="bold">
-                    {values.isUsed ? "สถานะ: เปิดขาย (Active)" : "สถานะ: ปิดขาย (Inactive)"}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        {values.isUsed ? "ลูกค้าสามารถสั่งเมนูนี้ได้" : "เมนูนี้จะไม่แสดงให้ลูกค้าเห็น"}
-                    </Typography>
+                  <Typography sx={{ fontSize: "1rem", fontWeight: 700 }}>
+                    {values.isUsed ? "สถานะ: พร้อมขาย" : "สถานะ: ปิดการขาย"}
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.875rem" }} color="text.secondary">
+                    กำหนดการแสดงผลของเมนูในหน้าแอปพลิเคชันลูกค้า
+                  </Typography>
                 </Box>
                 <Switch
                   checked={values.isUsed}
                   onChange={(e) => setFieldValue("isUsed", e.target.checked)}
                   color="success"
+                  size="medium"
                 />
               </Paper>
             )}
@@ -386,9 +480,15 @@ export default function FormMenu({
           <Stack
             direction="row"
             spacing={2}
-            sx={{ p: 2, bgcolor: "background.paper" }}
+            sx={{ px: 3, py: 2.5, bgcolor: "background.paper" }}
           >
-            <Button onClick={onClose} fullWidth variant="outlined" disabled={isSubmitting}>
+            <Button
+              onClick={onClose}
+              fullWidth
+              variant="outlined"
+              disabled={isSubmitting}
+              sx={{ fontSize: "1rem", fontWeight: 600, py: 1.25, borderRadius: 2 }}
+            >
               ยกเลิก
             </Button>
             <Button
@@ -396,8 +496,13 @@ export default function FormMenu({
               variant="contained"
               fullWidth
               disabled={isSubmitting || categories.length === 0}
+              sx={{ fontSize: "1rem", fontWeight: 700, py: 1.25, borderRadius: 2 }}
             >
-              {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "บันทึกข้อมูล"}
+              {isSubmitting ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "บันทึกเมนู"
+              )}
             </Button>
           </Stack>
         </Box>

@@ -40,9 +40,6 @@ export default function MobileCategoryItem({
             <Typography variant="subtitle1" fontWeight={800} noWrap>
               {row.name}
             </Typography>
-            <Typography variant="body2" color="text.secondary" noWrap>
-              /{row.slug}
-            </Typography>
           </Stack>
 
           <Chip

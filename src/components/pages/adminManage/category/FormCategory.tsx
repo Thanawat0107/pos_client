@@ -29,15 +29,6 @@ type Props = {
   isLoading?: boolean;
 };
 
-// Helper: สร้าง Slug อัตโนมัติ
-const generateSlug = (text: string) =>
-  text
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9ก-๙\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-
 export default function FormCategory({
   open,
   onClose,
@@ -51,7 +42,6 @@ export default function FormCategory({
     initialValues: {
       id: initial?.id ?? 0,
       name: initial?.name ?? "",
-      slug: initial?.slug ?? "",
       isUsed: initial?.isUsed ?? true,
       isDeleted: initial?.isDeleted ?? false,
     },
@@ -61,14 +51,12 @@ export default function FormCategory({
           const payload: UpdateMenuCategory = {
             id: initial.id,
             name: values.name,
-            slug: values.slug,
             isUsed: values.isUsed,
           };
           await onSubmit(payload);
         } else {
           const payload: CreateMenuCategory = {
             name: values.name,
-            slug: values.slug,
           };
           await onSubmit(payload);
         }
@@ -95,13 +83,6 @@ export default function FormCategory({
   useEffect(() => {
     if (!open) resetForm();
   }, [open, resetForm]);
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleChange(e);
-    if (!initial?.id && !touched.slug) {
-      setFieldValue("slug", generateSlug(e.target.value));
-    }
-  };
 
   return (
     <Drawer
@@ -139,27 +120,12 @@ export default function FormCategory({
             label="ชื่อหมวดหมู่"
             name="name"
             value={values.name}
-            onChange={handleNameChange} // 🟢 ใช้ Handler พิเศษที่สร้าง Slug อัตโนมัติ
+            onChange={handleChange}
             onBlur={handleBlur}
             error={touched.name && !!errors.name}
             helperText={touched.name && errors.name}
             fullWidth
             autoFocus
-          />
-
-          <TextField
-            label="Slug (URL)"
-            name="slug"
-            value={values.slug}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={touched.slug && !!errors.slug}
-            helperText={
-              (touched.slug && errors.slug) || "ใช้สำหรับ URL / อ้างอิงในระบบ"
-            }
-            fullWidth
-            // ถ้าต้องการห้ามแก้ Slug ตอน Edit ให้ uncomment บรรทัดล่างครับ
-            // InputProps={{ readOnly: !!initial?.id }}
           />
 
           {/* Status Switch (Design แบบเดียวกับหน้าเมนู: แสดงเฉพาะตอนแก้ไข) */}

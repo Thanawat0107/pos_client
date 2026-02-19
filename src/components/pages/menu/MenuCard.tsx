@@ -120,7 +120,7 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx, onClick }: Props) {
               "&:hover": { filter: "brightness(110%)", boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}` },
             }}
           >
-            Add to Cart
+            Add to cart
           </Button>
         </Box>
       </CardContent>
