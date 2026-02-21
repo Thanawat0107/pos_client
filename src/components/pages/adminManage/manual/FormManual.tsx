@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Drawer,
   Box,
@@ -13,9 +12,12 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  ImageList,
+  ImageListItem,
+  ImageListItemBar,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import DescriptionIcon from "@mui/icons-material/Description"; // เพิ่มไอคอนสำหรับ PDF
+import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import { FormikProvider, useFormik } from "formik";
 import { useEffect, useRef, useState } from "react";
 import type { Manual } from "../../../../@types/dto/Manual";
@@ -41,25 +43,38 @@ export default function FormManual({
   onSubmit,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [isPdf, setIsPdf] = useState(false);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
 
   const formik = useFormik({
     enableReinitialize: true,
     validationSchema: manualSchema,
     initialValues: {
-      title: initial?.title ?? "", // [เพิ่ม] หัวข้อ
-      location: initial?.location ?? "", // [เพิ่ม] สถานที่
+      title: initial?.title ?? "",
+      location: initial?.location ?? "",
       content: initial?.content ?? "",
       category: initial?.category ?? "",
       targetRole: initial?.targetRole ?? "Customer",
-      fileUrl: initial?.fileUrl ?? "",
-      file: undefined as File | undefined,
+      // รูปภาพเดิมที่ต้องการคงไว้ (กรณี update)
+      keepImages: initial?.images ?? [] as string[],
+      // รูปภาพใหม่ที่จะอัปโหลด
+      newImages: [] as File[],
       isUsed: initial ? initial.isUsed : true,
     },
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        await onSubmit(values as any, initial?.id);
+        const { isUsed, keepImages, newImages, ...rest } = values;
+        const payload: CreateManual | UpdateManual = initial
+          ? {
+              ...rest,
+              isUsed,
+              keepImages,
+              newImages: newImages.length > 0 ? newImages : null,
+            }
+          : {
+              ...rest,
+              newImages: newImages.length > 0 ? newImages : null,
+            };
+        await onSubmit(payload, initial?.id);
         onClose();
       } catch (error) {
         console.error("Submit error:", error);
@@ -83,36 +98,37 @@ export default function FormManual({
 
   useEffect(() => {
     if (open) {
-      setFilePreview(initial?.fileUrl || null);
-      setIsPdf(initial?.fileUrl?.toLowerCase().endsWith(".pdf") || false);
+      // ไม่ต้องทำอะไรพิเศษ เพราะ enableReinitialize จะ reset ให้อัตโนมัติ
+      setNewImagePreviews([]);
     } else {
       resetForm();
-      setFilePreview(null);
-      setIsPdf(false);
+      setNewImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [open, initial, resetForm]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFieldValue("file", file);
-      if (file.type.startsWith("image/")) {
-        setFilePreview(URL.createObjectURL(file));
-        setIsPdf(false);
-      } else if (file.type === "application/pdf") {
-        setFilePreview(file.name);
-        setIsPdf(true);
-      }
-    }
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const previews = files.map((f) => URL.createObjectURL(f));
+    setFieldValue("newImages", [...values.newImages, ...files]);
+    setNewImagePreviews((prev) => [...prev, ...previews]);
+    // reset input เพื่อให้เลือกไฟล์เดิมซ้ำได้
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleRemoveFile = () => {
-    setFieldValue("file", undefined);
-    setFieldValue("fileUrl", "");
-    setFilePreview(null);
-    setIsPdf(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  // ลบรูปใหม่ออกจาก newImages
+  const handleRemoveNewImage = (index: number) => {
+    const updatedFiles = values.newImages.filter((_, i) => i !== index);
+    const updatedPreviews = newImagePreviews.filter((_, i) => i !== index);
+    setFieldValue("newImages", updatedFiles);
+    setNewImagePreviews(updatedPreviews);
+  };
+
+  // ลบรูปเดิมออกจาก keepImages
+  const handleRemoveKeepImage = (index: number) => {
+    const updated = values.keepImages.filter((_, i) => i !== index);
+    setFieldValue("keepImages", updated);
   };
 
   return (
@@ -150,79 +166,98 @@ export default function FormManual({
               <Alert severity="error">กรุณากรอกข้อมูลให้ครบถ้วน</Alert>
             )}
 
-            {/* 1. File Upload Section */}
+            {/* 1. Image Upload Section */}
             <Box>
-              <Typography variant="subtitle2" gutterBottom fontWeight={700}>
-                รูปภาพหรือไฟล์คู่มือ (Image/PDF)
-              </Typography>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  รูปภาพคู่มือ
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<AddPhotoAlternateIcon />}
+                  onClick={() => fileInputRef.current?.click()}
+                  sx={{ fontSize: "0.85rem" }}
+                >
+                  เพิ่มรูปภาพ
+                </Button>
+              </Stack>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*, .pdf"
+                accept="image/*"
+                multiple
                 hidden
-                onChange={handleFileChange}
+                onChange={handleImagesChange}
               />
-              {filePreview ? (
-                <Box position="relative" sx={{ mt: 1 }}>
-                  {isPdf ? (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 4,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        bgcolor: "#f9f9f9",
-                        borderStyle: "dashed",
-                      }}
-                    >
-                      <DescriptionIcon sx={{ fontSize: 48, color: "error.main" }} />
-                      <Typography variant="caption" sx={{ mt: 1 }}>{values.file?.name || "ไฟล์ PDF"}</Typography>
-                    </Paper>
-                  ) : (
-                    <Box
-                      component="img"
-                      src={filePreview}
-                      sx={{
-                        width: "100%",
-                        height: 200,
-                        objectFit: "contain",
-                        bgcolor: "#f5f5f5",
-                        borderRadius: 2,
-                        border: "1px solid #eee",
-                      }}
-                    />
-                  )}
-                  <IconButton
-                    onClick={handleRemoveFile}
-                    size="small"
-                    sx={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      bgcolor: "white",
-                      boxShadow: 2,
-                      "&:hover": { bgcolor: "#f5f5f5" },
-                    }}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
+
+              {/* รูปภาพเดิม (keepImages) */}
+              {values.keepImages.length > 0 && (
+                <Box mb={1.5}>
+                  <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
+                    รูปภาพปัจจุบัน
+                  </Typography>
+                  <ImageList cols={3} gap={8} sx={{ m: 0 }}>
+                    {values.keepImages.map((url, i) => (
+                      <ImageListItem key={i} sx={{ borderRadius: 1.5, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+                        <img src={url} alt={`existing-${i}`} style={{ height: 90, objectFit: "cover", width: "100%" }} />
+                        <ImageListItemBar
+                          sx={{ background: "rgba(0,0,0,0.35)", height: 28 }}
+                          actionIcon={
+                            <IconButton size="small" sx={{ color: "white", p: 0.25 }} onClick={() => handleRemoveKeepImage(i)}>
+                              <CloseIcon sx={{ fontSize: "1rem" }} />
+                            </IconButton>
+                          }
+                          actionPosition="right"
+                          position="bottom"
+                        />
+                      </ImageListItem>
+                    ))}
+                  </ImageList>
                 </Box>
-              ) : (
+              )}
+
+              {/* รูปภาพใหม่ (newImages preview) */}
+              {newImagePreviews.length > 0 && (
+                <Box mb={1.5}>
+                  <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
+                    รูปภาพที่จะอัปโหลด
+                  </Typography>
+                  <ImageList cols={3} gap={8} sx={{ m: 0 }}>
+                    {newImagePreviews.map((preview, i) => (
+                      <ImageListItem key={i} sx={{ borderRadius: 1.5, overflow: "hidden", border: "1.5px dashed", borderColor: "primary.main" }}>
+                        <img src={preview} alt={`new-${i}`} style={{ height: 90, objectFit: "cover", width: "100%" }} />
+                        <ImageListItemBar
+                          sx={{ background: "rgba(0,0,0,0.35)", height: 28 }}
+                          actionIcon={
+                            <IconButton size="small" sx={{ color: "white", p: 0.25 }} onClick={() => handleRemoveNewImage(i)}>
+                              <CloseIcon sx={{ fontSize: "1rem" }} />
+                            </IconButton>
+                          }
+                          actionPosition="right"
+                          position="bottom"
+                        />
+                      </ImageListItem>
+                    ))}
+                  </ImageList>
+                </Box>
+              )}
+
+              {values.keepImages.length === 0 && newImagePreviews.length === 0 && (
                 <Button
                   variant="outlined"
                   fullWidth
                   sx={{
-                    height: 120,
+                    height: 100,
                     borderStyle: "dashed",
                     color: "text.secondary",
                     flexDirection: "column",
-                    gap: 1,
+                    gap: 0.5,
                   }}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Typography variant="body2">คลิกเพื่ออัปโหลดรูปภาพหรือ PDF</Typography>
-                  <Typography variant="caption" color="text.disabled">รองรับ .jpg, .png, .pdf</Typography>
+                  <AddPhotoAlternateIcon sx={{ fontSize: "2rem" }} />
+                  <Typography variant="body2">คลิกเพื่ออัปโหลดรูปภาพ</Typography>
+                  <Typography variant="caption" color="text.disabled">รองรับ .jpg, .png, .webp (เลือกได้หลายรูป)</Typography>
                 </Button>
               )}
             </Box>

@@ -28,6 +28,7 @@ export const manualApi = createApi({
         pageNumber?: number;
         pageSize?: number;
         category?: string;
+        targetRole?: string; // filter ตามกลุ่มเป้าหมาย (admin ใช้)
       }
     >({
       query: (params) => ({
@@ -68,6 +69,14 @@ export const manualApi = createApi({
       invalidatesTags: ["Manual"],
     }),
 
+    // GET manuals/categories/{role} — ดึงหมวดหมู่ตาม role
+    getManualCategories: builder.query<string[], string>({
+      query: (role) => `manuals/categories/${role}`,
+      transformResponse: (response: ApiResponse<string[]>) =>
+        response.result ?? [],
+      providesTags: ["Manual"],
+    }),
+
     deleteManual: builder.mutation<void, number>({
       query: (id) => ({
         url: `manuals/delete/${id}`,
@@ -87,6 +96,7 @@ export const manualApi = createApi({
 export const {
   useGetManualsQuery,
   useGetManualByIdQuery,
+  useGetManualCategoriesQuery,
   useCreateManualMutation,
   useUpdateManualMutation,
   useDeleteManualMutation,

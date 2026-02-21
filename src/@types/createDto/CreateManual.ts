@@ -4,5 +4,5 @@ export interface CreateManual {
   location?: string;   // เพิ่มใหม่
   category: string;
   targetRole: string;
-  file?: File | null;
+  newImages?: File[] | null;
 }

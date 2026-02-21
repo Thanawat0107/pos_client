@@ -5,5 +5,6 @@ export interface UpdateManual {
   category?: string;
   targetRole?: string;
   isUsed?: boolean;
-  file?: File | null;
+  keepImages?: string[];
+  newImages?: File[] | null;
 }

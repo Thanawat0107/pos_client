@@ -74,7 +74,7 @@ export default function ManageManualList() {
   const [updateManual, { isLoading: isUpdating }] = useUpdateManualMutation();
   const [deleteManual, { isLoading: isDeleting }] = useDeleteManualMutation();
 
-  const rows: Manual[] = manualData?.result ?? [];
+  const rows: Manual[] = useMemo(() => manualData?.result ?? [], [manualData]);
 
   useEffect(() => {
     setPage(1);
@@ -138,10 +138,18 @@ export default function ManageManualList() {
     if (!item) return;
 
     try {
-      // ส่งข้อมูลครบถ้วนตามความต้องการของ Backend
+      // แมป images → keepImages ให้ตรงกับ UpdateManual interface
       await updateManual({
         id,
-        data: { ...item, isUsed: next } as UpdateManual,
+        data: {
+          title: item.title,
+          content: item.content,
+          location: item.location,
+          category: item.category,
+          targetRole: item.targetRole,
+          isUsed: next,
+          keepImages: item.images,
+        },
       }).unwrap();
     } catch (error) {
       console.error("Toggle failed:", error);

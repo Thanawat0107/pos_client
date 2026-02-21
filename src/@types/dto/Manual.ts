@@ -1,11 +1,11 @@
 export interface Manual {
   id: number;
-  title: string;     // เพิ่มใหม่
+  title: string;
   content?: string;
-  location?: string;  // เพิ่มใหม่ (Optional)
+  location?: string;
   category: string;
   targetRole: string;
-  fileUrl: string;
+  images: string[];
   createAt: string;
   updateAt: string;
   isUsed: boolean;
