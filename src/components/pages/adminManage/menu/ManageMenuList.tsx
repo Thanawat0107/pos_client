@@ -217,10 +217,10 @@ export default function ManageMenuList() {
       <Container
         maxWidth="xl"
         disableGutters={!isSmUp}
-        className="px-6 md:px-12 pt-8 md:pt-12"
+        className="px-6 md:px-12 pt-6 md:pt-8"
       >
         {/* ใช้ Stack สร้างระยะห่าง (Gap) ระหว่าง Section ให้ขาดออกจากกันอย่างชัดเจน */}
-        <Stack spacing={{ xs: 3, md: 5 }}>
+        <Stack spacing={{ xs: 2, md: 2.5 }}>
           {/* =========================================
               1. Header & Buttons Section 
              ========================================= */}
@@ -228,15 +228,15 @@ export default function ManageMenuList() {
             <Stack
               direction="row"
               justifyContent="space-between"
-              alignItems="flex-start"
-              className="mb-4"
+              alignItems="flex-end"
+              className="mb-3"
             >
               <Box>
                 <Typography
                   className="text-gray-900"
                   sx={{
                     fontWeight: 800,
-                    fontSize: { xs: "1.6rem", md: "2.75rem" },
+                    fontSize: { xs: "1.6rem", md: "2.2rem" },
                     letterSpacing: "-0.02em",
                   }}
                 >
@@ -244,33 +244,18 @@ export default function ManageMenuList() {
                 </Typography>
                 <Typography
                   className="text-gray-500"
-                  sx={{ fontSize: { xs: "0.95rem", md: "1.25rem" }, mt: 0.5 }}
+                  sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
                 >
                   ตรวจสอบ เพิ่ม แก้ไข หรือปิดการขายรายการอาหาร
                 </Typography>
               </Box>
-
-              {/* ปุ่มรีเฟรชกลมๆ บน Desktop มุมขวา */}
-              {isSmUp && (
-                <Tooltip title="รีเฟรชข้อมูล">
-                  <IconButton
-                    onClick={() => refetch()}
-                    className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
-                    sx={{ p: 1.5, borderRadius: "50%" }}
-                  >
-                    <RefreshIcon
-                      sx={{ fontSize: "1.75rem", color: "text.secondary" }}
-                    />
-                  </IconButton>
-                </Tooltip>
-              )}
             </Stack>
 
             {/* กลุ่มปุ่มกด - ทรง Pill สีแดงตามแบบ */}
             <Stack
               direction="row"
               spacing={1.5}
-              className="mt-4 overflow-x-auto pb-1 no-scrollbar"
+              className="overflow-x-auto pb-1 no-scrollbar"
               alignItems="center"
               sx={{ flexWrap: "nowrap" }}
             >
@@ -327,16 +312,16 @@ export default function ManageMenuList() {
                 สูตรอาหาร
               </Button>
 
-              {/* ปุ่มรีเฟรชสำหรับมือถือ */}
-              {!isSmUp && (
+              {/* ปุ่มรีเฟรช */}
+              <Tooltip title="รีเฟรชข้อมูล">
                 <IconButton
                   onClick={() => refetch()}
-                  className="bg-white border border-gray-200 shadow-sm"
-                  sx={{ p: 1.5, borderRadius: "50%" }}
+                  className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
+                  sx={{ p: 1, borderRadius: "50%", flexShrink: 0 }}
                 >
-                  <RefreshIcon sx={{ color: "text.secondary" }} />
+                  <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
                 </IconButton>
-              )}
+              </Tooltip>
             </Stack>
           </Box>
 
@@ -346,7 +331,7 @@ export default function ManageMenuList() {
           <Paper
             elevation={0}
             className="bg-white rounded-[24px] shadow-sm border border-gray-200"
-            sx={{ px: { xs: 2.5, md: 5 }, py: { xs: 2.5, md: 4 } }}
+            sx={{ px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
           >
             <MenuFilterBar
               q={filters.q}

@@ -22,59 +22,97 @@ const CustomerManual = () => {
     pageSize: 20,
   });
 
+  const count = data?.result?.length ?? 0;
+
   return (
-    // เปลี่ยนพื้นหลังเป็นสีเทาอ่อนมากเพื่อให้ Card สีขาวดูเด่นและสะอาด
-    <Box sx={{ bgcolor: "#F9FAFB", minHeight: "100vh", pb: 5 }}>
-      {/* 1. Modern Minimal Header */}
-      <Box sx={{ bgcolor: "white", pt: 6, pb: 4, px: 2 }}>
+    <Box sx={{ bgcolor: "#F1F5F9", minHeight: "100vh", pb: 6 }}>
+
+      {/* ===== Hero Banner ===== */}
+      <Box
+        sx={{
+          background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)",
+          pt: 5,
+          pb: 7,
+          px: 3,
+        }}
+      >
         <Container maxWidth="sm">
-          <Stack spacing={0.5}>
-            <Typography
-              variant="h4"
-              fontWeight="900"
-              sx={{ color: "#111827", letterSpacing: "-0.5px" }}
-            >
-              Service Guide
-            </Typography>
-            <Typography variant="body1" sx={{ color: "#6B7280" }}>
-              ค้นหาจุดบริการและวิธีใช้งานที่ถูกต้อง
-            </Typography>
-          </Stack>
+          {/* ไอคอนห้อง / แผนที่ */}
+          <Typography sx={{ fontSize: 52, lineHeight: 1, mb: 1 }}>🗺️</Typography>
+
+          <Typography
+            sx={{
+              fontSize: "34px",
+              fontWeight: 900,
+              color: "#fff",
+              letterSpacing: "-0.5px",
+              lineHeight: 1.1,
+              mb: 0.75,
+            }}
+          >
+            จุดบริการของร้าน
+          </Typography>
+          <Typography
+            sx={{ fontSize: "17px", color: "rgba(255,255,255,0.75)", fontWeight: 500 }}
+          >
+            ช้อนส้อม · น้ำดื่ม · ห้องน้ำ อยู่ที่ไหน?
+          </Typography>
         </Container>
       </Box>
 
-      {/* 2. Category Filter - เอา Paper และ Border สีเหลืองออก */}
-      <Box sx={{ mt: -2 }}>
-        <CategoryFilter
-          selected={selectedCategory}
-          onSelect={setSelectedCategory}
-        />
-      </Box>
+      {/* ===== Category Filter — ขึ้นทับ Banner เล็กน้อย ===== */}
+      <Container maxWidth="sm" sx={{ mt: -3 }}>
+        <Box
+          sx={{
+            bgcolor: "white",
+            borderRadius: "24px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+            overflow: "hidden",
+          }}
+        >
+          <CategoryFilter
+            selected={selectedCategory}
+            onSelect={setSelectedCategory}
+          />
+        </Box>
+      </Container>
 
-      {/* 3. List Section */}
+      {/* ===== รายการ ===== */}
       <Container maxWidth="sm" sx={{ mt: 3 }}>
+
+        {/* จำนวนรายการ */}
+        {!isLoading && count > 0 && (
+          <Typography
+            sx={{ fontSize: "15px", fontWeight: 700, color: "#9CA3AF", mb: 2, pl: 0.5 }}
+          >
+            พบ {count} จุดบริการ
+          </Typography>
+        )}
+
         {isLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-            <CircularProgress
-              size={30}
-              thickness={5}
-              sx={{ color: "#D32F2F" }}
-            />
+          <Box sx={{ display: "flex", justifyContent: "center", py: 12 }}>
+            <CircularProgress size={36} thickness={5} sx={{ color: "#2563EB" }} />
           </Box>
         ) : (
-          <Stack spacing={2}>
+          <Stack spacing={2.5}>
             {data?.result.map((item) => (
-              <ManualCard
-                key={item.id}
-                manual={item}
-                onOpen={setActiveManual}
-              />
+              <ManualCard key={item.id} manual={item} onOpen={setActiveManual} />
             ))}
 
-            {data?.result.length === 0 && (
-              <Typography align="center" sx={{ py: 10, color: "#9CA3AF" }}>
-                ไม่มีข้อมูลในหมวดหมู่นี้
-              </Typography>
+            {count === 0 && (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 10,
+                  bgcolor: "white",
+                  borderRadius: "24px",
+                }}
+              >
+                <Typography sx={{ fontSize: 48, mb: 1 }}>🔍</Typography>
+                <Typography sx={{ fontSize: "18px", fontWeight: 700, color: "#9CA3AF" }}>
+                  ไม่มีข้อมูลในหมวดหมู่นี้
+                </Typography>
+              </Box>
             )}
           </Stack>
         )}

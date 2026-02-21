@@ -36,3 +36,11 @@ export const Sd = {
   KDS_None: "NONE", // ไม่มีสถานะ
   KDS_Cancelled: "CANCELLED", // ยกเลิกรายการนี้
 };
+
+export const SD_ServiceType = {
+  Water: "water",       // น้ำดื่ม
+  Utensils: "utensils", // อุปกรณ์ (ช้อนส้อม)
+  Restroom: "restroom", // ห้องน้ำ
+} as const;
+
+export type SD_ServiceType = typeof SD_ServiceType[keyof typeof SD_ServiceType];

@@ -189,40 +189,28 @@ export default function ManageMenuItemOptionList() {
 
   return (
     <Box className="min-h-screen bg-[#F5F6F8] pb-28 md:pb-12 font-sans">
-      <Container maxWidth="xl" disableGutters={!isSmUp} className="px-6 md:px-12 pt-8 md:pt-12">
-        <Stack spacing={{ xs: 3, md: 5 }}>
+      <Container maxWidth="xl" disableGutters={!isSmUp} className="px-6 md:px-12 pt-6 md:pt-8">
+        <Stack spacing={{ xs: 2, md: 2.5 }}>
 
           {/* =========================================
               1. Header & Buttons
              ========================================= */}
           <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" className="mb-4">
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-end" className="mb-3">
               <Box>
                 <Typography
-                  sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", md: "2.75rem" }, letterSpacing: "-0.02em" }}
+                  sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", md: "2.2rem" }, letterSpacing: "-0.02em" }}
                   className="text-gray-900"
                 >
                   กลุ่มตัวเลือกเมนู
                 </Typography>
-                <Typography className="text-gray-500" sx={{ fontSize: { xs: "0.95rem", md: "1.25rem" }, mt: 0.5 }}>
+                <Typography className="text-gray-500" sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}>
                   จัดการตัวเลือกเสริม เช่น ความหวาน, ท็อปปิ้ง — นำไปผูกกับรายการอาหาร
                 </Typography>
               </Box>
-
-              {isSmUp && (
-                <Tooltip title="รีเฟรชข้อมูล">
-                  <IconButton
-                    onClick={() => refetch()}
-                    className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
-                    sx={{ p: 1.5, borderRadius: "50%" }}
-                  >
-                    <RefreshIcon sx={{ fontSize: "1.75rem", color: "text.secondary" }} />
-                  </IconButton>
-                </Tooltip>
-              )}
             </Stack>
 
-            <Stack direction="row" spacing={1.5} alignItems="center" className="mt-4 overflow-x-auto pb-1 no-scrollbar" sx={{ flexWrap: "nowrap" }}>
+            <Stack direction="row" spacing={1.5} alignItems="center" className="overflow-x-auto pb-1 no-scrollbar" sx={{ flexWrap: "nowrap" }}>
               <Button
                 variant="contained"
                 startIcon={<AddIcon sx={{ fontSize: { xs: "1.25rem !important", md: "1.75rem !important" } }} />}
@@ -243,18 +231,22 @@ export default function ManageMenuItemOptionList() {
                 กลับหน้าเมนูอาหาร
               </Button>
 
-              {!isSmUp && (
-                <IconButton onClick={() => refetch()} className="bg-white border border-gray-200 shadow-sm" sx={{ p: 1.5, borderRadius: "50%" }}>
-                  <RefreshIcon sx={{ color: "text.secondary" }} />
+              <Tooltip title="รีเฟรชข้อมูล">
+                <IconButton
+                  onClick={() => refetch()}
+                  className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
+                  sx={{ p: 1, borderRadius: "50%", flexShrink: 0 }}
+                >
+                  <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
                 </IconButton>
-              )}
+              </Tooltip>
             </Stack>
           </Box>
 
           {/* =========================================
               2. Filter Section
              ========================================= */}
-          <Paper elevation={0} className="bg-white rounded-3xl shadow-sm border border-gray-200" sx={{ px: { xs: 2.5, md: 5 }, py: { xs: 2.5, md: 4 } }}>
+          <Paper elevation={0} className="bg-white rounded-[24px] shadow-sm border border-gray-200" sx={{ px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}>
             <MenuItemOptionFilterBar
               q={filters.q}
               status={filters.status}
