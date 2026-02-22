@@ -1,16 +1,41 @@
 import { Box, Stack, Typography, ButtonBase } from "@mui/material";
 import {
   WaterDrop as WaterIcon,
-  Restaurant as FoodIcon,
-  Wc as ToiletIcon,
+  Restaurant as UtensilsIcon,
+  Wc as RestroomIcon,
   GridView as AllIcon,
 } from "@mui/icons-material";
+import { SD_ServiceType } from "../../../../helpers/SD";
 
 const CATEGORIES = [
-  { id: "all",       name: "ทั้งหมด", emoji: "🗺️", icon: <AllIcon   sx={{ fontSize: 40 }} />, color: "#374151", bg: "#F3F4F6" },
-  { id: "water",     name: "น้ำดื่ม",  emoji: "💧", icon: <WaterIcon sx={{ fontSize: 40 }} />, color: "#1565C0", bg: "#E3F2FD" },
-  { id: "equipment", name: "อุปกรณ์", emoji: "🍴", icon: <FoodIcon  sx={{ fontSize: 40 }} />, color: "#E65100", bg: "#FFF3E0" },
-  { id: "toilet",    name: "ห้องน้ำ", emoji: "🚻", icon: <ToiletIcon sx={{ fontSize: 40 }} />, color: "#6A1B9A", bg: "#F3E5F5" },
+  {
+    id: "all",
+    name: "ทั้งหมด",
+    icon: <AllIcon sx={{ fontSize: 40 }} />,
+    color: "#374151",
+    bg: "#F3F4F6",
+  },
+  {
+    id: SD_ServiceType.Water,
+    name: "น้ำดื่ม",
+    icon: <WaterIcon sx={{ fontSize: 40 }} />,
+    color: "#1565C0",
+    bg: "#E3F2FD",
+  },
+  {
+    id: SD_ServiceType.Utensils,
+    name: "อุปกรณ์",
+    icon: <UtensilsIcon sx={{ fontSize: 40 }} />,
+    color: "#E65100",
+    bg: "#FFF3E0",
+  },
+  {
+    id: SD_ServiceType.Restroom,
+    name: "ห้องน้ำ",
+    icon: <RestroomIcon sx={{ fontSize: 40 }} />,
+    color: "#6A1B9A",
+    bg: "#F3E5F5",
+  },
 ];
 
 interface Props {
@@ -22,14 +47,15 @@ export const CategoryFilter = ({ selected, onSelect }: Props) => (
   <Box
     sx={{
       overflowX: "auto",
-      py: 3,
-      px: 2,
+      py: 2.5,
+      px: { xs: 1.5, sm: 2 },
       display: "flex",
+      justifyContent: { xs: "flex-start", sm: "center" },
       "&::-webkit-scrollbar": { display: "none" },
       scrollbarWidth: "none",
     }}
   >
-    <Stack direction="row" spacing={2} sx={{ minWidth: "max-content", px: 1 }}>
+    <Stack direction="row" spacing={{ xs: 1.5, sm: 2 }} sx={{ minWidth: "max-content", px: 0.5 }}>
       {CATEGORIES.map((cat) => {
         const isActive = selected === cat.id;
         return (
@@ -40,11 +66,13 @@ export const CategoryFilter = ({ selected, onSelect }: Props) => (
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              width: 100,
-              height: 110,
+              width: { xs: 84, sm: 100 },
+              height: { xs: 95, sm: 110 },
               borderRadius: "24px",
               bgcolor: isActive ? cat.color : cat.bg,
-              border: isActive ? `3px solid ${cat.color}` : "2px solid transparent",
+              border: isActive
+                ? `3px solid ${cat.color}`
+                : "2px solid transparent",
               boxShadow: isActive
                 ? `0 8px 20px ${cat.color}40`
                 : "0 2px 6px rgba(0,0,0,0.06)",

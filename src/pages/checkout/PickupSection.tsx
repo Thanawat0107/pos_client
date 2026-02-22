@@ -95,7 +95,7 @@ export default function PickupSection({
         />
         <Box>
           <Typography fontSize="1.3rem" fontWeight={800} color="#1a2a3a">
-            รับทันที / รอรับหน้าร้าน
+            รอรับหน้าร้าน
           </Typography>
           <Typography fontSize="1rem" color="text.secondary" fontWeight={500}>
             ใช้เวลาเตรียมประมาณ 15-20 นาที

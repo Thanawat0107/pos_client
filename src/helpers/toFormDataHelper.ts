@@ -30,51 +30,51 @@ export function toFormData<T extends Record<string, any>>(data: T): FormData {
   const appendFormData = (value: any, key: string) => {
     if (value === undefined || value === null) return;
 
-    // File / Blob
     if (isFile(value)) {
       formData.append(key, value);
       return;
     }
 
-    // Date
     if (value instanceof Date) {
-      formData. append(key, value.toISOString());
+      formData.append(key, value.toISOString());
       return;
     }
 
-    // Array
     if (Array.isArray(value)) {
       value.forEach((item, index) => {
-        // ถ้า item เป็น object → ต้องใช้รูปแบบ field[index]. PropertyName
-        if (isPlainObject(item)) {
+        // --- จุดที่แก้ไข: ถ้าเป็นไฟล์ในอาเรย์ ให้ใช้ key เดิมซ้ำๆ ---
+        if (isFile(item)) {
+          formData.append(key, item); 
+        } 
+        else if (isPlainObject(item)) {
           Object.entries(item).forEach(([childKey, childValue]) => {
-            // Capitalize first letter สำหรับ ASP.NET (PascalCase)
             const capitalizedKey = childKey.charAt(0).toUpperCase() + childKey.slice(1);
             appendFormData(childValue, `${key}[${index}].${capitalizedKey}`);
           });
         } else {
-          // ถ้าเป็น primitive array
-          appendFormData(item, `${key}[${index}]`);
+          // สำหรับ primitive array ทั่วไป (เช่น string[]) ยังคงใช้ [index] ได้
+          formData.append(`${key}[${index}]`, String(item));
         }
       });
       return;
     }
 
-    // Object ซ้อน → parent.Child (PascalCase)
     if (isPlainObject(value)) {
-      Object.entries(value). forEach(([childKey, childValue]) => {
+      Object.entries(value).forEach(([childKey, childValue]) => {
         const capitalizedKey = childKey.charAt(0).toUpperCase() + childKey.slice(1);
         appendFormData(childValue, `${key}.${capitalizedKey}`);
       });
       return;
     }
 
-    // primitive (string / number / boolean หรืออย่างอื่นที่ cast ได้)
     formData.append(key, String(value));
   };
 
-  // root level - Capitalize keys
-  Object.entries(data). forEach(([key, value]) => {
+  // root level - แนะนำให้เช็กเรื่องตัวเล็กตัวใหญ่
+  Object.entries(data).forEach(([key, value]) => {
+    // ถ้าใน Swagger เป็นตัวเล็ก (newImages) แต่ตรงนี้เปลี่ยนเป็นตัวใหญ่ (NewImages) 
+    // อาจทำให้ [FromForm] หาไม่เจอได้ในบาง Config
+    // แนะนำ: ถ้าใช้ PascalCase ใน C# DTO ให้ใช้แบบเดิม แต่ถ้า Swagger เป็น camelCase ให้ระวังจุดนี้
     const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
     appendFormData(value, capitalizedKey);
   });

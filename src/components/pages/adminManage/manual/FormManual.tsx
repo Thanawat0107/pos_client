@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Drawer,
   Box,
@@ -15,16 +16,24 @@ import {
   ImageList,
   ImageListItem,
   ImageListItemBar,
+  Autocomplete,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
+// Icons สำหรับ SD_ServiceType
+import LocalDrinkIcon from "@mui/icons-material/LocalDrink"; // Water
+import RestaurantIcon from "@mui/icons-material/Restaurant"; // Utensils
+import WcIcon from "@mui/icons-material/Wc"; // Restroom
+import CategoryIcon from "@mui/icons-material/Category"; // Default
+
 import { FormikProvider, useFormik } from "formik";
 import { useEffect, useRef, useState } from "react";
 import type { Manual } from "../../../../@types/dto/Manual";
 import type { CreateManual } from "../../../../@types/createDto/CreateManual";
 import type { UpdateManual } from "../../../../@types/UpdateDto/UpdateManual";
 import { manualSchema } from "../../../../helpers/validationSchema";
-import { ROLES } from "../../../../helpers/SD";
+import { ROLES, SD_ServiceType } from "../../../../helpers/SD";
+import { useGetManualCategoriesQuery } from "../../../../services/manualApi";
 
 type Props = {
   open: boolean;
@@ -32,7 +41,7 @@ type Props = {
   initial?: Manual;
   onSubmit: (
     data: CreateManual | UpdateManual,
-    id?: number
+    id?: number,
   ) => Promise<void> | void;
 };
 
@@ -45,6 +54,20 @@ export default function FormManual({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
 
+  // --- 1. ฟังก์ชันดึง Icon ตาม Service Type ---
+  const getServiceIcon = (category: string) => {
+    switch (category?.toLowerCase()) {
+      case SD_ServiceType.Water:
+        return <LocalDrinkIcon sx={{ color: "#2196f3", mr: 1 }} />;
+      case SD_ServiceType.Utensils:
+        return <RestaurantIcon sx={{ color: "#ff9800", mr: 1 }} />;
+      case SD_ServiceType.Restroom:
+        return <WcIcon sx={{ color: "#9c27b0", mr: 1 }} />;
+      default:
+        return <CategoryIcon sx={{ color: "#757575", mr: 1 }} />;
+    }
+  };
+
   const formik = useFormik({
     enableReinitialize: true,
     validationSchema: manualSchema,
@@ -53,28 +76,25 @@ export default function FormManual({
       location: initial?.location ?? "",
       content: initial?.content ?? "",
       category: initial?.category ?? "",
-      targetRole: initial?.targetRole ?? "Customer",
-      // รูปภาพเดิมที่ต้องการคงไว้ (กรณี update)
-      keepImages: initial?.images ?? [] as string[],
-      // รูปภาพใหม่ที่จะอัปโหลด
+      targetRole: initial?.targetRole ?? ROLES[3].value, // Default: Customer
+      keepImages: initial?.images ?? [], // รูปเดิมจาก API DTO
       newImages: [] as File[],
       isUsed: initial ? initial.isUsed : true,
     },
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const { isUsed, keepImages, newImages, ...rest } = values;
-        const payload: CreateManual | UpdateManual = initial
-          ? {
-              ...rest,
-              isUsed,
-              keepImages,
-              newImages: newImages.length > 0 ? newImages : null,
-            }
-          : {
-              ...rest,
-              newImages: newImages.length > 0 ? newImages : null,
-            };
-        await onSubmit(payload, initial?.id);
+
+        const payload = {
+          ...rest,
+          IsUsed: isUsed,
+          // ตรวจสอบชื่อ Key ให้เป็นตัวใหญ่ตาม DTO ของ C# (NewImages)
+          KeepImages: initial ? keepImages : [],
+          // ส่งอาเรย์ไปตรงๆ เพื่อให้ toFormData (ฉบับปรับปรุง) จัดการ
+          NewImages: newImages.length > 0 ? newImages : null,
+        };
+
+        await onSubmit(payload as any, initial?.id);
         onClose();
       } catch (error) {
         console.error("Submit error:", error);
@@ -87,7 +107,6 @@ export default function FormManual({
   const {
     values,
     handleChange,
-    handleBlur,
     touched,
     errors,
     setFieldValue,
@@ -96,39 +115,46 @@ export default function FormManual({
     submitCount,
   } = formik;
 
+  // --- 2. เรียกใช้ Hook ดึงหมวดหมู่ (RTK Query) ---
+  const { data: catRes, isLoading: loadingCategories } =
+    useGetManualCategoriesQuery(
+      values.targetRole,
+      { skip: !open }, // ดึงข้อมูลเฉพาะตอนเปิด Drawer
+    );
+  const categoryOptions = catRes ?? [];
+
+  // --- 3. จัดการสถานะ Drawer ---
   useEffect(() => {
-    if (open) {
-      // ไม่ต้องทำอะไรพิเศษ เพราะ enableReinitialize จะ reset ให้อัตโนมัติ
-      setNewImagePreviews([]);
-    } else {
+    if (!open) {
       resetForm();
       setNewImagePreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  }, [open, initial, resetForm]);
+  }, [open, resetForm]);
 
+  // --- 4. Logic จัดการรูปภาพ ---
   const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
     const previews = files.map((f) => URL.createObjectURL(f));
     setFieldValue("newImages", [...values.newImages, ...files]);
     setNewImagePreviews((prev) => [...prev, ...previews]);
-    // reset input เพื่อให้เลือกไฟล์เดิมซ้ำได้
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // ลบรูปใหม่ออกจาก newImages
   const handleRemoveNewImage = (index: number) => {
-    const updatedFiles = values.newImages.filter((_, i) => i !== index);
-    const updatedPreviews = newImagePreviews.filter((_, i) => i !== index);
-    setFieldValue("newImages", updatedFiles);
-    setNewImagePreviews(updatedPreviews);
+    setFieldValue(
+      "newImages",
+      values.newImages.filter((_, i) => i !== index),
+    );
+    setNewImagePreviews(newImagePreviews.filter((_, i) => i !== index));
   };
 
-  // ลบรูปเดิมออกจาก keepImages
   const handleRemoveKeepImage = (index: number) => {
-    const updated = values.keepImages.filter((_, i) => i !== index);
-    setFieldValue("keepImages", updated);
+    setFieldValue(
+      "keepImages",
+      values.keepImages.filter((_, i) => i !== index),
+    );
   };
 
   return (
@@ -136,47 +162,70 @@ export default function FormManual({
       anchor="right"
       open={open}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: 1, sm: 500 } } }}
+      PaperProps={{
+        sx: { width: { xs: "100%", sm: 550 }, borderLeft: "1px solid #e0e0e0" },
+      }}
     >
       <FormikProvider value={formik}>
         <Box
           component="form"
           onSubmit={formik.handleSubmit}
-          sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+          sx={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            bgcolor: "#fcfcfc",
+          }}
         >
           {/* Header */}
           <Stack
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            sx={{ p: 2, bgcolor: "primary.main", color: "white" }}
+            sx={{ p: 2.5, bgcolor: "primary.main", color: "white" }}
           >
-            <Typography variant="h6" fontWeight={800}>
-              {initial ? "แก้ไขคู่มือ" : "เพิ่มคู่มือใหม่"}
-            </Typography>
-            <IconButton onClick={onClose} disabled={isSubmitting} sx={{ color: "white" }}>
+            <Box>
+              <Typography variant="h6" fontWeight={800}>
+                {initial ? "แก้ไขข้อมูลคู่มือ" : "ลงทะเบียนคู่มือใหม่"}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                ระบุรายละเอียดและกลุ่มเป้าหมายที่ต้องการให้มองเห็น
+              </Typography>
+            </Box>
+            <IconButton
+              onClick={onClose}
+              disabled={isSubmitting}
+              sx={{ color: "white" }}
+            >
               <CloseIcon />
             </IconButton>
           </Stack>
-          <Divider />
 
           {/* Body */}
-          <Stack spacing={2.5} sx={{ p: 3, flex: 1, overflowY: "auto" }}>
+          <Stack spacing={3} sx={{ p: 3, flex: 1, overflowY: "auto" }}>
             {Object.keys(errors).length > 0 && submitCount > 0 && (
-              <Alert severity="error">กรุณากรอกข้อมูลให้ครบถ้วน</Alert>
+              <Alert severity="error" variant="filled">
+                กรุณากรอกข้อมูลในช่องที่จำเป็นให้ครบถ้วน
+              </Alert>
             )}
 
-            {/* 1. Image Upload Section */}
+            {/* ส่วนจัดการรูปภาพ */}
             <Box>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={1.5}
+              >
                 <Typography variant="subtitle2" fontWeight={700}>
-                  รูปภาพคู่มือ
+                  รูปภาพประกอบ (
+                  {values.keepImages.length + values.newImages.length})
                 </Typography>
                 <Button
                   size="small"
+                  variant="outlined"
                   startIcon={<AddPhotoAlternateIcon />}
                   onClick={() => fileInputRef.current?.click()}
-                  sx={{ fontSize: "0.85rem" }}
                 >
                   เพิ่มรูปภาพ
                 </Button>
@@ -190,116 +239,113 @@ export default function FormManual({
                 onChange={handleImagesChange}
               />
 
-              {/* รูปภาพเดิม (keepImages) */}
-              {values.keepImages.length > 0 && (
-                <Box mb={1.5}>
-                  <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
-                    รูปภาพปัจจุบัน
-                  </Typography>
-                  <ImageList cols={3} gap={8} sx={{ m: 0 }}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  minHeight: 100,
+                  bgcolor: "#f9f9f9",
+                  borderStyle: "dashed",
+                }}
+              >
+                {values.keepImages.length > 0 || newImagePreviews.length > 0 ? (
+                  <ImageList cols={3} gap={10} sx={{ m: 0 }}>
+                    {/* รูปภาพเดิม */}
                     {values.keepImages.map((url, i) => (
-                      <ImageListItem key={i} sx={{ borderRadius: 1.5, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
-                        <img src={url} alt={`existing-${i}`} style={{ height: 90, objectFit: "cover", width: "100%" }} />
+                      <ImageListItem
+                        key={`old-${i}`}
+                        sx={{
+                          borderRadius: 1.5,
+                          overflow: "hidden",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        <img
+                          src={url}
+                          alt="keep"
+                          style={{ height: 100, objectFit: "cover" }}
+                        />
                         <ImageListItemBar
-                          sx={{ background: "rgba(0,0,0,0.35)", height: 28 }}
+                          sx={{
+                            background: "rgba(211, 47, 47, 0.8)",
+                            height: 30,
+                          }}
                           actionIcon={
-                            <IconButton size="small" sx={{ color: "white", p: 0.25 }} onClick={() => handleRemoveKeepImage(i)}>
-                              <CloseIcon sx={{ fontSize: "1rem" }} />
+                            <IconButton
+                              size="small"
+                              sx={{ color: "white" }}
+                              onClick={() => handleRemoveKeepImage(i)}
+                            >
+                              <CloseIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           }
-                          actionPosition="right"
-                          position="bottom"
                         />
                       </ImageListItem>
                     ))}
-                  </ImageList>
-                </Box>
-              )}
-
-              {/* รูปภาพใหม่ (newImages preview) */}
-              {newImagePreviews.length > 0 && (
-                <Box mb={1.5}>
-                  <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
-                    รูปภาพที่จะอัปโหลด
-                  </Typography>
-                  <ImageList cols={3} gap={8} sx={{ m: 0 }}>
+                    {/* รูปภาพใหม่ */}
                     {newImagePreviews.map((preview, i) => (
-                      <ImageListItem key={i} sx={{ borderRadius: 1.5, overflow: "hidden", border: "1.5px dashed", borderColor: "primary.main" }}>
-                        <img src={preview} alt={`new-${i}`} style={{ height: 90, objectFit: "cover", width: "100%" }} />
+                      <ImageListItem
+                        key={`new-${i}`}
+                        sx={{
+                          borderRadius: 1.5,
+                          overflow: "hidden",
+                          border: "2px dashed #1976d2",
+                        }}
+                      >
+                        <img
+                          src={preview}
+                          alt="new"
+                          style={{ height: 100, objectFit: "cover" }}
+                        />
                         <ImageListItemBar
-                          sx={{ background: "rgba(0,0,0,0.35)", height: 28 }}
+                          sx={{ height: 30 }}
                           actionIcon={
-                            <IconButton size="small" sx={{ color: "white", p: 0.25 }} onClick={() => handleRemoveNewImage(i)}>
-                              <CloseIcon sx={{ fontSize: "1rem" }} />
+                            <IconButton
+                              size="small"
+                              sx={{ color: "white" }}
+                              onClick={() => handleRemoveNewImage(i)}
+                            >
+                              <CloseIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           }
-                          actionPosition="right"
-                          position="bottom"
                         />
                       </ImageListItem>
                     ))}
                   </ImageList>
-                </Box>
-              )}
-
-              {values.keepImages.length === 0 && newImagePreviews.length === 0 && (
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    height: 100,
-                    borderStyle: "dashed",
-                    color: "text.secondary",
-                    flexDirection: "column",
-                    gap: 0.5,
-                  }}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <AddPhotoAlternateIcon sx={{ fontSize: "2rem" }} />
-                  <Typography variant="body2">คลิกเพื่ออัปโหลดรูปภาพ</Typography>
-                  <Typography variant="caption" color="text.disabled">รองรับ .jpg, .png, .webp (เลือกได้หลายรูป)</Typography>
-                </Button>
-              )}
+                ) : (
+                  <Stack
+                    alignItems="center"
+                    justifyContent="center"
+                    sx={{ height: 100, color: "text.disabled" }}
+                  >
+                    <Typography variant="caption">
+                      ยังไม่มีรูปภาพประกอบ
+                    </Typography>
+                  </Stack>
+                )}
+              </Paper>
             </Box>
 
-            {/* 2. Title Field - [เพิ่มใหม่] */}
             <TextField
-              label="หัวข้อคู่มือ (Title)"
+              fullWidth
+              label="หัวข้อ (Title)"
               name="title"
               value={values.title}
               onChange={handleChange}
-              onBlur={handleBlur}
               error={touched.title && !!errors.title}
               helperText={touched.title && errors.title}
-              fullWidth
-              placeholder="เช่น จุดบริการน้ำดื่มสะอาด, ขั้นตอนการล้างจาน"
+              variant="outlined"
             />
 
-            <Stack direction="row" spacing={2}>
-              {/* Category */}
-              <TextField
-                label="หมวดหมู่ (Category)"
-                name="category"
-                value={values.category}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={touched.category && !!errors.category}
-                helperText={touched.category && errors.category}
-                fullWidth
-                placeholder="เช่น Service, SOP"
-              />
-
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               {/* Target Role */}
               <TextField
                 select
+                fullWidth
                 label="กลุ่มเป้าหมาย"
                 name="targetRole"
                 value={values.targetRole}
                 onChange={handleChange}
-                onBlur={handleBlur}
-                error={touched.targetRole && !!errors.targetRole}
-                helperText={touched.targetRole && errors.targetRole}
-                fullWidth
               >
                 {ROLES.map((role) => (
                   <MenuItem key={role.value} value={role.value}>
@@ -307,88 +353,119 @@ export default function FormManual({
                   </MenuItem>
                 ))}
               </TextField>
+
+              {/* Autocomplete หมวดหมู่ พร้อม Icon */}
+              <Autocomplete
+                fullWidth
+                freeSolo
+                options={categoryOptions}
+                loading={loadingCategories}
+                value={values.category}
+                onInputChange={(_, val) => setFieldValue("category", val)}
+                onChange={(_, val) => setFieldValue("category", val)}
+                renderOption={(props, option) => (
+                  <Box
+                    component="li"
+                    {...props}
+                    sx={{ display: "flex", alignItems: "center" }}
+                  >
+                    {getServiceIcon(option)}
+                    {option}
+                  </Box>
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="หมวดหมู่"
+                    error={touched.category && !!errors.category}
+                    helperText={touched.category && errors.category}
+                    InputProps={{
+                      ...params.InputProps,
+                      startAdornment: values.category
+                        ? getServiceIcon(values.category)
+                        : null,
+                      endAdornment: (
+                        <>
+                          {loadingCategories ? (
+                            <CircularProgress color="inherit" size={20} />
+                          ) : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
+              />
             </Stack>
 
-            {/* 3. Location Field - [เพิ่มใหม่] */}
             <TextField
+              fullWidth
               label="สถานที่ (Location)"
               name="location"
               value={values.location}
               onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.location && !!errors.location}
-              helperText={touched.location && errors.location}
-              fullWidth
-              placeholder="เช่น โซน A ชั้น 1, หลังเคาน์เตอร์"
+              placeholder="เช่น โซน VIP, ชั้น 2"
             />
 
-            {/* Content Area */}
             <TextField
-              label="เนื้อหา / รายละเอียด"
-              name="content"
+              fullWidth
               multiline
               rows={5}
+              label="เนื้อหา / ขั้นตอนการใช้งาน"
+              name="content"
               value={values.content}
               onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.content && !!errors.content}
-              helperText={touched.content && errors.content}
-              fullWidth
             />
 
-            {/* Status Switch */}
-            {initial && (
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderColor: values.isUsed ? "success.main" : "divider",
-                  bgcolor: values.isUsed ? "rgba(76, 175, 80, 0.04)" : "transparent",
-                }}
-              >
-                <Box>
-                  <Typography variant="body2" fontWeight="bold">
-                    {values.isUsed ? "เปิดการใช้งาน (Public)" : "ปิดการใช้งาน (Hidden)"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    กำหนดว่าผู้ใช้ทั่วไปจะเห็นคู่มือนี้หรือไม่
-                  </Typography>
-                </Box>
-                <Switch
-                  checked={values.isUsed}
-                  onChange={(e) => setFieldValue("isUsed", e.target.checked)}
-                  color="success"
-                />
-              </Paper>
-            )}
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderRadius: 2,
+              }}
+            >
+              <Box>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  การแสดงผล
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  เปิดใช้งานเพื่อให้บุคคลทั่วไปสามารถเข้าชมคู่มือนี้ได้
+                </Typography>
+              </Box>
+              <Switch
+                checked={values.isUsed}
+                onChange={(e) => setFieldValue("isUsed", e.target.checked)}
+                color="success"
+              />
+            </Paper>
           </Stack>
 
           {/* Footer */}
           <Divider />
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ p: 2, bgcolor: "background.paper" }}
-          >
+          <Stack direction="row" spacing={2} sx={{ p: 2.5, bgcolor: "white" }}>
             <Button
-              onClick={onClose}
               fullWidth
               variant="outlined"
               color="inherit"
+              onClick={onClose}
               disabled={isSubmitting}
             >
               ยกเลิก
             </Button>
             <Button
-              type="submit"
-              variant="contained"
               fullWidth
+              variant="contained"
+              type="submit"
               disabled={isSubmitting}
             >
-              {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "บันทึกข้อมูล"}
+              {isSubmitting ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "บันทึกข้อมูล"
+              )}
             </Button>
           </Stack>
         </Box>

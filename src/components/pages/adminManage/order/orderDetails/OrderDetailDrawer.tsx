@@ -71,6 +71,7 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [selectedItemStatus, setSelectedItemStatus] = useState<string>("");
 
   // --- Effects ---
   useEffect(() => {
@@ -156,9 +157,11 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
   const handleOpenStatusMenu = (
     event: React.MouseEvent<HTMLElement>,
     itemId: number,
+    currentStatus: string,
   ) => {
     setAnchorEl(event.currentTarget);
     setSelectedItemId(itemId);
+    setSelectedItemStatus(currentStatus);
   };
   const handleChangeItemStatus = async (newStatus: string) => {
     if (selectedItemId)
@@ -282,6 +285,7 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
         anchorEl={anchorEl}
         onCloseMenu={() => setAnchorEl(null)}
         onChangeItemStatus={handleChangeItemStatus}
+        currentItemStatus={selectedItemStatus}
       />
     </>
   );

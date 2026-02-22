@@ -33,7 +33,7 @@ export default function ManageManualItem({
   onToggleActive,
 }: Props) {
   // เช็กว่าเป็นไฟล์ PDF หรือไม่
-  const isPdf = row.fileUrl?.toLowerCase().endsWith(".pdf");
+  const isPdf = row.images?.some((img) => img.toLowerCase().endsWith(".pdf"));
 
   return (
     <TableRow hover sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
@@ -48,7 +48,7 @@ export default function ManageManualItem({
       <TableCell width={100}>
         <Avatar
           variant="rounded"
-          src={isPdf ? "" : row.fileUrl} // ถ้าเป็น PDF ไม่ต้องโหลดรูป
+          src={isPdf ? "" : row.images?.[0]} // ถ้าเป็น PDF ไม่ต้องโหลดรูป
           sx={{
             width: 64,
             height: 64,

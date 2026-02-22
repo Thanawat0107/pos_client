@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
+import { useState, useRef } from "react";
 import {
   Dialog,
   IconButton,
@@ -13,15 +15,19 @@ import {
   Close as CloseIcon,
   Place as PlaceIcon,
   CheckCircle as CheckIcon,
+  ChevronLeft,
+  ChevronRight,
+  ImageNotSupported,
 } from "@mui/icons-material";
 import type { Manual } from "../../../../@types/dto/Manual";
-import { baseUrl } from "../../../../helpers/SD";
+import { baseUrl, SD_ServiceType } from "../../../../helpers/SD";
 
-const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  water:     { bg: "#E3F2FD", text: "#1565C0" },
-  equipment: { bg: "#FFF3E0", text: "#E65100" },
-  toilet:    { bg: "#F3E5F5", text: "#6A1B9A" },
+const CATEGORY_META: Record<string, { bg: string; text: string; label: string }> = {
+  [SD_ServiceType.Water]:    { bg: "#E3F2FD", text: "#1565C0", label: "น้ำดื่ม" },
+  [SD_ServiceType.Utensils]: { bg: "#FFF3E0", text: "#E65100", label: "อุปกรณ์" },
+  [SD_ServiceType.Restroom]: { bg: "#F3E5F5", text: "#6A1B9A", label: "ห้องน้ำ" },
 };
+const DEFAULT_META = { bg: "#F3F4F6", text: "#374151", label: "ทั่วไป" };
 
 interface Props {
   open: boolean;
@@ -32,12 +38,40 @@ interface Props {
 export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [imgIndex, setImgIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
 
   if (!manual) return null;
 
-  const catColor =
-    CATEGORY_COLORS[manual.category] ?? { bg: "#F3F4F6", text: "#374151" };
+  const images = manual.images ?? [];
+  const hasMultiple = images.length > 1;
+  const meta = CATEGORY_META[manual.category] ?? DEFAULT_META;
   const steps = manual.content?.split("\n").filter((s) => s.trim()) ?? [];
+
+  const prev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImgIndex((i) => (i - 1 + images.length) % images.length);
+  };
+
+  const next = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImgIndex((i) => (i + 1) % images.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || !hasMultiple) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) {
+      diff > 0
+        ? setImgIndex((i) => (i + 1) % images.length)
+        : setImgIndex((i) => (i - 1 + images.length) % images.length);
+    }
+    touchStartX.current = null;
+  };
 
   return (
     <Dialog
@@ -56,19 +90,131 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
         },
       }}
     >
-      {/* ----- รูปภาพ + ปุ่มปิด ----- */}
-      <Box sx={{ position: "relative", flexShrink: 0 }}>
-        <Box
-          component="img"
-          src={baseUrl + manual.fileUrl}
-          sx={{
-            width: "100%",
-            height: isMobile ? 220 : 260,
-            objectFit: "cover",
-            display: "block",
-            bgcolor: "#E5E7EB",
-          }}
-        />
+      {/* ----- รูปภาพ + carousel + ปุ่มปิด ----- */}
+      <Box
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        sx={{
+          position: "relative",
+          flexShrink: 0,
+          height: isMobile ? 220 : 280,
+          bgcolor: "#E5E7EB",
+          touchAction: "pan-y",
+        }}
+      >
+        {images.length > 0 ? (
+          <Box
+            component="img"
+            src={baseUrl + images[imgIndex]}
+            sx={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        ) : (
+          <Stack
+            alignItems="center"
+            justifyContent="center"
+            sx={{ width: "100%", height: "100%", gap: 1 }}
+          >
+            <ImageNotSupported sx={{ fontSize: 56, color: "#D1D5DB" }} />
+            <Typography sx={{ color: "#9CA3AF", fontSize: 15, fontWeight: 600 }}>
+              ไม่มีรูปภาพ
+            </Typography>
+          </Stack>
+        )}
+
+        {/* ปุ่มซ้าย/ขวา — ซ่อนบนมือถือ ใช้ swipe แทน */}
+        {hasMultiple && (
+          <>
+            <IconButton
+              onClick={prev}
+              size="small"
+              sx={{
+                display: { xs: "none", sm: "flex" },
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                bgcolor: "rgba(255,255,255,0.88)",
+                backdropFilter: "blur(4px)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                "&:hover": { bgcolor: "white" },
+              }}
+            >
+              <ChevronLeft sx={{ fontSize: 22 }} />
+            </IconButton>
+            <IconButton
+              onClick={next}
+              size="small"
+              sx={{
+                display: { xs: "none", sm: "flex" },
+                position: "absolute",
+                right: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                bgcolor: "rgba(255,255,255,0.88)",
+                backdropFilter: "blur(4px)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                "&:hover": { bgcolor: "white" },
+              }}
+            >
+              <ChevronRight sx={{ fontSize: 22 }} />
+            </IconButton>
+
+            {/* Dots indicator */}
+            <Stack
+              direction="row"
+              spacing={0.6}
+              sx={{
+                position: "absolute",
+                bottom: 12,
+                left: "50%",
+                transform: "translateX(-50%)",
+              }}
+            >
+              {images.map((_, i) => (
+                <Box
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); setImgIndex(i); }}
+                  sx={{
+                    width: i === imgIndex ? 22 : 8,
+                    height: 8,
+                    borderRadius: "4px",
+                    bgcolor: i === imgIndex ? "white" : "rgba(255,255,255,0.5)",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                  }}
+                />
+              ))}
+            </Stack>
+
+            {/* Badge จำนวนรูป */}
+            <Box
+              sx={{
+                position: "absolute",
+                top: 10,
+                right: 50,
+                bgcolor: "rgba(0,0,0,0.50)",
+                color: "white",
+                borderRadius: "20px",
+                px: 1.5,
+                py: 0.35,
+                fontSize: "13px",
+                fontWeight: 700,
+                backdropFilter: "blur(4px)",
+                lineHeight: 1.6,
+              }}
+            >
+              {imgIndex + 1} / {images.length}
+            </Box>
+          </>
+        )}
+
+        {/* ปุ่มปิด */}
         <IconButton
           onClick={onClose}
           size="small"
@@ -86,21 +232,13 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
       </Box>
 
       {/* ----- เนื้อหา ----- */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: "auto",
-          px: 3,
-          pt: 3,
-          pb: 1,
-        }}
-      >
+      <Box sx={{ flex: 1, overflowY: "auto", px: 3, pt: 3, pb: 1 }}>
         {/* Chip หมวดหมู่ */}
         <Chip
-          label={manual.category}
+          label={meta.label}
           sx={{
-            bgcolor: catColor.bg,
-            color: catColor.text,
+            bgcolor: meta.bg,
+            color: meta.text,
             fontWeight: 800,
             fontSize: "15px",
             height: 30,
@@ -108,7 +246,7 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
           }}
         />
 
-        {/* ชื่อ — ใหญ่มาก */}
+        {/* ชื่อ */}
         <Typography
           sx={{ fontSize: "30px", fontWeight: 900, color: "#111827", lineHeight: 1.15, mb: 1.5 }}
         >
@@ -135,7 +273,7 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
           </Box>
         </Stack>
 
-        {/* หัวข้อขั้นตอน */}
+        {/* ขั้นตอนวิธีใช้งาน */}
         {steps.length > 0 && (
           <>
             <Typography
@@ -154,13 +292,12 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
             <Stack spacing={2.5} sx={{ mb: 3 }}>
               {steps.map((step, index) => (
                 <Stack key={index} direction="row" spacing={2} alignItems="flex-start">
-                  {/* หมายเลขขั้นตอน — วงกลมใหญ่ */}
                   <Box
                     sx={{
                       minWidth: 44,
                       height: 44,
                       borderRadius: "50%",
-                      bgcolor: catColor.text,
+                      bgcolor: meta.text,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -172,7 +309,6 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
                     </Typography>
                   </Box>
 
-                  {/* ข้อความขั้นตอน — ใหญ่ อ่านง่าย */}
                   <Box
                     sx={{
                       bgcolor: "white",

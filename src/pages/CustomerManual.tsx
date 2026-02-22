@@ -1,12 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import {
   Box,
   Container,
   Typography,
   CircularProgress,
-  Stack,
 } from "@mui/material";
+import type { Manual } from "../@types/dto/Manual";
 import { useGetManualsQuery } from "../services/manualApi";
 import { CategoryFilter } from "../components/pages/adminManage/manual/CategoryFilter";
 import { ManualCard } from "../components/pages/adminManage/manual/ManualCard";
@@ -14,107 +13,102 @@ import { ManualDetailModal } from "../components/pages/adminManage/manual/Manual
 
 const CustomerManual = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [activeManual, setActiveManual] = useState<any>(null);
+  const [activeManual, setActiveManual] = useState<Manual | null>(null);
 
   const { data, isLoading } = useGetManualsQuery({
     category: selectedCategory,
     pageNumber: 1,
-    pageSize: 20,
+    pageSize: 50,
   });
 
-  const count = data?.result?.length ?? 0;
+  const items = data?.result ?? [];
+  const count = items.length;
 
   return (
-    <Box sx={{ bgcolor: "#F1F5F9", minHeight: "100vh", pb: 6 }}>
+    <Box sx={{ bgcolor: "#FFF8F0", minHeight: "100vh" }}>
 
-      {/* ===== Hero Banner ===== */}
+      {/* ===== Header ===== */}
       <Box
         sx={{
-          background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)",
-          pt: 5,
-          pb: 7,
+          background: "linear-gradient(135deg, #C2410C 0%, #EA580C 50%, #F97316 100%)",
+          py: 3,
           px: 3,
         }}
       >
-        <Container maxWidth="sm">
-          {/* ไอคอนห้อง / แผนที่ */}
-          <Typography sx={{ fontSize: 52, lineHeight: 1, mb: 1 }}>🗺️</Typography>
-
-          <Typography
-            sx={{
-              fontSize: "34px",
-              fontWeight: 900,
-              color: "#fff",
-              letterSpacing: "-0.5px",
-              lineHeight: 1.1,
-              mb: 0.75,
-            }}
-          >
-            จุดบริการของร้าน
-          </Typography>
-          <Typography
-            sx={{ fontSize: "17px", color: "rgba(255,255,255,0.75)", fontWeight: 500 }}
-          >
-            ช้อนส้อม · น้ำดื่ม · ห้องน้ำ อยู่ที่ไหน?
-          </Typography>
+        <Container maxWidth="md">
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 0.75 }}>
+            <Typography sx={{ fontSize: 40, lineHeight: 1 }}>🍽️</Typography>
+            <Typography
+              sx={{ fontSize: { xs: "24px", sm: "28px" }, fontWeight: 900, color: "#fff", lineHeight: 1.15 }}
+            >
+              จุดบริการของร้าน
+            </Typography>
+            <Typography sx={{ fontSize: "15px", color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>
+              ช้อนส้อม · น้ำดื่ม · ห้องน้ำ อยู่ที่ไหน?
+            </Typography>
+          </Box>
         </Container>
       </Box>
 
-      {/* ===== Category Filter — ขึ้นทับ Banner เล็กน้อย ===== */}
-      <Container maxWidth="sm" sx={{ mt: -3 }}>
-        <Box
-          sx={{
-            bgcolor: "white",
-            borderRadius: "24px",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-            overflow: "hidden",
-          }}
-        >
-          <CategoryFilter
-            selected={selectedCategory}
-            onSelect={setSelectedCategory}
-          />
-        </Box>
-      </Container>
+      {/* ===== Category Filter — sticky (ขยับลงตาม navbar 64px) ===== */}
+      <Box
+        sx={{
+          position: "sticky",
+          top: 64,
+          zIndex: 10,
+          bgcolor: "rgba(255,248,240,0.82)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          boxShadow: "0 2px 16px rgba(234,88,12,0.10)",
+          borderBottom: "1px solid rgba(234,88,12,0.10)",
+        }}
+      >
+        <Container maxWidth="md" disableGutters>
+          <CategoryFilter selected={selectedCategory} onSelect={setSelectedCategory} />
+        </Container>
+      </Box>
 
-      {/* ===== รายการ ===== */}
-      <Container maxWidth="sm" sx={{ mt: 3 }}>
+      {/* ===== รายการการ์ด ===== */}
+      <Container maxWidth="md" sx={{ py: 3, px: { xs: 2, sm: 3 } }}>
 
         {/* จำนวนรายการ */}
         {!isLoading && count > 0 && (
-          <Typography
-            sx={{ fontSize: "15px", fontWeight: 700, color: "#9CA3AF", mb: 2, pl: 0.5 }}
-          >
+          <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "#9CA3AF", mb: 2 }}>
             พบ {count} จุดบริการ
           </Typography>
         )}
 
         {isLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 12 }}>
-            <CircularProgress size={36} thickness={5} sx={{ color: "#2563EB" }} />
+          <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+            <CircularProgress size={36} thickness={5} sx={{ color: "#EA580C" }} />
+          </Box>
+        ) : count === 0 ? (
+          <Box sx={{ textAlign: "center", py: 10, bgcolor: "white", borderRadius: "24px", border: "1.5px solid #FED7AA" }}>
+            <Typography sx={{ fontSize: 48, mb: 1 }}>🔍</Typography>
+            <Typography sx={{ fontSize: "18px", fontWeight: 700, color: "#9CA3AF" }}>
+              ไม่มีข้อมูลในหมวดหมู่นี้
+            </Typography>
           </Box>
         ) : (
-          <Stack spacing={2.5}>
-            {data?.result.map((item) => (
+          /* Grid 2 คอลัมน์ตายตัว — มือถือเป็น 1 คอลัมน์ */
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
+              gap: 2.5,
+              /* จัดการ์ดคี่ท้ายสุดให้กึ่งกลาง */
+              "& > :last-child:nth-of-type(odd)": {
+                gridColumn: { sm: "1 / -1" },
+                maxWidth: { sm: "calc(50% - 10px)" },
+                mx: "auto",
+                width: "100%",
+              },
+            }}
+          >
+            {items.map((item) => (
               <ManualCard key={item.id} manual={item} onOpen={setActiveManual} />
             ))}
-
-            {count === 0 && (
-              <Box
-                sx={{
-                  textAlign: "center",
-                  py: 10,
-                  bgcolor: "white",
-                  borderRadius: "24px",
-                }}
-              >
-                <Typography sx={{ fontSize: 48, mb: 1 }}>🔍</Typography>
-                <Typography sx={{ fontSize: "18px", fontWeight: 700, color: "#9CA3AF" }}>
-                  ไม่มีข้อมูลในหมวดหมู่นี้
-                </Typography>
-              </Box>
-            )}
-          </Stack>
+          </Box>
         )}
       </Container>
 
@@ -128,3 +122,4 @@ const CustomerManual = () => {
 };
 
 export default CustomerManual;
+

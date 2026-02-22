@@ -1,18 +1,15 @@
  import {
-  Avatar,
   Chip,
   IconButton,
   Paper,
   Stack,
   Switch,
   Typography,
-  Box,
+  Divider,
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import DescriptionIcon from "@mui/icons-material/Description";
 import PlaceIcon from "@mui/icons-material/Place";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import type { Manual } from "../../../../@types/dto/Manual";
 
 type Props = {
@@ -25,138 +22,107 @@ type Props = {
 
 export default function MobileManualItem({
   row,
+  index,
   onEdit,
   onDelete,
   onToggleActive,
 }: Props) {
-  // เช็กว่าเป็นไฟล์ PDF หรือไม่
-  const isPdf = row.fileUrl?.toLowerCase().endsWith(".pdf");
-
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 3, p: 2, bgcolor: "white" }}>
-      <Stack direction="row" spacing={2} alignItems="flex-start">
-        {/* รูป หรือ ไอคอนไฟล์ */}
-        <Avatar
-          variant="rounded"
-          src={isPdf ? "" : row.fileUrl}
-          sx={{
-            width: 70,
-            height: 70,
-            borderRadius: 2,
-            bgcolor: isPdf ? "error.lighter" : "primary.lighter",
-            color: isPdf ? "error.main" : "primary.main",
-            flexShrink: 0,
-            border: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          {isPdf ? (
-            <PictureAsPdfIcon fontSize="small" />
-          ) : (
-            <DescriptionIcon fontSize="small" />
-          )}
-        </Avatar>
-
-        <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
-          {/* ส่วนหัว: Title และ Role */}
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="flex-start"
-            spacing={1}
-          >
-            <Typography
-              variant="subtitle2"
-              fontWeight={800}
-              color="primary.main"
-              noWrap
-              sx={{ flex: 1 }}
-            >
+    <Paper
+      variant="outlined"
+      sx={{
+        borderRadius: 3,
+        p: 2,
+        bgcolor: "background.paper",
+        borderColor: row.isUsed ? "divider" : "action.disabledBackground",
+        transition: "0.2s",
+      }}
+    >
+      <Stack spacing={1.5}>
+        {/* ส่วนที่ 1: หัวข้อ + สถานะ */}
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+          <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
+            <Typography variant="subtitle1" fontWeight={800} sx={{ lineHeight: 1.2 }} noWrap>
               {row.title || "ไม่มีชื่อหัวข้อ"}
             </Typography>
-            <Chip
-              size="small"
-              label={row.targetRole}
-              variant="filled"
-              color={row.targetRole === "Admin" ? "error" : "primary"}
-              sx={{ height: 18, fontSize: 9, fontWeight: 700 }}
-            />
+            <Typography variant="caption" color="text.secondary">
+              ID: {row.id}{index !== undefined ? ` • ลำดับที่ ${index}` : ""}
+            </Typography>
           </Stack>
 
-          {/* สถานที่ (Location) */}
-          {row.location && (
-            <Stack direction="row" alignItems="center" spacing={0.5}>
-              <PlaceIcon sx={{ fontSize: 12, color: "text.disabled" }} />
-              <Typography variant="caption" color="text.secondary">
-                {row.location}
-              </Typography>
-            </Stack>
-          )}
+          <Chip
+            size="small"
+            label={row.isUsed ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+            color={row.isUsed ? "success" : "default"}
+            variant={row.isUsed ? "filled" : "outlined"}
+            sx={{ fontWeight: 700, height: 24, flexShrink: 0 }}
+          />
+        </Stack>
 
-          {/* เนื้อหา (Content) */}
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              lineHeight: 1.3,
-              mt: 0.5,
-            }}
-          >
-            {row.content}
-          </Typography>
+        {/* ส่วนที่ 2: Location */}
+        {row.location && (
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            <PlaceIcon sx={{ fontSize: 13, color: "text.disabled" }} />
+            <Typography variant="caption" color="text.secondary">
+              {row.location}
+            </Typography>
+          </Stack>
+        )}
 
-          {/* Footer: วันที่ และ ปุ่มจัดการ */}
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            pt={1.5}
-          >
-            <Box>
-              <Typography
-                variant="caption"
-                color="text.disabled"
-                display="block"
-                sx={{ fontSize: 10 }}
-              >
-                แก้ไขเมื่อ: {new Date(row.updateAt).toLocaleDateString("th-TH")}
-              </Typography>
-            </Box>
+        {/* ส่วนที่ 3: Chips แสดงคุณสมบัติ */}
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Chip
+            label={row.targetRole}
+            size="small"
+            color={row.targetRole === "Admin" ? "error" : row.targetRole === "Customer" ? "primary" : "default"}
+            variant="filled"
+            sx={{ fontSize: "0.7rem", fontWeight: 700 }}
+          />
+          <Chip
+            label={row.category}
+            size="small"
+            variant="outlined"
+            sx={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase" }}
+          />
+        </Stack>
 
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              {/* สวิตซ์เปิด/ปิด */}
-              <Stack direction="row" alignItems="center" mr={1}>
-                <Switch
-                  size="small"
-                  checked={row.isUsed}
-                  onChange={(_, v) => onToggleActive(row.id, v)}
-                  color="success"
-                />
-              </Stack>
+        <Divider sx={{ borderStyle: "dashed" }} />
 
-              {/* ปุ่มแก้ไข */}
-              <IconButton
-                size="small"
-                onClick={() => onEdit(row)}
-                sx={{ bgcolor: "primary.lighter", color: "primary.main" }}
-              >
-                <EditOutlinedIcon sx={{ fontSize: 18 }} />
-              </IconButton>
+        {/* ส่วนที่ 4: Toggle & Actions */}
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Switch
+              size="small"
+              checked={row.isUsed}
+              onChange={(_, v) => onToggleActive(row.id, v)}
+              color="success"
+            />
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color={row.isUsed ? "success.main" : "text.disabled"}
+            >
+              {row.isUsed ? "พร้อมใช้งาน" : "ปิดชั่วคราว"}
+            </Typography>
+          </Stack>
 
-              {/* ปุ่มลบ */}
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => onDelete(row.id)}
-                sx={{ bgcolor: "error.lighter" }}
-              >
-                <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Stack>
+          <Stack direction="row" spacing={1}>
+            <IconButton
+              size="medium"
+              onClick={() => onEdit(row)}
+              sx={{ bgcolor: "primary.50", color: "primary.main", "&:hover": { bgcolor: "primary.100" } }}
+            >
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+
+            <IconButton
+              size="medium"
+              color="error"
+              onClick={() => onDelete(row.id)}
+              sx={{ bgcolor: "error.50", color: "error.main", "&:hover": { bgcolor: "error.100" } }}
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
           </Stack>
         </Stack>
       </Stack>

@@ -58,7 +58,7 @@ const getItemStatusInfo = (status: string) => {
 
 type Props = {
   order: any;
-  onOpenStatusMenu: (e: React.MouseEvent<HTMLElement>, id: number) => void;
+  onOpenStatusMenu: (e: React.MouseEvent<HTMLElement>, id: number, currentStatus: string) => void;
   onCancelItem: (id: number, name: string) => void;
 };
 
@@ -178,7 +178,7 @@ export default function OrderItemsList({
                       <Button
                         size="small"
                         variant="contained"
-                        onClick={(e) => onOpenStatusMenu(e, item.id)}
+                        onClick={(e) => onOpenStatusMenu(e, item.id, item.kitchenStatus)}
                         endIcon={<KeyboardArrowDownIcon />}
                         disableElevation
                         sx={{
