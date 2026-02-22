@@ -5,6 +5,8 @@ import {
   Chip,
   Button,
   CircularProgress,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -24,51 +26,90 @@ export default function ManageOrderHeader({
     <Stack
       direction={{ xs: "column", sm: "row" }}
       justifyContent="space-between"
-      alignItems="center"
+      alignItems={{ xs: "flex-start", sm: "flex-end" }}
       spacing={2}
-      mb={3}
     >
+      {/* Title block */}
       <Box>
-        <Stack direction="row" alignItems="center" spacing={2}>
-          <Typography variant="h5" fontWeight={800} sx={{ color: "#2b3445" }}>
+        <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: "1.6rem", md: "2.2rem" },
+              letterSpacing: "-0.02em",
+            }}
+            className="text-gray-900"
+          >
             จัดการรายการคำสั่งซื้อ
           </Typography>
+
           {pendingCount > 0 && (
             <Chip
-              icon={<NotificationsActiveIcon />}
+              icon={<NotificationsActiveIcon sx={{ fontSize: "1rem !important" }} />}
               label={`รออนุมัติ ${pendingCount} รายการ`}
               color="warning"
               size="small"
-              sx={{ fontWeight: "bold", animation: "pulse 2s infinite" }}
+              sx={{ fontWeight: 700, animation: "pulse 2s infinite", borderRadius: "50px" }}
             />
           )}
         </Stack>
-        <Typography variant="body2" color="text.secondary">
+
+        <Typography
+          className="text-gray-500"
+          sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
+        >
           รายการออเดอร์ทั้งหมดในระบบ
         </Typography>
       </Box>
-      <Button
-        startIcon={
-          isFetching ? (
-            <CircularProgress size={20} color="inherit" />
-          ) : (
-            <RefreshIcon />
-          )
-        }
-        onClick={onRefresh}
-        variant="outlined"
-        disabled={isFetching}
-        sx={{
-          borderRadius: 2,
-          textTransform: "none",
-          fontWeight: 700,
-          borderColor: "#ef5350",
-          color: "#d32f2f",
-          "&:hover": { borderColor: "#d32f2f", bgcolor: "#ffebee" },
-        }}
-      >
-        รีเฟรชข้อมูล
-      </Button>
+
+      {/* Action buttons */}
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Tooltip title="รีเฟรชข้อมูล">
+          <span>
+            <IconButton
+              onClick={onRefresh}
+              disabled={isFetching}
+              className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
+              sx={{ p: 1, borderRadius: "50%" }}
+            >
+              {isFetching ? (
+                <CircularProgress size={20} sx={{ color: "#D32F2F" }} />
+              ) : (
+                <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
+              )}
+            </IconButton>
+          </span>
+        </Tooltip>
+
+        <Button
+          variant="outlined"
+          startIcon={
+            isFetching ? (
+              <CircularProgress size={18} color="inherit" />
+            ) : (
+              <RefreshIcon />
+            )
+          }
+          onClick={onRefresh}
+          disabled={isFetching}
+          className="bg-white hover:bg-red-50 whitespace-nowrap"
+          sx={{
+            borderRadius: "50px",
+            px: { xs: 2, md: 3 },
+            py: { xs: 1, md: 1.25 },
+            fontSize: { xs: "0.85rem", md: "1rem" },
+            fontWeight: 700,
+            borderColor: "#E63946",
+            borderWidth: "1.5px",
+            color: "#D32F2F",
+            textTransform: "none",
+            display: { xs: "none", sm: "inline-flex" },
+            "&:hover": { borderColor: "#D32F2F", borderWidth: "1.5px" },
+          }}
+        >
+          รีเฟรชข้อมูล
+        </Button>
+      </Stack>
     </Stack>
   );
 }
