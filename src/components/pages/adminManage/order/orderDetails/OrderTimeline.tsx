@@ -19,7 +19,7 @@ import { Sd } from "../../../../../helpers/SD";
 const BRAND_COLOR = "#D32F2F";
 
 const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
-  [`&.${stepConnectorClasses.alternativeLabel}`]: { top: 22 },
+  [`&.${stepConnectorClasses.alternativeLabel}`]: { top: 27 },
   [`&.${stepConnectorClasses.active}`]: {
     [`& .${stepConnectorClasses.line}`]: {
       backgroundImage: `linear-gradient( 95deg, ${BRAND_COLOR} 0%, #ff8a80 50%, #e0e0e0 100%)`,
@@ -44,31 +44,31 @@ const ColorlibStepIconRoot = styled("div")<{
   backgroundColor: theme.palette.mode === "dark" ? theme.palette.grey[700] : "#ccc",
   zIndex: 1,
   color: "#fff",
-  width: 45, // ✅ ลดขนาดลงเล็กน้อยเพื่อให้เหมาะกับหน้า Drawer
-  height: 45,
+  width: 54,
+  height: 54,
   display: "flex",
   borderRadius: "50%",
   justifyContent: "center",
   alignItems: "center",
   transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-  boxShadow: "0 4px 10px 0 rgba(0,0,0,.05)",
+  boxShadow: "0 4px 10px 0 rgba(0,0,0,.08)",
   ...(ownerState.active && {
     backgroundImage: `linear-gradient( 136deg, #ff5252 0%, ${BRAND_COLOR} 50%, #b71c1c 100%)`,
-    boxShadow: "0 4px 15px 0 rgba(211, 47, 47, 0.4)",
-    transform: "scale(1.15)",
+    boxShadow: "0 6px 20px 0 rgba(211, 47, 47, 0.45)",
+    transform: "scale(1.18)",
   }),
   ...(ownerState.completed && {
-    backgroundImage: `linear-gradient( 136deg, #81c784 0%, #4caf50 50%, #2e7d32 100%)`, // ✅ ขั้นตอนที่จบแล้วให้เป็นโทนเขียว
+    backgroundImage: `linear-gradient( 136deg, #81c784 0%, #4caf50 50%, #2e7d32 100%)`,
   }),
 }));
 
 function ColorlibStepIcon(props: StepIconProps) {
   const icons: { [index: string]: React.ReactElement } = {
-    1: <NewReleasesIcon fontSize="small" />,
-    2: <PaidIcon fontSize="small" />,
-    3: <SoupKitchenIcon fontSize="small" />,
-    4: <CheckCircleIcon fontSize="small" />, // ✅ พร้อมรับ
-    5: <FlagIcon fontSize="small" />,        // ✅ สำเร็จ
+    1: <NewReleasesIcon fontSize="medium" />,
+    2: <PaidIcon fontSize="medium" />,
+    3: <SoupKitchenIcon fontSize="medium" />,
+    4: <CheckCircleIcon fontSize="medium" />,
+    5: <FlagIcon fontSize="medium" />,
   };
 
   return (
@@ -113,32 +113,48 @@ export default function OrderTimeline({ status }: { status: string }) {
   const isFinished = status === Sd.Status_Completed;
 
   return (
-    <Box sx={{ width: "100%", py: 1 }}>
+    <Box
+      sx={{
+        width: "100%",
+        py: { xs: 1.5, sm: 2 },
+        px: { xs: 0.5, sm: 1 },
+        bgcolor: "white",
+        borderRadius: 3,
+        border: "1px solid #f0f0f0",
+      }}
+    >
       <Stepper
         alternativeLabel
         activeStep={isFinished ? 5 : currentStep}
         connector={<ColorlibConnector />}
       >
-        {stepsLabel.map((label, index) => (
-          <Step key={label}>
-            <StepLabel StepIconComponent={ColorlibStepIcon}>
-              <Typography
-                variant="caption"
-                fontWeight={currentStep === index ? 900 : 600}
-                sx={{
-                  mt: 0.5,
-                  display: "block",
-                  color: currentStep === index ? BRAND_COLOR : "text.secondary",
-                  fontSize: "0.7rem", // ✅ ลดขนาด Font ลงนิดนึงให้พอดีหน้า Drawer
-                  transition: "all 0.3s",
-                  opacity: (currentStep >= index || isFinished) ? 1 : 0.5
-                }}
-              >
-                {label}
-              </Typography>
-            </StepLabel>
-          </Step>
-        ))}
+        {stepsLabel.map((label, index) => {
+          const isActive = currentStep === index && !isFinished;
+          const isDone = isFinished || currentStep > index;
+          return (
+            <Step key={label}>
+              <StepLabel StepIconComponent={ColorlibStepIcon}>
+                <Typography
+                  fontWeight={isActive ? 900 : 600}
+                  sx={{
+                    mt: 0.75,
+                    display: "block",
+                    color: isActive
+                      ? BRAND_COLOR
+                      : isDone
+                      ? "#4caf50"
+                      : "text.disabled",
+                    fontSize: { xs: "0.7rem", sm: "0.8rem" },
+                    lineHeight: 1.3,
+                    transition: "all 0.3s",
+                  }}
+                >
+                  {label}
+                </Typography>
+              </StepLabel>
+            </Step>
+          );
+        })}
       </Stepper>
     </Box>
   );

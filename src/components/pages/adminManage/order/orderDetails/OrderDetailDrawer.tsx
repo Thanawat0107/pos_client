@@ -13,6 +13,9 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import TakeoutDiningIcon from "@mui/icons-material/TakeoutDining";
+import LocalPrintshopIcon from "@mui/icons-material/LocalPrintshop";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { registerPdfFonts } from "../../../../../hooks/useFont";
 import type { OrderHeader } from "../../../../../@types/dto/OrderHeader";
 import {
   useCancelOrderMutation,
@@ -29,6 +32,10 @@ import OrderCustomerInfo from "./OrderCustomerInfo";
 import OrderItemsList from "./OrderItemsList";
 import OrderModals from "./OrderModals";
 import { paymentMethods } from "../../../../../helpers/SD";
+import OrderReceiptPDF from "./OrderReceiptPDF";
+
+// register Thai font for PDF
+registerPdfFonts();
 
 const BRAND_COLOR = "#D32F2F";
 const BG_COLOR = "#f5f5f5";
@@ -184,59 +191,162 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
         open={open}
         onClose={onClose}
         PaperProps={{
-          sx: { width: { xs: "100%", md: 650 }, bgcolor: BG_COLOR },
+          sx: { width: { xs: "100%", sm: "90vw", md: 700 }, bgcolor: BG_COLOR },
         }}
       >
         {/* Header */}
         <Box
           sx={{
-            p: 2.5,
+            px: { xs: 2, sm: 3 },
+            pt: 2.5,
+            pb: 2,
             bgcolor: "white",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            borderBottom: "1px solid #eee",
+            borderBottom: "2px solid #f0f0f0",
           }}
         >
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar sx={{ bgcolor: "#ffebee", color: BRAND_COLOR }}>
-              <ReceiptLongIcon />
-            </Avatar>
-            <Box>
-              <Typography
-                variant="h6"
-                fontWeight={800}
-                lineHeight={1.2}
-                sx={{ color: "#333" }}
-              >
-                {order.orderCode}
-              </Typography>
-              <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
-                <OrderStatusBadge status={order.orderStatus} />
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
+          <div className="flex items-start justify-between gap-2">
+            {/* Left: order info */}
+            <Stack spacing={1.5} flex={1} minWidth={0}>
+              {/* Order code row */}
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Avatar
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    borderLeft: "1px solid #ddd",
-                    pl: 1,
+                    bgcolor: "#ffebee",
+                    color: BRAND_COLOR,
+                    width: { xs: 44, sm: 52 },
+                    height: { xs: 44, sm: 52 },
+                    flexShrink: 0,
                   }}
                 >
-                  <TakeoutDiningIcon fontSize="inherit" /> PickUp:{" "}
-                  <strong>{order.pickUpCode || "-"}</strong>
-                </Typography>
+                  <ReceiptLongIcon sx={{ fontSize: { xs: 22, sm: 28 } }} />
+                </Avatar>
+                <Box minWidth={0}>
+                  <Typography
+                    variant="h5"
+                    fontWeight={900}
+                    sx={{
+                      color: "#1a1a1a",
+                      lineHeight: 1.1,
+                      fontSize: { xs: "1.3rem", sm: "1.6rem" },
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {order.orderCode}
+                  </Typography>
+                  <Box mt={0.5}>
+                    <OrderStatusBadge status={order.orderStatus} />
+                  </Box>
+                </Box>
               </Stack>
-            </Box>
-          </Stack>
-          <IconButton onClick={onClose} sx={{ color: "#999" }}>
-            <CloseIcon />
-          </IconButton>
+
+              {/* PickUp code — big & prominent */}
+              {order.pickUpCode ? (
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    bgcolor: BRAND_COLOR,
+                    borderRadius: 3,
+                    px: { xs: 2, sm: 3 },
+                    py: { xs: 1.2, sm: 1.5 },
+                    boxShadow: "0 4px 16px rgba(211,47,47,0.35)",
+                    width: "fit-content",
+                  }}
+                >
+                  <TakeoutDiningIcon
+                    sx={{ color: "white", fontSize: { xs: 28, sm: 36 } }}
+                  />
+                  <Box>
+                    <Typography
+                      sx={{
+                        color: "rgba(255,255,255,0.75)",
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        letterSpacing: 2,
+                        textTransform: "uppercase",
+                        lineHeight: 1,
+                      }}
+                    >
+                      รหัสรับออเดอร์ · PICK UP
+                    </Typography>
+                    <Typography
+                      sx={{
+                        color: "white",
+                        fontWeight: 900,
+                        lineHeight: 1.1,
+                        letterSpacing: 4,
+                        fontSize: { xs: "2.4rem", sm: "3rem" },
+                      }}
+                    >
+                      {order.pickUpCode}
+                    </Typography>
+                  </Box>
+                </Box>
+              ) : (
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  spacing={1}
+                  sx={{
+                    bgcolor: "#f5f5f5",
+                    borderRadius: 2,
+                    px: 2,
+                    py: 1,
+                    width: "fit-content",
+                  }}
+                >
+                  <TakeoutDiningIcon fontSize="small" sx={{ color: "#aaa" }} />
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#aaa", fontWeight: 600 }}
+                  >
+                    ไม่มีรหัส Pick Up
+                  </Typography>
+                </Stack>
+              )}
+            </Stack>
+
+            {/* Right: actions */}
+            <Stack spacing={1} alignItems="flex-end" flexShrink={0}>
+              <IconButton
+                onClick={onClose}
+                sx={{
+                  color: "#888",
+                  bgcolor: "#f5f5f5",
+                  "&:hover": { bgcolor: "#ffe0e0", color: BRAND_COLOR },
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+
+              {/* PDF Download button */}
+              <PDFDownloadLink
+                document={<OrderReceiptPDF order={order} />}
+                fileName={`receipt-${order.orderCode}.pdf`}
+                style={{ textDecoration: "none" }}
+              >
+                {({ loading }) => (
+                  <IconButton
+                    disabled={loading}
+                    title="ดาวน์โหลดใบเสร็จ PDF"
+                    sx={{
+                      color: loading ? "#bbb" : "#2e7d32",
+                      bgcolor: "#f5f5f5",
+                      borderRadius: 2,
+                      "&:hover": { bgcolor: "#e8f5e9", color: "#1b5e20" },
+                    }}
+                  >
+                    <LocalPrintshopIcon />
+                  </IconButton>
+                )}
+              </PDFDownloadLink>
+            </Stack>
+          </div>
         </Box>
 
         {/* Content */}
-        <Box sx={{ p: 3, flex: 1, overflowY: "auto" }}>
+        <Box sx={{ p: { xs: 2, sm: 3 }, flex: 1, overflowY: "auto" }}>
           <Stack spacing={3}>
             <OrderTimeline status={order.orderStatus} />
 

@@ -8,7 +8,6 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
-import LocalPrintshopIcon from "@mui/icons-material/LocalPrintshop";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PaidIcon from "@mui/icons-material/Paid";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -68,12 +67,7 @@ export default function OrderActionBoard({
       }}
     >
       <CardContent>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={2}
-        >
+        <Stack direction="row" alignItems="center" mb={2}>
           <Typography
             variant="subtitle2"
             fontWeight={800}
@@ -82,15 +76,6 @@ export default function OrderActionBoard({
           >
             Action Required
           </Typography>
-          <Button
-            variant="outlined"
-            color="inherit"
-            size="small"
-            onClick={() => window.print()}
-            startIcon={<LocalPrintshopIcon />}
-          >
-            พิมพ์ใบเสร็จ
-          </Button>
         </Stack>
 
         <Grid container spacing={2}>

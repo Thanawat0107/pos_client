@@ -14,8 +14,11 @@ import LocalDiningIcon from "@mui/icons-material/LocalDining";
 import PrintIcon from "@mui/icons-material/Print";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import { getItemStatusConfig } from "../../utility/OrderHelpers";
 import { Sd } from "../../helpers/SD";
+import type { OrderHeader } from "../../@types/dto/OrderHeader";
+import OrderReceiptPDF from "../../components/pages/adminManage/order/orderDetails/OrderReceiptPDF";
 
 interface OrderDetailOption {
   optionGroupName: string;
@@ -37,6 +40,7 @@ interface OrderDetail {
 }
 
 interface Props {
+  order: OrderHeader;
   orderDetails: OrderDetail[];
   subTotal: number;
   discount: number;
@@ -47,6 +51,7 @@ interface Props {
 }
 
 export default function OrderMenuList({
+  order,
   orderDetails,
   subTotal,
   discount,
@@ -57,24 +62,6 @@ export default function OrderMenuList({
 }: Props) {
   // const isAllCancelled =
   //   orderDetails?.length > 0 && orderDetails.every((item) => item.isCancelled);
-
-  const handlePrint = () => {
-    // 1. เก็บชื่อ Title เดิมไว้ก่อน (เช่น "My Website")
-    const originalTitle = document.title;
-
-    // 2. ตั้งชื่อไฟล์ที่ต้องการ (เบราว์เซอร์จะเติม .pdf ให้เอง)
-    // สมมติชื่อไฟล์คือ Receipt_# ตามด้วย ID ออเดอร์
-    document.title = `Receipt_Order_#${orderDetails[0]?.id || "New"}`;
-
-    // 3. สั่งพิมพ์
-    window.print();
-
-    // 4. เปลี่ยน Title กลับเป็นเหมือนเดิมหลังจากหน้าต่างพิมพ์เปิดขึ้นมาแล้ว
-    // ใช้ setTimeout เล็กน้อยเพื่อให้เบราว์เซอร์ดึงชื่อ Title ไปใช้ทัน
-    setTimeout(() => {
-      document.title = originalTitle;
-    }, 100);
-  };
 
   return (
     <Paper
@@ -118,13 +105,21 @@ export default function OrderMenuList({
             />
           </Typography>
 
-          <IconButton
-            className="no-print"
-            onClick={handlePrint}
-            sx={{ bgcolor: "#f5f5f5", p: 1 }}
+          <PDFDownloadLink
+            document={<OrderReceiptPDF order={order} />}
+            fileName={`Receipt_${order.orderCode}.pdf`}
+            style={{ textDecoration: "none" }}
           >
-            <PrintIcon fontSize="small" />
-          </IconButton>
+            {({ loading }) => (
+              <IconButton
+                className="no-print"
+                disabled={loading}
+                sx={{ bgcolor: "#f5f5f5", p: 1 }}
+              >
+                <PrintIcon fontSize="small" />
+              </IconButton>
+            )}
+          </PDFDownloadLink>
         </Stack>
       </Box>
 

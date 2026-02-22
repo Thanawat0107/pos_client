@@ -327,6 +327,7 @@ export default function OrderSuccess() {
           />
 
           <OrderMenuList
+            order={order}
             orderDetails={order.orderDetails}
             subTotal={order.subTotal}
             discount={order.discount}
