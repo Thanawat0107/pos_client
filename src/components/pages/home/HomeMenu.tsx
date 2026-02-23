@@ -1,4 +1,5 @@
 import { Box, Container, Stack, Typography, Button, Alert, useTheme } from "@mui/material";
+import { Link } from "react-router-dom";
 import { alpha } from "@mui/material/styles";
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import MenuScroller from "../../../components/pages/menu/MenuScroller"; 
@@ -68,6 +69,8 @@ export default function HomeMenu({ items, isError }: HomeMenuProps) {
 
           <Button
             variant="text"
+            component={Link}
+            to="/menuItem"
             endIcon={<ArrowForwardIosIcon sx={{ fontSize: "12px !important" }} />}
             sx={{
               borderRadius: "50px",

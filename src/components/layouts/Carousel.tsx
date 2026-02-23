@@ -71,41 +71,55 @@ export default function Carousel({ items, autoPlay = true }: { items: Content[];
             {/* 3. Content Area with Entrance Animation */}
             <Box sx={{
               position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-              justifyContent: "center", p: { xs: 4, md: 10 }, color: "white",
+              justifyContent: { xs: "flex-end", md: "center" },
+              px: { xs: 3, md: 10 }, pt: { xs: 3, md: 10 }, pb: { xs: "60px", md: 10 }, color: "white",
               zIndex: 2,
             }}>
               <Box sx={{
                 animation: i === index ? "slideUp 0.8s cubic-bezier(0.2, 1, 0.3, 1) forwards" : "none",
                 "@keyframes slideUp": { "0%": { opacity: 0, transform: "translateY(30px)" }, "100%": { opacity: 1, transform: "translateY(0)" } }
-              }}>
-                <Typography 
+              }}>                <Typography 
                   variant="overline" 
                   sx={{ 
                     bgcolor: item.contentType === "Promotion" ? "primary.main" : "info.main",
-                    px: 2, py: 0.5, borderRadius: "50px", fontWeight: 700, letterSpacing: 1
+                    px: { xs: 1.2, md: 2 }, py: 0.5, borderRadius: "50px",
+                    fontWeight: 700, letterSpacing: 1,
+                    fontSize: { xs: "0.6rem", md: "0.75rem" },
                   }}
                 >
                   {item.contentType}
                 </Typography>
 
-                <Typography variant={isDesktop ? "h1" : "h3"} sx={{ mt: 2, mb: 1, fontWeight: 800, textShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+                <Typography
+                  sx={{
+                    mt: { xs: 1, md: 2 }, mb: { xs: 0.5, md: 1 },
+                    fontWeight: 800,
+                    textShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                    fontSize: { xs: "1.3rem", sm: "2rem", md: "3rem", lg: "3.5rem" },
+                    lineHeight: 1.15,
+                    display: "-webkit-box",
+                    WebkitLineClamp: { xs: 2, md: 3 },
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
                   {item.title}
                 </Typography>
 
-                <Typography variant="h6" sx={{ mb: 4, opacity: 0.8, maxWidth: "600px", fontWeight: 400, display: { xs: 'none', sm: 'block' } }}>
+                <Typography variant="body1" sx={{ mb: { xs: 2, md: 4 }, opacity: 0.8, maxWidth: "600px", fontWeight: 400, display: { xs: 'none', sm: 'block' } }}>
                   {item.description}
                 </Typography>
 
-                <Stack direction="row" spacing={2}>
+                <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
                   <Button 
-                    variant="contained" size="large"
-                    sx={{ borderRadius: "50px", px: 4, py: 1.5, fontSize: "1.1rem", boxShadow: `0 10px 20px ${alpha(theme.palette.primary.main, 0.4)}` }}
+                    variant="contained" size={isDesktop ? "large" : "small"}
+                    sx={{ borderRadius: "50px", px: { xs: 2.5, md: 4 }, py: { xs: 0.8, md: 1.5 }, fontSize: { xs: "0.8rem", md: "1.1rem" }, boxShadow: `0 10px 20px ${alpha(theme.palette.primary.main, 0.4)}` }}
                   >
                     สั่งเลยตอนนี้
                   </Button>
                   <Button 
-                    variant="outlined" size="large"
-                    sx={{ borderRadius: "50px", px: 4, color: "white", borderColor: "rgba(255,255,255,0.5)", "&:hover": { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" } }}
+                    variant="outlined" size={isDesktop ? "large" : "small"}
+                    sx={{ borderRadius: "50px", px: { xs: 2.5, md: 4 }, fontSize: { xs: "0.8rem", md: "1.1rem" }, color: "white", borderColor: "rgba(255,255,255,0.5)", "&:hover": { borderColor: "white", bgcolor: "rgba(255,255,255,0.1)" } }}
                   >
                     รายละเอียด
                   </Button>

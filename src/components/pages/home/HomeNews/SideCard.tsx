@@ -26,6 +26,10 @@ export default function SideCard({ item, index, onClick }: SideCardProps) {
         position: "relative",
         animation: `${fadeSlideUp} 0.6s ${0.1 + index * 0.1}s ease both`,
         bgcolor: "grey.900",
+        boxShadow: (theme) =>
+          theme.palette.mode === "dark"
+            ? "0 0 0 1px rgba(255,255,255,0.07), 0 2px 16px rgba(0,0,0,0.45)"
+            : "0 0 0 1px rgba(0,0,0,0.06), 0 2px 16px rgba(0,0,0,0.10)",
         // hover: IG hover dimming
         "&:hover .scard-img": { transform: "scale(1.05)", filter: "brightness(0.65)" },
         "&:hover .scard-overlay": { opacity: 1 },

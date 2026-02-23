@@ -49,7 +49,7 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx, onClick }: Props) {
         display: "flex",
         flexDirection: "column",
         position: "relative",
-        borderRadius: 4,
+        borderRadius: 2,
         border: "1px solid",
         borderColor: "divider",
         backgroundColor: "background.paper",
@@ -92,12 +92,12 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx, onClick }: Props) {
 
       {/* Content */}
       <CardContent sx={{ flexGrow: 1, p: 2.5, display: "flex", flexDirection: "column", gap: 1 }}>
-        <Typography variant="h6" fontWeight={700} lineHeight={1.2} sx={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+        <Typography variant="h6" fontWeight={700} lineHeight={1.2} sx={{ fontSize: "1.15rem", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
           {name}
         </Typography>
 
-        <Typography variant="body2" color="text.secondary" sx={{ minHeight: "2.5em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5 }}>
-          {description || "No description available."}
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.9rem", minHeight: "2.5em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.5 }}>
+          {description || "ไม่มีรายละเอียด"}
         </Typography>
 
         {/* Action Area */}
@@ -112,15 +112,16 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx, onClick }: Props) {
             }}
             startIcon={<AddShoppingCartIcon />}
             sx={{
-              borderRadius: 2.5,
-              fontWeight: 600,
+              borderRadius: 1.5,
+              fontWeight: 700,
+              fontSize: "0.95rem",
               textTransform: "none",
               py: 1.2,
               background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
               "&:hover": { filter: "brightness(110%)", boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}` },
             }}
           >
-            Add to cart
+            เพิ่มลงตะกร้า
           </Button>
         </Box>
       </CardContent>

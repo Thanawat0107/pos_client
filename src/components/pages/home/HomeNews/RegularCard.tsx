@@ -24,6 +24,10 @@ export default function RegularCard({ item, index, onClick }: RegularCardProps) 
         overflow: "hidden",
         bgcolor: "grey.900",
         animation: `${fadeSlideUp} 0.6s ${0.15 * index}s ease both`,
+        boxShadow: (theme) =>
+          theme.palette.mode === "dark"
+            ? "0 0 0 1px rgba(255,255,255,0.07), 0 2px 16px rgba(0,0,0,0.45)"
+            : "0 0 0 1px rgba(0,0,0,0.06), 0 2px 16px rgba(0,0,0,0.10)",
         // IG hover effect
         "&:hover .rcard-img": { transform: "scale(1.05)", filter: "brightness(0.6)" },
         "&:hover .rcard-overlay": { opacity: 1 },

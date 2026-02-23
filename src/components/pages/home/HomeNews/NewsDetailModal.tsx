@@ -10,9 +10,6 @@ import {
   Avatar,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
-import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
-import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
@@ -140,7 +137,8 @@ export default function NewsDetailModal({ item, onClose }: NewsDetailModalProps)
           animation: `${popIn} 0.22s ease both`,
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
-          maxHeight: { xs: "92vh", md: 620 },
+          maxHeight: { xs: "92vh", md: 580 },
+          height: { md: 580 },
         },
       }}
       slotProps={{
@@ -155,7 +153,7 @@ export default function NewsDetailModal({ item, onClose }: NewsDetailModalProps)
           flexShrink: 0,
           bgcolor: "black",
           paddingBottom: { xs: "75%", md: 0 },
-          minHeight: { md: "100%" },
+          alignSelf: { md: "stretch" },
         }}
       >
         <Box
@@ -163,7 +161,7 @@ export default function NewsDetailModal({ item, onClose }: NewsDetailModalProps)
           src={image}
           alt={item.title}
           sx={{
-            position: { xs: "absolute", md: "relative" },
+            position: "absolute",
             inset: 0,
             width: "100%",
             height: "100%",
@@ -222,23 +220,6 @@ export default function NewsDetailModal({ item, onClose }: NewsDetailModalProps)
             </Typography>
           )}
           <PromoSection item={item} />
-        </Box>
-
-        {/* Action bar */}
-        <Box sx={{ flexShrink: 0, borderTop: (theme) => `1px solid ${alpha(theme.palette.divider, 0.15)}`, px: 2, py: 1.2 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={0.5}>
-              <IconButton size="small" sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}>
-                <FavoriteBorderIcon fontSize="small" />
-              </IconButton>
-              <IconButton size="small" sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}>
-                <ShareOutlinedIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-            <IconButton size="small" sx={{ color: "text.secondary", "&:hover": { color: "warning.main" } }}>
-              <BookmarkBorderIcon fontSize="small" />
-            </IconButton>
-          </Stack>
         </Box>
       </Stack>
     </Dialog>

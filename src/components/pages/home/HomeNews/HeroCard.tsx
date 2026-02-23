@@ -21,6 +21,10 @@ export default function HeroCard({ item, onClick }: { item: Content; onClick: ()
         borderRadius: 2,
         overflow: "hidden",
         cursor: "pointer",
+        boxShadow: (theme) =>
+          theme.palette.mode === "dark"
+            ? "0 0 0 1px rgba(255,255,255,0.07), 0 4px 28px rgba(0,0,0,0.55)"
+            : "0 0 0 1px rgba(0,0,0,0.06), 0 4px 28px rgba(0,0,0,0.12)",
         "&:hover .hero-img": { transform: "scale(1.06)" },
         "&:hover .hero-btn": { gap: 1.5 },
         animation: `${fadeSlideUp} 0.6s ease both`,
