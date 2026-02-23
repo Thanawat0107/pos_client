@@ -16,11 +16,14 @@ import {
   useMediaQuery,
   Chip,
   CircularProgress,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useDebounced } from "../../../../hooks/useDebounced";
@@ -45,7 +48,16 @@ import {
   useUpdateRecipeMutation,
 } from "../../../../services/recipesApi";
 import { useGetMenuItemsQuery } from "../../../../services/menuItemApi";
-// 1. เพิ่ม Hook สำหรับดึง Menu Items (Path สมมติ)
+
+const headCellSx = {
+  fontWeight: 800,
+  color: "#475569",
+  fontSize: "1.05rem",
+  bgcolor: "#F8FAFC",
+  py: 2.5,
+  letterSpacing: "0.01em",
+};
+
 export default function ManageRecipeList() {
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
@@ -74,10 +86,10 @@ export default function ManageRecipeList() {
     pageSize: 1000, 
   });
 
-  // 2.1 ดึงข้อมูล Menu เพื่อเอาไปใช้ใน Select/Autocomplete
+  // ดึงข้อมูล MenuItem ทั้งหมดสำหรับ Autocomplete ในฟอร์ม
   const { data: menuData } = useGetMenuItemsQuery({
     pageNumber: 1,
-    pageSize: 1000, // ดึงมาทั้งหมดเพื่อให้เลือกได้ครบ
+    pageSize: 1000,
   });
   const menuList = menuData?.result ?? [];
 
@@ -157,122 +169,240 @@ export default function ManageRecipeList() {
 
   const isBusy = isCreating || isUpdating || isDeleting;
 
-  if (isLoading)
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-
   return (
-    <Box sx={{ py: { xs: 2, md: 4 } }}>
-      <Container maxWidth="xl">
-        {/* Header */}
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ mb: 2 }}
-        >
-          <Typography variant={isSmUp ? "h5" : "h6"} fontWeight={800}>
-            จัดการสูตรอาหาร (Recipes)
-          </Typography>
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIcon />}
-              component={Link}
-              to="/manage-menuItem"
-            >
-              ย้อนกลับ
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
-              รีเฟรช
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenForm()}
-              disabled={isBusy}
-            >
-              เพิ่มสูตร
-            </Button>
-          </Stack>
-        </Stack>
+    <Box className="min-h-screen bg-[#F5F6F8] pb-12 font-sans">
+      <Container maxWidth="xl" className="px-4 md:px-8 pt-6 md:pt-8">
+        <Stack spacing={2.5}>
 
-        {/* Filter Bar */}
-        <RecipeFilterBar
-          q={filters.q}
-          status={filters.status}
-          onSearch={(v) => handleFilterChange("q", v)}
-          onStatusChange={(v) => handleFilterChange("status", v)}
-        />
-
-        {/* Summary */}
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            พบ {filtered.length} รายการ
-          </Typography>
-          {filters.status !== "all" && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={filters.status === "active" ? "ใช้งาน" : "ปิด"}
-              onDelete={() => handleFilterChange("status", "all")}
-            />
-          )}
-          {filters.q && (
-            <Chip
-              size="small"
-              variant="outlined"
-              label={`ค้นหา: "${filters.q}"`}
-              onDelete={() => handleFilterChange("q", "")}
-            />
-          )}
-        </Stack>
-
-        {/* Content */}
-        {isSmUp ? (
-          <Paper
-            variant="outlined"
-            sx={{ borderRadius: 2, overflow: "hidden" }}
+          {/* ── 1. Header ── */}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", sm: "flex-end" }}
+            spacing={2}
           >
-            <TableContainer>
-              <Table size="medium" sx={{ tableLayout: "fixed" }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell width="5%" align="center" sx={{ fontWeight: 700 }}>
-                      #
-                    </TableCell>
-                    <TableCell width="25%" sx={{ fontWeight: 700 }}>
-                      เมนู
-                    </TableCell>
-                    <TableCell width="35%" sx={{ fontWeight: 700 }}>
-                      วิธีทำ (ย่อ)
-                    </TableCell>
-                    <TableCell width="15%" align="center" sx={{ fontWeight: 700 }}>
-                      สถานะ
-                    </TableCell>
-                    <TableCell width="20%" align="center" sx={{ fontWeight: 700 }}>
-                      จัดการ
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
+            <Box>
+              <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
+                <MenuBookIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "#D32F2F" }} />
+                <Typography
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: { xs: "1.6rem", md: "2.2rem" },
+                    letterSpacing: "-0.02em",
+                  }}
+                  className="text-gray-900"
+                >
+                  จัดการสูตรอาหาร
+                </Typography>
+                <Chip
+                  size="small"
+                  label={`${rows.length} สูตร`}
+                  sx={{
+                    fontWeight: 700,
+                    bgcolor: "#FFF1F2",
+                    color: "#BE123C",
+                    border: "1.5px solid #FECDD3",
+                    borderRadius: "50px",
+                  }}
+                />
+              </Stack>
+              <Typography
+                className="text-gray-500"
+                sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
+              >
+                รายการสูตรอาหารและวิธีปรุงทั้งหมดในระบบ
+              </Typography>
+            </Box>
 
-                <TableBody>
-                  {pageRows.map((r, i) => (
-                    <ManageRecipeItem
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenForm()}
+                disabled={isBusy}
+                sx={{
+                  borderRadius: "50px",
+                  px: { xs: 2, md: 3 },
+                  py: { xs: 1, md: 1.25 },
+                  fontWeight: 700,
+                  textTransform: "none",
+                  fontSize: { xs: "0.85rem", md: "1rem" },
+                  bgcolor: "#D32F2F",
+                  "&:hover": { bgcolor: "#B71C1C" },
+                }}
+              >
+                เพิ่มสูตร
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<ArrowBackIcon />}
+                component={Link}
+                to="/manage-menuItem"
+                sx={{
+                  borderRadius: "50px",
+                  px: { xs: 2, md: 3 },
+                  py: { xs: 1, md: 1.25 },
+                  fontWeight: 700,
+                  textTransform: "none",
+                  fontSize: { xs: "0.85rem", md: "1rem" },
+                  borderColor: "#D32F2F",
+                  borderWidth: "1.5px",
+                  color: "#D32F2F",
+                  "&:hover": { borderColor: "#B71C1C", borderWidth: "1.5px", bgcolor: "#FFF1F2" },
+                }}
+              >
+                ย้อนกลับ
+              </Button>
+              <Tooltip title="รีเฟรชข้อมูล">
+                <span>
+                  <IconButton
+                    onClick={() => refetch()}
+                    disabled={isLoading}
+                    sx={{
+                      p: 1,
+                      borderRadius: "50%",
+                      bgcolor: "white",
+                      border: "1px solid #E5E7EB",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      "&:hover": { bgcolor: "#F9FAFB" },
+                    }}
+                  >
+                    {isLoading ? (
+                      <CircularProgress size={20} sx={{ color: "#D32F2F" }} />
+                    ) : (
+                      <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
+                    )}
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack>
+          </Stack>
+
+          {/* ── 2. Filter Card ── */}
+          <Paper
+            elevation={0}
+            className="bg-white rounded-3xl shadow-sm border border-gray-200"
+            sx={{ px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
+          >
+            <RecipeFilterBar
+              q={filters.q}
+              status={filters.status}
+              onSearch={(v) => handleFilterChange("q", v)}
+              onStatusChange={(v) => handleFilterChange("status", v)}
+            />
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }} flexWrap="wrap">
+              <Typography
+                className="text-[#E63946] font-bold flex items-center gap-2"
+                sx={{ fontSize: { xs: "0.95rem", md: "1.1rem" }, fontWeight: 700 }}
+              >
+                <Box
+                  component="span"
+                  sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#E63946", display: "inline-block", mr: 0.75 }}
+                />
+                รายการที่พบทั้งหมด: {filtered.length} รายการ
+              </Typography>
+              {filters.status !== "all" && (
+                <Chip
+                  size="small"
+                  label={filters.status === "active" ? "ใช้งาน" : "ปิดใช้งาน"}
+                  onDelete={() => handleFilterChange("status", "all")}
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
+              {filters.q && (
+                <Chip
+                  size="small"
+                  label={`ค้นหา: "${filters.q}"`}
+                  onDelete={() => handleFilterChange("q", "")}
+                  sx={{ fontWeight: 600 }}
+                />
+              )}
+            </Stack>
+          </Paper>
+
+          {/* ── 3. Content Card ── */}
+          {isLoading ? (
+            <Box className="flex flex-col justify-center items-center min-h-64 gap-4">
+              <CircularProgress size={56} thickness={4} sx={{ color: "#D32F2F" }} />
+              <Typography variant="h6" className="text-gray-500 font-semibold">
+                กำลังโหลดข้อมูล...
+              </Typography>
+            </Box>
+          ) : isSmUp ? (
+            <Paper
+              elevation={0}
+              className="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm"
+            >
+              <TableContainer>
+                <Table sx={{ minWidth: 700 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell align="center" sx={{ ...headCellSx, width: 60, pl: 3 }}>#</TableCell>
+                      <TableCell sx={headCellSx}>เมนูอาหาร</TableCell>
+                      <TableCell sx={headCellSx}>วิธีทำ (ย่อ)</TableCell>
+                      <TableCell align="center" sx={{ ...headCellSx, width: 140 }}>สถานะ</TableCell>
+                      <TableCell align="right" sx={{ ...headCellSx, pr: 3, width: 160 }}>จัดการ</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {pageRows.map((r, i) => (
+                      <ManageRecipeItem
+                        key={r.id}
+                        row={r}
+                        index={(page - 1) * pageSize + i + 1}
+                        onEdit={() => handleOpenForm(r)}
+                        onDelete={handleDelete}
+                        onToggleActive={handleToggleActive}
+                      />
+                    ))}
+                    {pageRows.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center" sx={{ py: 14 }}>
+                          <Stack spacing={2} alignItems="center">
+                            <Typography color="text.secondary" variant="h6" fontWeight={700}>
+                              ไม่พบข้อมูลสูตรอาหาร
+                            </Typography>
+                            <Button
+                              variant="text"
+                              onClick={() => {
+                                handleFilterChange("q", "");
+                                handleFilterChange("status", "all");
+                              }}
+                              sx={{ fontWeight: 700, color: "#E63946", textDecoration: "underline", textTransform: "none" }}
+                            >
+                              ล้างตัวกรองทั้งหมด
+                            </Button>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+                <PaginationBar
+                  page={page}
+                  pageSize={pageSize}
+                  totalCount={totalCount}
+                  onPageChange={setPage}
+                  onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                  showSummary
+                  showPageSizeSelect
+                  pageSizeOptions={[5, 10, 20]}
+                />
+              </Box>
+            </Paper>
+          ) : (
+            // ── Mobile View ──
+            <>
+              <Stack spacing={1.5}>
+                {pageRows.length === 0 ? (
+                  <Paper elevation={0} sx={{ p: 4, textAlign: "center", bgcolor: "transparent" }}>
+                    <Typography color="text.secondary">ไม่พบข้อมูล</Typography>
+                  </Paper>
+                ) : (
+                  pageRows.map((r, i) => (
+                    <MobileRecipeItem
                       key={r.id}
                       row={r}
                       index={(page - 1) * pageSize + i + 1}
@@ -280,100 +410,50 @@ export default function ManageRecipeList() {
                       onDelete={handleDelete}
                       onToggleActive={handleToggleActive}
                     />
-                  ))}
-                  {pageRows.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5}>
-                        <Box sx={{ py: 6, textAlign: "center" }}>
-                          <Typography color="text.secondary">
-                            ไม่พบข้อมูลสูตรอาหาร
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider" }}>
-              <PaginationBar
-                page={page}
-                pageSize={pageSize}
-                totalCount={totalCount}
-                onPageChange={setPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size);
-                  setPage(1);
+                  ))
+                )}
+              </Stack>
+              <Stack
+                alignItems="center"
+                sx={{
+                  pt: 1,
+                  position: "sticky",
+                  bottom: 0,
+                  bgcolor: "background.default",
+                  pb: "calc(env(safe-area-inset-bottom) + 8px)",
+                  borderTop: "1px solid",
+                  borderColor: "divider",
+                  mt: 2,
                 }}
-                showSummary
-                showPageSizeSelect
-                pageSizeOptions={[5, 10, 20]}
-              />
-            </Box>
-          </Paper>
-        ) : (
-          // Mobile View
-          <>
-            <Stack spacing={1.5}>
-              {pageRows.length === 0 ? (
-                <Paper
-                  sx={{ p: 4, textAlign: "center", bgcolor: "transparent" }}
-                >
-                  <Typography color="text.secondary">ไม่พบข้อมูล</Typography>
-                </Paper>
-              ) : (
-                pageRows.map((r, i) => (
-                  <MobileRecipeItem
-                    key={r.id}
-                    row={r}
-                    index={(page - 1) * pageSize + i + 1}
-                    onEdit={() => handleOpenForm(r)}
-                    onDelete={handleDelete}
-                    onToggleActive={handleToggleActive}
-                  />
-                ))
-              )}
-            </Stack>
-
-            <Stack
-              alignItems="center"
-              sx={{
-                pt: 1,
-                position: "sticky",
-                bottom: 0,
-                bgcolor: "background.default",
-                pb: "calc(env(safe-area-inset-bottom) + 8px)",
-                borderTop: "1px solid",
-                borderColor: "divider",
-                mt: 2,
-              }}
-            >
-              <PaginationBar
-                page={page}
-                pageSize={pageSize}
-                totalCount={totalCount}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-                showPageSizeSelect={false}
-                showSummary={false}
-                sx={{ mt: 0 }}
-              />
-            </Stack>
-          </>
-        )}
+              >
+                <PaginationBar
+                  page={page}
+                  pageSize={pageSize}
+                  totalCount={totalCount}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  showPageSizeSelect={false}
+                  showSummary={false}
+                  sx={{ mt: 0 }}
+                />
+              </Stack>
+            </>
+          )}
+        </Stack>
       </Container>
 
-      {/* Drawer */}
+      {/* Form Drawer */}
       <FormRecipe
         open={formState.open}
         onClose={handleCloseForm}
         initial={formState.data ?? undefined}
         onSubmit={handleSubmit}
         isLoading={isCreating || isUpdating}
-        // 3. ส่งรายการเมนูไปให้ Form
-        menuOptions={menuList} 
+        menuOptions={menuList}
       />
+
+      {/* Pulse animation */}
+      <style>{`@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.8; transform:scale(1.05); } }`}</style>
     </Box>
   );
 }

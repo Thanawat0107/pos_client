@@ -1,14 +1,17 @@
-import {
+﻿import {
   Paper,
   Stack,
   Typography,
   Chip,
   Switch,
   IconButton,
-  Tooltip,
+  Box,
+  Avatar,
+  Divider,
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import CategoryIcon from "@mui/icons-material/Category";
 import type { MenuCategory } from "../../../../@types/dto/MenuCategory";
 
 type MobileCategoryItemProps = {
@@ -26,81 +29,136 @@ export default function MobileCategoryItem({
   onDelete,
   onToggleActive,
 }: MobileCategoryItemProps) {
+  const isActive = row.isUsed && !row.isDeleted;
+
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 2, p: 1.5 }}>
-      <Stack spacing={1}>
-        {/* ชื่อ + สถานะ */}
-        <Stack
-          direction="row"
-          alignItems="flex-start"
-          justifyContent="space-between"
-          spacing={1}
-        >
-          <Stack spacing={0.25} minWidth={0}>
-            <Typography variant="subtitle1" fontWeight={800} noWrap>
+    <Paper
+      variant="outlined"
+      sx={{
+        borderRadius: 3,
+        p: 0,
+        borderColor: isActive ? "divider" : "error.lighter",
+        bgcolor: isActive ? "background.paper" : "grey.50",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* แถบสีสถานะด้านซ้าย */}
+      <Box
+        sx={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 5,
+          bgcolor: isActive ? "success.main" : "grey.400",
+        }}
+      />
+
+      <Stack spacing={0} sx={{ pl: 2.5, pr: 2, pt: 2.5, pb: 2 }}>
+        {/* Row บน: ไอคอน + ชื่อ */}
+        <Stack direction="row" spacing={2} alignItems="center">
+          {/* ไอคอน + เลขลำดับ */}
+          <Box sx={{ position: "relative", flexShrink: 0 }}>
+            <Avatar
+              variant="rounded"
+              sx={{
+                width: 72,
+                height: 72,
+                borderRadius: 2.5,
+                bgcolor: "#FFF1F2",
+                border: "1.5px solid #FECDD3",
+              }}
+            >
+              <CategoryIcon sx={{ fontSize: "2rem", color: "#D32F2F" }} />
+            </Avatar>
+            <Box
+              sx={{
+                position: "absolute",
+                top: -8,
+                left: -8,
+                bgcolor: "grey.800",
+                color: "white",
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.78rem",
+                fontWeight: 800,
+                border: "2px solid white",
+              }}
+            >
+              {index}
+            </Box>
+          </Box>
+
+          {/* ชื่อ + แท็กสถานะ */}
+          <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              sx={{ fontSize: "1.2rem", fontWeight: 800, lineHeight: 1.3 }}
+              noWrap
+            >
               {row.name}
+            </Typography>
+            <Chip
+              label={isActive ? "พร้อมใช้" : "ปิดใช้งาน"}
+              size="small"
+              sx={{
+                alignSelf: "flex-start",
+                height: 26,
+                fontSize: "0.85rem",
+                fontWeight: 700,
+                ...(isActive
+                  ? { bgcolor: "#F0FDF4", color: "#15803D", border: "1.5px solid #BBF7D0" }
+                  : { bgcolor: "#F9FAFB", color: "#6B7280", border: "1.5px solid #E5E7EB" }),
+              }}
+            />
+          </Stack>
+        </Stack>
+
+        <Divider sx={{ borderStyle: "dashed", my: 2 }} />
+
+        {/* Row ล่าง: Switch + ปุ่ม */}
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" spacing={0.75}>
+            <Switch
+              checked={isActive}
+              onChange={(_, v) => onToggleActive(row.id, v)}
+              color="success"
+            />
+            <Typography
+              sx={{ fontSize: "1rem", fontWeight: 700 }}
+              color={isActive ? "success.main" : "text.disabled"}
+            >
+              {isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
             </Typography>
           </Stack>
 
-          <Chip
-            size="small"
-            label={row.isUsed ? "พร้อมใช้" : "ปิดใช้งาน"}
-            color={row.isUsed ? "success" : "default"}
-            sx={{
-              height: 24,
-              ml: 1,
-              "& .MuiChip-label": { px: 0.75, fontSize: 12 },
-            }}
-          />
-        </Stack>
-
-        {/* ลำดับการแสดง + เมนู + (ลำดับจากฐานข้อมูลถ้ามี) */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          flexWrap="wrap"
-          sx={{ rowGap: 0.5, columnGap: 0.75 }}
-        >
-          {/* ✅ ลำดับการแสดงตามหน้า */}
-          <Chip size="small" variant="outlined" label={`ลำดับแสดง ${index}`} />
-
-          <Chip size="small" label={`เมนู ${0} รายการ`} />
-        </Stack>
-
-        {/* สวิตช์ + ปุ่ม + เวลาอัปเดต */}
-        <Stack spacing={0.5}>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Stack direction="row" alignItems="center" spacing={0.75}>
-              <Switch
-                size="small"
-                checked={row.isUsed}
-                onChange={(_, v) => onToggleActive(row.id, v)}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {row.isUsed ? "เปิดใช้งานอยู่" : "ปิดการใช้งาน"}
-              </Typography>
-            </Stack>
-
-            <Stack direction="row" alignItems="center" spacing={0.5}>
-              <Tooltip title="แก้ไข">
-                <IconButton size="small" onClick={() => onEdit(row)}>
-                  <EditOutlinedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="ลบ">
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => onDelete(row.id)}
-                >
-                  <DeleteOutlineIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
+          <Stack direction="row" spacing={1}>
+            <IconButton
+              onClick={() => onEdit(row)}
+              sx={{
+                p: 1,
+                bgcolor: "info.lighter",
+                color: "info.main",
+                "&:hover": { bgcolor: "info.light" },
+              }}
+            >
+              <EditOutlinedIcon sx={{ fontSize: "1.3rem" }} />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(row.id)}
+              sx={{
+                p: 1,
+                bgcolor: "error.lighter",
+                color: "error.main",
+                "&:hover": { bgcolor: "error.light" },
+              }}
+            >
+              <DeleteOutlineIcon sx={{ fontSize: "1.3rem" }} />
+            </IconButton>
           </Stack>
         </Stack>
       </Stack>

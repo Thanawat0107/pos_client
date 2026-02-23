@@ -1,4 +1,4 @@
-import {
+﻿import {
   Chip,
   IconButton,
   Stack,
@@ -27,97 +27,85 @@ export default function ManageCategoryItem({
   onDelete,
   onToggleActive,
 }: Props) {
+  const isActive = row.isUsed && !row.isDeleted;
+
   return (
-    <TableRow hover>
-      <TableCell
-        align="center"
-        sx={{
-          width: "10%",
-          fontWeight: 800,
-          fontVariantNumeric: "tabular-nums",
-          color: "text.primary",
-        }}
-      >
-        {index ?? "-"}
+    <TableRow hover sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+
+      {/* 1. ลำดับ */}
+      <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 80, py: 2.5, pl: 4 }}>
+        <Typography sx={{ fontSize: "1rem", fontWeight: 800 }} color="text.secondary">
+          {index ?? "-"}
+        </Typography>
       </TableCell>
 
-      <TableCell
-        align="center"
-        sx={{
-          width: "30%",
-          maxWidth: 260,
-        }}
-      >
-        <Stack spacing={0.25} alignItems="center">
-          <Typography fontWeight={700} noWrap>
-            {row.name}
-          </Typography>
-        </Stack>
+      {/* 2. ชื่อหมวดหมู่ */}
+      <TableCell sx={{ py: 2.5 }}>
+        <Typography sx={{ fontSize: "1.1rem", fontWeight: 700, lineHeight: 1.3 }}>
+          {row.name}
+        </Typography>
       </TableCell>
 
-      <TableCell
-        align="center"
-        sx={{
-          width: "25%",
-          whiteSpace: "nowrap",
-        }}
-      >
-        <Chip size="small" variant="outlined" label={0} />
-      </TableCell>
-
-      <TableCell
-        align="center"
-        sx={{
-          width: "15%",
-          whiteSpace: "nowrap",
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="center"
-          spacing={1}
-        >
+      {/* 3. สถานะ */}
+      <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 200, py: 2.5 }}>
+        <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
           <Switch
-            checked={row.isUsed}
+            checked={isActive}
             onChange={(_, v) => onToggleActive(row.id, v)}
-            size="small"
+            color="success"
           />
-          <Typography variant="body2" color="text.secondary">
-            {row.isUsed ? "พร้อมใช้" : "ปิด"}
-          </Typography>
+          <Chip
+            label={isActive ? "พร้อมใช้" : "ปิดใช้งาน"}
+            sx={
+              isActive
+                ? {
+                    bgcolor: "#F0FDF4",
+                    color: "#15803D",
+                    border: "1.5px solid #BBF7D0",
+                    fontWeight: 700,
+                    fontSize: "0.9rem",
+                    height: 30,
+                  }
+                : {
+                    bgcolor: "#F9FAFB",
+                    color: "#6B7280",
+                    border: "1.5px solid #E5E7EB",
+                    fontWeight: 700,
+                    fontSize: "0.9rem",
+                    height: 30,
+                  }
+            }
+          />
         </Stack>
       </TableCell>
 
-      <TableCell
-        align="center"
-        sx={{
-          width: "20%",
-          whiteSpace: "nowrap",
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="center"
-          spacing={0.5}
-        >
-          <Tooltip title="แก้ไข">
+      {/* 4. การจัดการ */}
+      <TableCell align="right" sx={{ whiteSpace: "nowrap", width: 120, py: 2.5, pr: 4 }}>
+        <Stack direction="row" justifyContent="flex-end" spacing={1}>
+          <Tooltip title="แก้ไขข้อมูล">
             <IconButton
-              size="small"
               onClick={() => onEdit(row)}
-              color="primary"
+              sx={{
+                p: 1,
+                color: "info.main",
+                bgcolor: "info.lighter",
+                "&:hover": { bgcolor: "info.light" },
+              }}
             >
-              <EditOutlinedIcon />
+              <EditOutlinedIcon sx={{ fontSize: "1.3rem" }} />
             </IconButton>
           </Tooltip>
-          <Tooltip title="ลบ">
+          <Tooltip title="ลบหมวดหมู่">
             <IconButton
-              size="small"
-              color="error"
               onClick={() => onDelete(row.id)}
+              sx={{
+                p: 1,
+                color: "error.main",
+                bgcolor: "error.lighter",
+                "&:hover": { bgcolor: "error.light" },
+              }}
             >
-              <DeleteOutlineIcon />
+              <DeleteOutlineIcon sx={{ fontSize: "1.3rem" }} />
             </IconButton>
           </Tooltip>
         </Stack>

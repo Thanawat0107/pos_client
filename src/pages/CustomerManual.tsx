@@ -25,7 +25,7 @@ const CustomerManual = () => {
   const count = items.length;
 
   return (
-    <Box sx={{ bgcolor: "#FFF8F0", minHeight: "100vh" }}>
+    <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
 
       {/* ===== Header ===== */}
       <Box
@@ -56,11 +56,12 @@ const CustomerManual = () => {
           position: "sticky",
           top: 64,
           zIndex: 10,
-          bgcolor: "rgba(255,248,240,0.82)",
+          bgcolor: "background.paper",
           backdropFilter: "blur(14px)",
           WebkitBackdropFilter: "blur(14px)",
-          boxShadow: "0 2px 16px rgba(234,88,12,0.10)",
-          borderBottom: "1px solid rgba(234,88,12,0.10)",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+          borderBottom: "1px solid",
+          borderColor: "divider",
         }}
       >
         <Container maxWidth="md" disableGutters>

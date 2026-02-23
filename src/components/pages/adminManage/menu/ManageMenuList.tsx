@@ -19,6 +19,7 @@ import {
   Alert,
   Tooltip,
   IconButton,
+  Chip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
@@ -224,14 +225,15 @@ export default function ManageMenuList() {
           {/* =========================================
               1. Header & Buttons Section 
              ========================================= */}
-          <Box>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="flex-end"
-              className="mb-3"
-            >
-              <Box>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", sm: "flex-end" }}
+            spacing={2}
+          >
+            <Box>
+              <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
+                <RestaurantMenuIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "#D32F2F" }} />
                 <Typography
                   className="text-gray-900"
                   sx={{
@@ -242,35 +244,40 @@ export default function ManageMenuList() {
                 >
                   จัดการเมนูอาหาร
                 </Typography>
-                <Typography
-                  className="text-gray-500"
-                  sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
-                >
-                  ตรวจสอบ เพิ่ม แก้ไข หรือปิดการขายรายการอาหาร
-                </Typography>
-              </Box>
-            </Stack>
+                <Chip
+                  size="small"
+                  label={`${rows.length} รายการ`}
+                  sx={{
+                    fontWeight: 700,
+                    bgcolor: "#FFF1F2",
+                    color: "#BE123C",
+                    border: "1.5px solid #FECDD3",
+                    borderRadius: "50px",
+                  }}
+                />
+              </Stack>
+              <Typography
+                className="text-gray-500"
+                sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
+              >
+                ตรวจสอบ เพิ่ม แก้ไข หรือปิดการขายรายการอาหาร
+              </Typography>
+            </Box>
 
-            {/* กลุ่มปุ่มกด - ทรง Pill สีแดงตามแบบ */}
-            <Stack
-              direction="row"
-              spacing={1.5}
-              className="overflow-x-auto pb-1 no-scrollbar"
-              alignItems="center"
-              sx={{ flexWrap: "nowrap" }}
-            >
+            <Stack direction="row" spacing={1} alignItems="center">
               <Button
                 variant="contained"
-                startIcon={<AddIcon sx={{ fontSize: { xs: "1.25rem !important", md: "1.75rem !important" } }} />}
+                startIcon={<AddIcon />}
                 onClick={() => handleOpenForm()}
-                className="bg-[#E63946] hover:bg-[#D32F2F] shadow-md hover:shadow-lg whitespace-nowrap"
                 sx={{
                   borderRadius: "50px",
-                  px: { xs: 2, md: 4 },
-                  py: { xs: 1, md: 1.5 },
-                  fontSize: { xs: "0.9rem", md: "1.25rem" },
+                  px: { xs: 2, md: 3 },
+                  py: { xs: 1, md: 1.25 },
                   fontWeight: 700,
-                  flexShrink: 0,
+                  textTransform: "none",
+                  fontSize: { xs: "0.85rem", md: "1rem" },
+                  bgcolor: "#D32F2F",
+                  "&:hover": { bgcolor: "#B71C1C" },
                 }}
               >
                 เพิ่มเมนูใหม่
@@ -279,51 +286,65 @@ export default function ManageMenuList() {
                 component={Link}
                 to="/manage-menuItemOption"
                 variant="outlined"
-                className="bg-white border-[#E63946] text-[#E63946] hover:bg-red-50 shadow-sm whitespace-nowrap"
                 sx={{
                   borderRadius: "50px",
                   px: { xs: 2, md: 3 },
                   py: { xs: 1, md: 1.25 },
-                  fontSize: { xs: "0.85rem", md: "1.15rem" },
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  textTransform: "none",
+                  fontSize: { xs: "0.85rem", md: "1rem" },
+                  borderColor: "#D32F2F",
                   borderWidth: "1.5px",
-                  flexShrink: 0,
-                  "&:hover": { borderWidth: "1.5px" },
+                  color: "#D32F2F",
+                  "&:hover": { borderColor: "#B71C1C", borderWidth: "1.5px", bgcolor: "#FFF1F2" },
                 }}
               >
-                จัดการตัวเลือกเพิ่มเติม
+                ตัวเลือกเพิ่มเติม
               </Button>
               <Button
                 component={Link}
                 to="/manage-recipe"
                 variant="outlined"
-                className="bg-white border-[#E63946] text-[#E63946] hover:bg-red-50 shadow-sm whitespace-nowrap"
                 sx={{
                   borderRadius: "50px",
                   px: { xs: 2, md: 3 },
                   py: { xs: 1, md: 1.25 },
-                  fontSize: { xs: "0.85rem", md: "1.15rem" },
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  textTransform: "none",
+                  fontSize: { xs: "0.85rem", md: "1rem" },
+                  borderColor: "#D32F2F",
                   borderWidth: "1.5px",
-                  flexShrink: 0,
-                  "&:hover": { borderWidth: "1.5px" },
+                  color: "#D32F2F",
+                  "&:hover": { borderColor: "#B71C1C", borderWidth: "1.5px", bgcolor: "#FFF1F2" },
                 }}
               >
                 สูตรอาหาร
               </Button>
-
               {/* ปุ่มรีเฟรช */}
               <Tooltip title="รีเฟรชข้อมูล">
-                <IconButton
-                  onClick={() => refetch()}
-                  className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
-                  sx={{ p: 1, borderRadius: "50%", flexShrink: 0 }}
-                >
-                  <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
-                </IconButton>
+                <span>
+                  <IconButton
+                    onClick={() => refetch()}
+                    disabled={isLoading}
+                    sx={{
+                      p: 1,
+                      borderRadius: "50%",
+                      bgcolor: "white",
+                      border: "1px solid #E5E7EB",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      "&:hover": { bgcolor: "#F9FAFB" },
+                    }}
+                  >
+                    {isLoading ? (
+                      <CircularProgress size={20} sx={{ color: "#D32F2F" }} />
+                    ) : (
+                      <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
+                    )}
+                  </IconButton>
+                </span>
               </Tooltip>
             </Stack>
-          </Box>
+          </Stack>
 
           {/* =========================================
               2. Filter Section (แยกใส่กล่องสีขาวชัดเจน)

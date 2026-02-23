@@ -7,7 +7,6 @@ import {
   IconButton,
   TextField,
   Button,
-  Divider,
   Switch,
   CircularProgress,
   Paper,
@@ -155,7 +154,10 @@ export default function FormRecipe({
       open={open}
       onClose={onClose}
       PaperProps={{
-        sx: { width: { xs: 1, sm: 500 } },
+        sx: {
+          width: { xs: 1, sm: 520 },
+          bgcolor: "#FAFAFA",
+        },
       }}
     >
       <Box
@@ -163,24 +165,44 @@ export default function FormRecipe({
         onSubmit={formik.handleSubmit}
         sx={{ height: "100%", display: "flex", flexDirection: "column" }}
       >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ p: 2, pt: "calc(env(safe-area-inset-top) + 8px)" }}
+        {/* ── Header ── */}
+        <Box
+          sx={{
+            px: 3,
+            pt: "calc(env(safe-area-inset-top) + 16px)",
+            pb: 2,
+            bgcolor: "white",
+            borderBottom: "1px solid #E5E7EB",
+          }}
         >
-          <Typography variant="h6" fontWeight={800}>
-            {initial?.id ? "แก้ไขสูตรอาหาร" : "เพิ่มสูตรอาหารใหม่"}
-          </Typography>
-          <IconButton onClick={onClose} disabled={isSubmitting}>
-            <CloseIcon />
-          </IconButton>
-        </Stack>
-        <Divider />
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Box>
+              <Typography
+                sx={{ fontWeight: 800, fontSize: "1.25rem", color: "#111827", letterSpacing: "-0.01em" }}
+              >
+                {initial?.id ? "แก้ไขสูตรอาหาร" : "เพิ่มสูตรอาหารใหม่"}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>
+                {initial?.id ? `กำลังแก้ไข: ${initial.menuItemName ?? "สูตร #" + initial.id}` : "กรอกข้อมูลสูตรอาหารใหม่"}
+              </Typography>
+            </Box>
+            <IconButton
+              onClick={onClose}
+              disabled={isSubmitting}
+              sx={{
+                bgcolor: "#F3F4F6",
+                "&:hover": { bgcolor: "#E5E7EB" },
+                borderRadius: "10px",
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </Box>
 
-        <Stack spacing={3} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
+        {/* ── Form Body ── */}
+        <Stack spacing={3} sx={{ p: 3, flex: 1, overflowY: "auto" }}>
           
-          {/* ✅ เพิ่ม isOptionEqualToValue เพื่อช่วยให้ค่าไม่หลุด */}
           <Autocomplete
             options={menuOptions}
             getOptionLabel={(option) => option.name || ""}
@@ -193,12 +215,19 @@ export default function FormRecipe({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="เลือกเมนูอาหาร"
+                label="เลือกเมนูอาหาร *"
                 name="menuItemId"
-                // ตรวจสอบ error ให้ละเอียดขึ้นป้องกัน crash
                 error={touched.menuItemId && Boolean(errors.menuItemId)}
                 helperText={touched.menuItemId && (errors.menuItemId as string)}
                 fullWidth
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "12px",
+                    "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+                    "&:hover fieldset": { borderColor: "#E63946" },
+                    "&.Mui-focused fieldset": { borderColor: "#E63946" },
+                  },
+                }}
               />
             )}
           />
@@ -281,6 +310,14 @@ export default function FormRecipe({
             multiline
             minRows={4}
             placeholder="1. ตั้งกระทะ...&#10;2. ใส่หมู..."
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "12px",
+                "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+                "&:hover fieldset": { borderColor: "#E63946" },
+                "&.Mui-focused fieldset": { borderColor: "#E63946" },
+              },
+            }}
           />
 
           {initial?.id && (
@@ -291,60 +328,82 @@ export default function FormRecipe({
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                borderColor: values.isUsed ? "success.main" : "divider",
-                bgcolor: values.isUsed ? "success.lighter" : "transparent",
+                borderColor: values.isUsed ? "#BBF7D0" : "#E5E7EB",
+                bgcolor: values.isUsed ? "#F0FDF4" : "#F9FAFB",
+                borderRadius: "12px",
+                borderWidth: "1.5px",
               }}
             >
               <Box>
-                <Typography variant="body2" fontWeight="bold">
-                  {values.isUsed
-                    ? "สถานะ: ใช้งาน (Active)"
-                    : "สถานะ: ปิดใช้งาน"}
+                <Typography variant="body2" fontWeight={800} color={values.isUsed ? "#15803D" : "text.secondary"}>
+                  {values.isUsed ? "สถานะ: ใช้งาน (Active)" : "สถานะ: ปิดใช้งาน"}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                   {values.isUsed ? "สูตรนี้กำลังถูกใช้งาน" : "ปิดการใช้งานชั่วคราว"}
+                  {values.isUsed ? "สูตรนี้กำลังถูกใช้งานอยู่" : "ปิดการแสดงสูตรชั่วคราว"}
                 </Typography>
               </Box>
               <Switch
                 checked={values.isUsed}
                 onChange={(e) => setFieldValue("isUsed", e.target.checked)}
-                color="success"
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": { color: "#22C55E" },
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { bgcolor: "#86EFAC" },
+                }}
               />
             </Paper>
           )}
         </Stack>
 
-        <Divider />
-        <Stack
-          direction="row"
-          spacing={2}
+        {/* ── Footer ── */}
+        <Box
           sx={{
-            p: 2,
-            bgcolor: "background.paper",
-            pb: "calc(env(safe-area-inset-bottom) + 8px)",
+            px: 3,
+            py: 2,
+            bgcolor: "white",
+            borderTop: "1px solid #E5E7EB",
+            pb: "calc(env(safe-area-inset-bottom) + 12px)",
           }}
         >
-          <Button
-            onClick={onClose}
-            fullWidth
-            variant="outlined"
-            disabled={isSubmitting}
-          >
-            ยกเลิก
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            disabled={isSubmitting || isLoading}
-          >
-            {isSubmitting || isLoading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "บันทึก"
-            )}
-          </Button>
-        </Stack>
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              onClick={onClose}
+              fullWidth
+              variant="outlined"
+              disabled={isSubmitting}
+              sx={{
+                borderRadius: "12px",
+                py: 1.5,
+                fontWeight: 700,
+                textTransform: "none",
+                borderColor: "#E5E7EB",
+                color: "text.secondary",
+                "&:hover": { borderColor: "#D1D5DB", bgcolor: "#F9FAFB" },
+              }}
+            >
+              ยกเลิก
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              disabled={isSubmitting || isLoading}
+              sx={{
+                borderRadius: "12px",
+                py: 1.5,
+                fontWeight: 700,
+                textTransform: "none",
+                bgcolor: "#D32F2F",
+                "&:hover": { bgcolor: "#B71C1C" },
+              }}
+            >
+              {isSubmitting || isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "บันทึก"
+              )}
+            </Button>
+          </Stack>
+        </Box>
       </Box>
     </Drawer>
   );

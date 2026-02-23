@@ -5,9 +5,9 @@ import {
   FormControl,
   Select,
   MenuItem,
-  useMediaQuery,
+  Typography,
+  Box,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 
 type StatusType = "all" | "active" | "inactive";
@@ -19,60 +19,82 @@ type Props = {
   onStatusChange: (val: StatusType) => void;
 };
 
-export default function RecipeFilterBar({
-  q,
-  status,
-  onSearch,
-  onStatusChange,
-}: Props) {
-  const theme = useTheme();
-  const isMdUp = useMediaQuery(theme.breakpoints.up("md")); // Desktop breakpoint
+const labelSx = {
+  fontSize: { xs: "0.875rem", md: "1rem" },
+  fontWeight: 700,
+  color: "text.secondary",
+  ml: 0.5,
+  mb: 0.75,
+  display: "block",
+};
 
+const selectSx = {
+  borderRadius: "14px",
+  height: { xs: 48, md: 56 },
+  fontSize: { xs: "0.9rem", md: "1rem" },
+  bgcolor: "background.paper",
+  "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+  "&:hover fieldset": { borderColor: "#E63946 !important" },
+  "&.Mui-focused fieldset": { borderColor: "#E63946 !important" },
+  "& .MuiSelect-select": { px: 2 },
+};
+
+const menuItemSx = { fontSize: { xs: "0.875rem", md: "0.95rem" }, py: 1.1 };
+
+export default function RecipeFilterBar({ q, status, onSearch, onStatusChange }: Props) {
   return (
-    <Stack
-      direction={isMdUp ? "row" : "column"}
-      spacing={1.25}
-      sx={{
-        mb: 2,
-        width: "100%",
-      }}
-    >
-      {/* Search Input */}
-      <TextField
-        size={isMdUp ? "medium" : "small"}
-        // ปรับ Placeholder ให้ตรงกับบริบท Recipe
-        placeholder="ค้นหาชื่อเมนู / วิธีทำ"
-        value={q}
-        onChange={(e) => onSearch(e.target.value)}
-        fullWidth
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon fontSize="small" />
-            </InputAdornment>
-          ),
-        }}
-        sx={{
-          "& input": { fontSize: isMdUp ? 14 : 13 },
-        }}
-      />
+    <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems={{ xs: "stretch", md: "flex-end" }}>
 
-      {/* Status Select */}
-      <FormControl fullWidth sx={{ minWidth: isMdUp ? 160 : "100%" }}>
-        <Select
-          size={isMdUp ? "medium" : "small"}
-          value={status}
-          onChange={(e) => onStatusChange(e.target.value as StatusType)}
-          displayEmpty
+      {/* ค้นหา */}
+      <Box sx={{ flex: { md: 2 } }}>
+        <Typography sx={labelSx}>ค้นหาสูตรอาหาร</Typography>
+        <TextField
+          placeholder="ค้นหาชื่อเมนู / วิธีทำ..."
+          value={q}
+          onChange={(e) => onSearch(e.target.value)}
+          fullWidth
           sx={{
-            fontSize: isMdUp ? 14 : 13,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "14px",
+              bgcolor: "background.paper",
+              height: { xs: 48, md: 56 },
+              fontSize: { xs: "0.9rem", md: "1rem" },
+              px: 1,
+              "& fieldset": { borderColor: "divider", borderWidth: "1.5px" },
+              "&:hover fieldset": { borderColor: "#E63946" },
+              "&.Mui-focused fieldset": { borderColor: "#E63946" },
+            },
+            "& .MuiOutlinedInput-input": { pl: 1, pr: 2 },
           }}
-        >
-          <MenuItem value="all">สถานะทั้งหมด</MenuItem>
-          <MenuItem value="active">ใช้งาน (Active)</MenuItem>
-          <MenuItem value="inactive">ปิดใช้งาน (Inactive)</MenuItem>
-        </Select>
-      </FormControl>
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start" sx={{ ml: 0.5 }}>
+                  <SearchIcon sx={{ color: "text.disabled", fontSize: { xs: "1.3rem", md: "1.5rem" } }} />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+      </Box>
+
+      {/* สถานะ */}
+      <Box sx={{ flex: { md: 1 }, minWidth: { md: 200 } }}>
+        <Typography sx={labelSx}>สถานะการใช้งาน</Typography>
+        <FormControl fullWidth>
+          <Select
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value as StatusType)}
+            displayEmpty
+            sx={selectSx}
+          >
+            <MenuItem value="all" sx={menuItemSx}>ทุกสถานะ</MenuItem>
+            <MenuItem value="active" sx={menuItemSx}>ใช้งาน (Active)</MenuItem>
+            <MenuItem value="inactive" sx={menuItemSx}>ปิดใช้งาน (Inactive)</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+
     </Stack>
   );
 }

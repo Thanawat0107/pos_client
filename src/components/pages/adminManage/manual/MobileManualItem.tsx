@@ -1,16 +1,22 @@
  import {
+  Box,
   Chip,
   IconButton,
   Paper,
   Stack,
   Switch,
+  Tooltip,
   Typography,
   Divider,
 } from "@mui/material";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import CollectionsIcon from "@mui/icons-material/Collections";
 import PlaceIcon from "@mui/icons-material/Place";
+import { useState } from "react";
 import type { Manual } from "../../../../@types/dto/Manual";
+import ManualFilesDialog from "./ManualFilesDialog";
 
 type Props = {
   row: Manual;
@@ -27,7 +33,13 @@ export default function MobileManualItem({
   onDelete,
   onToggleActive,
 }: Props) {
+  const [filesOpen, setFilesOpen] = useState(false);
+  const images = row.images ?? [];
+  const firstFile = images[0];
+  const isFirstPdf = firstFile?.toLowerCase().endsWith(".pdf");
+
   return (
+    <>
     <Paper
       variant="outlined"
       sx={{
@@ -69,7 +81,81 @@ export default function MobileManualItem({
           </Stack>
         )}
 
-        {/* ส่วนที่ 3: Chips แสดงคุณสมบัติ */}
+        {/* ส่วนที่ 3: Thumbnail เดียว + badge + คลิกเปิด Dialog */}
+        {images.length > 0 && (
+          <Tooltip title={`ดูทั้งหมด (${images.length})`} arrow>
+            <Box
+              onClick={() => setFilesOpen(true)}
+              sx={{
+                position: "relative",
+                width: "100%",
+                height: 130,
+                borderRadius: 2.5,
+                overflow: "hidden",
+                border: "2px solid",
+                borderColor: "divider",
+                cursor: "pointer",
+                bgcolor: isFirstPdf ? "#FFF5F5" : "grey.100",
+                transition: "all 0.18s",
+                "&:hover": { borderColor: "primary.main", boxShadow: "0 4px 14px rgba(0,0,0,0.12)" },
+                "&:hover .hover-overlay": { opacity: 1 },
+              }}
+            >
+              {isFirstPdf ? (
+                <Box sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
+                  <PictureAsPdfIcon sx={{ fontSize: 44, color: "error.main" }} />
+                  <Typography sx={{ fontSize: "0.75rem", color: "error.main", fontWeight: 700 }}>PDF</Typography>
+                </Box>
+              ) : (
+                <Box
+                  component="img"
+                  src={firstFile}
+                  alt="preview"
+                  sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              )}
+
+              {/* Hover overlay */}
+              <Box
+                className="hover-overlay"
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  bgcolor: "rgba(0,0,0,0.35)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: 0,
+                  transition: "opacity 0.15s",
+                }}
+              >
+                <CollectionsIcon sx={{ color: "white", fontSize: 32 }} />
+              </Box>
+
+              {/* Badge จำนวนไฟล์ */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: 8,
+                  right: 8,
+                  bgcolor: "rgba(0,0,0,0.6)",
+                  color: "white",
+                  borderRadius: "12px",
+                  px: 1,
+                  py: 0.3,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                }}
+              >
+                <CollectionsIcon sx={{ fontSize: 13 }} />
+                <Typography sx={{ fontSize: "0.75rem", fontWeight: 800 }}>{images.length}</Typography>
+              </Box>
+            </Box>
+          </Tooltip>
+        )}
+
+        {/* ส่วนที่ 4: Chips แสดงคุณสมบัติ */}
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           <Chip
             label={row.targetRole}
@@ -88,7 +174,7 @@ export default function MobileManualItem({
 
         <Divider sx={{ borderStyle: "dashed" }} />
 
-        {/* ส่วนที่ 4: Toggle & Actions */}
+        {/* ส่วนที่ 5: Toggle & Actions */}
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" alignItems="center" spacing={1}>
             <Switch
@@ -127,5 +213,14 @@ export default function MobileManualItem({
         </Stack>
       </Stack>
     </Paper>
+
+    {/* Dialog แสดงไฟล์ทั้งหมด */}
+    <ManualFilesDialog
+      open={filesOpen}
+      onClose={() => setFilesOpen(false)}
+      images={images}
+      title={row.title}
+    />
+    </>
   );
 }

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Box,
+  Chip,
   Container,
   Typography,
   Stack,
@@ -20,6 +21,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { useEffect, useMemo, useState } from "react";
 import ManageManualItem from "./ManageManualItem";
 import MobileManualItem from "./MobileManualItem";
@@ -187,45 +189,81 @@ export default function ManageManualList() {
           {/* =========================================
               1. Header & Buttons
              ========================================= */}
-          <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-end" className="mb-3">
-              <Box>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", sm: "flex-end" }}
+            spacing={2}
+          >
+            <Box>
+              <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
+                <MenuBookIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "#D32F2F" }} />
                 <Typography
-                  sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", md: "2.2rem" }, letterSpacing: "-0.02em" }}
                   className="text-gray-900"
+                  sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", md: "2.2rem" }, letterSpacing: "-0.02em" }}
                 >
                   จัดการคู่มือ & จุดบริการ
                 </Typography>
-                <Typography className="text-gray-500" sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}>
-                  สร้างและแก้ไขคู่มือการทำงานสำหรับพนักงาน หรือจุดบริการสำหรับลูกค้า
-                </Typography>
-              </Box>
-            </Stack>
+                <Chip
+                  size="small"
+                  label={`${filteredSorted.length} รายการ`}
+                  sx={{
+                    fontWeight: 700,
+                    bgcolor: "#FFF1F2",
+                    color: "#BE123C",
+                    border: "1.5px solid #FECDD3",
+                    borderRadius: "50px",
+                  }}
+                />
+              </Stack>
+              <Typography className="text-gray-500" sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}>
+                สร้างและแก้ไขคู่มือการทำงานสำหรับพนักงาน หรือจุดบริการสำหรับลูกค้า
+              </Typography>
+            </Box>
 
-            <Stack direction="row" spacing={1.5} alignItems="center" className="overflow-x-auto pb-1 no-scrollbar" sx={{ flexWrap: "nowrap" }}>
+            <Stack direction="row" spacing={1} alignItems="center">
               <Button
                 variant="contained"
-                startIcon={<AddIcon sx={{ fontSize: { xs: "1.25rem !important", md: "1.75rem !important" } }} />}
+                startIcon={<AddIcon />}
                 onClick={() => handleOpenForm()}
                 disabled={isBusy}
-                className="bg-[#E63946] hover:bg-[#D32F2F] shadow-md hover:shadow-lg whitespace-nowrap"
-                sx={{ borderRadius: "50px", px: { xs: 2, md: 4 }, py: { xs: 1, md: 1.5 }, fontSize: { xs: "0.9rem", md: "1.25rem" }, fontWeight: 700, flexShrink: 0 }}
+                sx={{
+                  borderRadius: "50px",
+                  px: { xs: 2, md: 3 },
+                  py: { xs: 1, md: 1.25 },
+                  fontWeight: 700,
+                  textTransform: "none",
+                  fontSize: { xs: "0.85rem", md: "1rem" },
+                  bgcolor: "#D32F2F",
+                  "&:hover": { bgcolor: "#B71C1C" },
+                }}
               >
                 เพิ่มคู่มือใหม่
               </Button>
-
               <Tooltip title="รีเฟรชข้อมูล">
-                <IconButton
-                  onClick={() => refetch()}
-                  disabled={isLoading}
-                  className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
-                  sx={{ p: 1, borderRadius: "50%", flexShrink: 0 }}
-                >
-                  <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
-                </IconButton>
+                <span>
+                  <IconButton
+                    onClick={() => refetch()}
+                    disabled={isLoading}
+                    sx={{
+                      p: 1,
+                      borderRadius: "50%",
+                      bgcolor: "white",
+                      border: "1px solid #E5E7EB",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                      "&:hover": { bgcolor: "#F9FAFB" },
+                    }}
+                  >
+                    {isLoading ? (
+                      <CircularProgress size={20} sx={{ color: "#D32F2F" }} />
+                    ) : (
+                      <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
+                    )}
+                  </IconButton>
+                </span>
               </Tooltip>
             </Stack>
-          </Box>
+          </Stack>
 
           {/* =========================================
               2. Filter Section
@@ -270,14 +308,14 @@ export default function ManageManualList() {
                   <Table sx={{ minWidth: 800 }}>
                     <TableHead className="bg-[#F8FAFC]">
                       <TableRow>
-                        <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, pl: 4, width: 80 }}>ลำดับ</TableCell>
-                        <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, width: 90 }}>ไฟล์</TableCell>
-                        <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>หัวข้อ / สถานที่</TableCell>
-                        <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>รายละเอียด</TableCell>
-                        <TableCell align="center" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, width: 140 }}>กลุ่มเป้าหมาย</TableCell>
-                        <TableCell align="center" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, width: 120 }}>สถานะ</TableCell>
-                        <TableCell align="center" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, width: 150 }}>อัปเดตล่าสุด</TableCell>
-                        <TableCell align="right" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, pr: 4, width: 110 }}>จัดการ</TableCell>
+                        <TableCell sx={{ fontSize: "1.05rem", fontWeight: 700, color: "text.secondary", py: 2.5, pl: 4, width: 80 }}>ลำดับ</TableCell>
+                        <TableCell sx={{ fontSize: "1.05rem", fontWeight: 700, color: "text.secondary", py: 2.5, width: 90 }}>รูปภาพ</TableCell>
+                        <TableCell sx={{ fontSize: "1.05rem", fontWeight: 700, color: "text.secondary", py: 2.5 }}>หัวข้อ / สถานที่</TableCell>
+                        <TableCell sx={{ fontSize: "1.05rem", fontWeight: 700, color: "text.secondary", py: 2.5 }}>รายละเอียด</TableCell>
+                        <TableCell align="center" sx={{ fontSize: "1.05rem", fontWeight: 700, color: "text.secondary", py: 2.5, width: 140 }}>กลุ่มเป้าหมาย</TableCell>
+                        <TableCell align="center" sx={{ fontSize: "1.05rem", fontWeight: 700, color: "text.secondary", py: 2.5, width: 120 }}>สถานะ</TableCell>
+                        <TableCell align="center" sx={{ fontSize: "1.05rem", fontWeight: 700, color: "text.secondary", py: 2.5, width: 150 }}>อัปเดตล่าสุด</TableCell>
+                        <TableCell align="right" sx={{ fontSize: "1.05rem", fontWeight: 700, color: "text.secondary", py: 2.5, pr: 4, width: 110 }}>จัดการ</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
