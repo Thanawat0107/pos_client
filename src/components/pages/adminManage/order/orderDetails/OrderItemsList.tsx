@@ -143,18 +143,43 @@ export default function OrderItemsList({
                         {item.menuItemName}
                       </Typography>
 
-                      {/* รายการ Option เสริม */}
+                      {/* Unit price breakdown */}
+                      <Typography variant="caption" sx={{ color: "#94A3B8", fontWeight: 600, mt: 0.25, display: "block" }}>
+                        ฿{item.unitPrice.toLocaleString()} × {item.quantity}
+                        {item.extraPrice > 0 && (
+                          <Typography component="span" sx={{ color: "#F59E0B", fontWeight: 700, ml: 0.75 }}>
+                            +฿{item.extraPrice.toLocaleString()} (ตัวเลือก)
+                          </Typography>
+                        )}
+                      </Typography>
+
+                      {/* รายการ Option เสริม (Group: Value +฿X) */}
                       {item.orderDetailOptions?.map((opt: any) => (
                         <Typography
                           key={opt.id}
                           variant="body2"
-                          color="text.secondary"
                           display="block"
-                          sx={{ pl: 1.5, mt: 0.25, fontSize: "0.82rem" }}
+                          sx={{ pl: 1.5, mt: 0.25, fontSize: "0.82rem", color: "#475569" }}
                         >
-                          • {opt.optionValueName}
+                          • <Typography component="span" sx={{ fontWeight: 700, color: "#374151", fontSize: "inherit" }}>{opt.optionGroupName}:</Typography>
+                          {" "}{opt.optionValueName}
+                          {opt.extraPrice > 0 && (
+                            <Typography component="span" sx={{ color: "#D97706", fontWeight: 700, fontSize: "0.78rem", ml: 0.5 }}>
+                              +฿{opt.extraPrice.toLocaleString()}
+                            </Typography>
+                          )}
                         </Typography>
                       ))}
+
+                      {/* Note ต่อ item */}
+                      {item.note && (
+                        <Typography
+                          variant="body2"
+                          sx={{ mt: 0.75, pl: 1.5, fontSize: "0.82rem", color: "#C2410C", fontStyle: "italic", fontWeight: 600 }}
+                        >
+                          📝 {item.note}
+                        </Typography>
+                      )}
                     </Box>
                     <Typography
                       fontWeight={800}
@@ -177,6 +202,18 @@ export default function OrderItemsList({
                         label={`x ${item.quantity}`}
                         sx={{ borderRadius: 1.5, fontWeight: 800, height: 26, fontSize: "0.85rem" }}
                       />
+
+                      {/* คิวหมายเลข */}
+                      {item.queueNo && (
+                        <Chip
+                          label={`คิว ${item.queueNo}`}
+                          size="small"
+                          sx={{
+                            borderRadius: 1.5, fontWeight: 800, height: 26, fontSize: "0.82rem",
+                            bgcolor: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE",
+                          }}
+                        />
+                      )}
 
                       {/* ปุ่มเปลี่ยนสถานะรายจาน */}
                       <Button

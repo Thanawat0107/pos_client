@@ -25,6 +25,7 @@ import { motion } from "framer-motion";
 
 import { useGetOrderHistoryQuery } from "../../services/orderApi";
 import { Sd } from "../../helpers/SD";
+import { formatThaiDate, formatThaiTime } from "../../utility/utils";
 import { useAppSelector } from "../../hooks/useAppHookState";
 
 export default function MyOrders() {
@@ -254,15 +255,9 @@ export default function MyOrders() {
                         >
                           <AccessTimeIcon sx={{ fontSize: 14 }} />
                           <Typography variant="caption" fontWeight={700}>
-                            {new Date(order.createdAt).toLocaleDateString(
-                              "th-TH",
-                              { day: "numeric", month: "short" },
-                            )}{" "}
+                            {formatThaiDate(order.createdAt, { day: "numeric", month: "short" })}{" "}
                             •{" "}
-                            {new Date(order.createdAt).toLocaleTimeString(
-                              "th-TH",
-                              { hour: "2-digit", minute: "2-digit" },
-                            )}
+                            {formatThaiTime(order.createdAt)}
                           </Typography>
                         </Stack>
 

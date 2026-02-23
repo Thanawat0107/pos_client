@@ -18,6 +18,7 @@ import type { Content } from "../../../../@types/dto/Content";
 const formatDate = (date?: Date | string | null) => {
   if (!date) return "ตลอดไป";
   return new Date(date).toLocaleDateString("th-TH", {
+    timeZone: "Asia/Bangkok",
     day: "numeric",
     month: "short",
   });

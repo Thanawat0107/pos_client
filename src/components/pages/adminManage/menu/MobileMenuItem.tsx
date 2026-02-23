@@ -12,6 +12,7 @@ import {
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
+import { formatThaiDate } from "../../../../utility/utils";
 
 // ฟังก์ชันจัดรูปแบบเงินบาท
 const moneyTHB = (n: number) =>
@@ -180,7 +181,7 @@ export default function MobileMenuItem({
 
           <Stack direction="row" spacing={1.25} alignItems="center">
             <Typography sx={{ fontSize: "0.8rem" }} color="text.disabled">
-              {new Date(row.updatedAt).toLocaleDateString("th-TH")}
+              {formatThaiDate(row.updatedAt)}
             </Typography>
             <IconButton
               onClick={() => onEdit(row)}

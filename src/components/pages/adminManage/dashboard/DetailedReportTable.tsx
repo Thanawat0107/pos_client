@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { Search, ClipboardList, Info, Utensils, Hash } from "lucide-react";
 import { alpha } from "@mui/material/styles";
+import { formatThaiDateTime } from "../../../../utility/utils";
 
 // ปรับชุดสีสถานะให้ดู Premium (Glow Style)
 const getStatusStyles = (status: string) => {
@@ -120,10 +121,7 @@ const DetailedReportTable = ({
             height: "100%",
           }}
         >
-          {new Date(value).toLocaleString("th-TH", {
-            dateStyle: "short",
-            timeStyle: "short",
-          })}
+          {formatThaiDateTime(value)}
         </Typography>
       ),
     },

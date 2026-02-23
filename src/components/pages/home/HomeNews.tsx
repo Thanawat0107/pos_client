@@ -15,6 +15,7 @@ import { alpha } from "@mui/material/styles";
 import { ContentType } from "../../../@types/Enum";
 import type { Content } from "../../../@types/dto/Content";
 import { baseUrl } from "../../../helpers/SD";
+import { formatThaiDate } from "../../../utility/utils";
 
 // --- ชิ้นข่าวปกติ (Standard Card) ---
 // function NewsCard({ item }: { item: Content }) {
@@ -96,7 +97,7 @@ function FeaturedNewsCard({ item }: { item: Content }) {
       <Box sx={{ position: "absolute", bottom: 0, left: 0, p: { xs: 3, md: 5 }, color: "white" }}>
         <TypeTag isEvent={isEvent} />
         <Typography variant="caption" sx={{ display: "block", mt: 2, opacity: 0.8, fontWeight: 600 }}>
-          ข่าวเด่นประจำสัปดาห์ • {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "long" })}
+          ข่าวเด่นประจำสัปดาห์ • {formatThaiDate(item.createdAt, { day: "numeric", month: "long" })}
         </Typography>
         <Typography variant="h4" sx={{ fontWeight: 900, mt: 1, textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
           {item.title}
@@ -214,7 +215,7 @@ function SmallNewsCard({ item }: { item: Content }) {
       </Box>
       <Box sx={{ py: 0.5 }}>
         <Typography variant="caption" color="text.secondary" fontWeight={600}>
-           {new Date(item.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}
+           {formatThaiDate(item.createdAt, { day: "numeric", month: "short" })}
         </Typography>
         <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, mt: 0.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {item.title}

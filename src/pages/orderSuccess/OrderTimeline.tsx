@@ -12,6 +12,7 @@ import AccessTimeFilledIcon from "@mui/icons-material/AccessTimeFilled";
 import RestaurantIcon from "@mui/icons-material/Restaurant";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { Sd } from "../../helpers/SD";
+import { formatThaiTime } from "../../utility/utils";
 import {
   ColorlibConnector,
   ColorlibStepIcon,
@@ -158,10 +159,7 @@ export default function OrderTimeline({
               color="inherit"
               sx={{ fontSize: { xs: "1.3rem", sm: "1.5rem" } }}
             >
-              {new Date(estimatedPickUpTime!).toLocaleTimeString("th-TH", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
+              {formatThaiTime(estimatedPickUpTime!)}{" "}
               น.
             </Typography>
           </Box>

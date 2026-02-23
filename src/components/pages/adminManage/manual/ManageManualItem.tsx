@@ -14,6 +14,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import DescriptionIcon from "@mui/icons-material/Description";
 import PlaceIcon from "@mui/icons-material/Place"; // ไอคอนสถานที่
+import { formatThaiDate, formatThaiTime } from "../../../../utility/utils";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf"; // ไอคอน PDF
 import type { Manual } from "../../../../@types/dto/Manual";
 
@@ -154,13 +155,10 @@ export default function ManageManualItem({
       {/* 7. อัปเดตล่าสุด */}
       <TableCell sx={{ whiteSpace: "nowrap", width: 150 }}>
         <Typography variant="caption" display="block" color="text.secondary">
-          {new Date(row.updateAt).toLocaleDateString("th-TH")}
+          {formatThaiDate(row.updateAt)}
         </Typography>
         <Typography variant="caption" color="text.disabled">
-          {new Date(row.updateAt).toLocaleTimeString("th-TH", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}{" "}
+          {formatThaiTime(row.updateAt)}{" "}
           น.
         </Typography>
       </TableCell>

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Box, Stack, Typography, GlobalStyles } from "@mui/material";
+import { formatThaiDate, formatThaiTime } from "../utils";
 
 interface Props {
   order: any;
@@ -71,7 +72,7 @@ export default function ThermalReceipt({ order }: Props) {
             sx={{ display: "flex", justifyContent: "space-between" }}
           >
             <span>ORDER: #{order.id}</span>
-            <span>{new Date(order.createdAt).toLocaleDateString("th-TH")}</span>
+            <span>{formatThaiDate(order.createdAt)}</span>
           </Typography>
           <Typography
             variant="caption"
@@ -79,7 +80,7 @@ export default function ThermalReceipt({ order }: Props) {
           >
             <span>CODE: {order.pickUpCode}</span>
             <span>
-              {new Date(order.createdAt).toLocaleTimeString("th-TH")} น.
+              {formatThaiTime(order.createdAt)} น.
             </span>
           </Typography>
         </Stack>

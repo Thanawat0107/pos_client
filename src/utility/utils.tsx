@@ -84,3 +84,31 @@ export const getStatusInfo = (status: string) => {
       };
   }
 };
+
+// ─── Thai date/time helpers (timezone-safe) ────────────────────────────────
+const TH_TZ = "Asia/Bangkok";
+
+/** วันที่ภาษาไทย — default: "22 ก.พ. 2569" */
+export const formatThaiDate = (
+  date: string | Date,
+  options: Omit<Intl.DateTimeFormatOptions, "timeZone"> = {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  },
+): string =>
+  new Date(date).toLocaleDateString("th-TH", { timeZone: TH_TZ, ...options });
+
+/** เวลาภาษาไทย — default: "14:27" */
+export const formatThaiTime = (
+  date: string | Date,
+  options: Omit<Intl.DateTimeFormatOptions, "timeZone"> = {
+    hour: "2-digit",
+    minute: "2-digit",
+  },
+): string =>
+  new Date(date).toLocaleTimeString("th-TH", { timeZone: TH_TZ, ...options });
+
+/** วัน + เวลาเต็ม — "22 ก.พ. 2569 14:27 น." */
+export const formatThaiDateTime = (date: string | Date): string =>
+  `${formatThaiDate(date)} ${formatThaiTime(date)} น.`;

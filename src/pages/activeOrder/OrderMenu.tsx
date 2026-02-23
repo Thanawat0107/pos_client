@@ -11,6 +11,7 @@ import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { getStatusConfig } from "../../utility/OrderHelpers";
 import type { OrderHeader } from "../../@types/dto/OrderHeader";
 import { Sd } from "../../helpers/SD";
+import { formatThaiTime } from "../../utility/utils";
 
 // 1. เพิ่มชุดสถานะที่จะซ่อนเลขคิว (ให้เหมือน OrderStatusCard)
 const HIDDEN_QUEUE_STATUSES = [
@@ -76,10 +77,7 @@ export default function OrderMenu({
           // 2. เช็ก showQueue รายตัวใน Loop
           const showQueue = !HIDDEN_QUEUE_STATUSES.includes(order.orderStatus);
           
-          const timeString = new Date(order.createdAt).toLocaleTimeString("th-TH", {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
+          const timeString = formatThaiTime(order.createdAt);
 
           return (
             <MenuItem

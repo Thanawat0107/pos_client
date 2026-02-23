@@ -8,13 +8,18 @@ import {
   TextField,
   Button,
   Divider,
-  Alert,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import PhoneIcon from "@mui/icons-material/Phone";
+import StickyNote2Icon from "@mui/icons-material/StickyNote2";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import StorefrontIcon from "@mui/icons-material/Storefront";
+import AccessTimeFilledIcon from "@mui/icons-material/AccessTimeFilled";
 import { Sd } from "../../../../../helpers/SD";
+import { formatThaiDate, formatThaiTime } from "../../../../../utility/utils";
 
 type Props = {
   order: any;
@@ -161,15 +166,101 @@ export default function OrderCustomerInfo({
             </Stack>
 
             {/* Note */}
-            {order.customerNote && (
-              <Alert
-                severity="warning"
-                icon={false}
-                sx={{ mt: 0.5, borderRadius: 2, "& .MuiAlert-message": { fontSize: "0.95rem" } }}
-              >
-                <strong>Note: </strong>{order.customerNote}
-              </Alert>
+            <Stack direction="row" spacing={2} alignItems="flex-start">
+              <Typography variant="body1" color="text.secondary" fontWeight={600} sx={{ minWidth: 64, pt: 0.25 }}>
+                Note
+              </Typography>
+              <Stack direction="row" alignItems="flex-start" gap={1} flex={1}>
+                <StickyNote2Icon fontSize="small" sx={{ color: order.customerNote ? "#D97706" : "text.disabled", mt: 0.25, flexShrink: 0 }} />
+                {order.customerNote ? (
+                  <Typography
+                    variant="body1"
+                    fontWeight={700}
+                    sx={{
+                      color: "#92400E",
+                      bgcolor: "#FFFBEB",
+                      border: "1px solid #FDE68A",
+                      borderRadius: 2,
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: { xs: "0.9rem", sm: "0.95rem" },
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {order.customerNote}
+                  </Typography>
+                ) : (
+                  <Typography variant="body1" color="text.disabled" fontWeight={500}>—</Typography>
+                )}
+              </Stack>
+            </Stack>
+
+            <Divider />
+
+            {/* ช่องทาง */}
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Typography variant="body1" color="text.secondary" fontWeight={600} sx={{ minWidth: 64 }}>
+                ช่องทาง
+              </Typography>
+              <Stack direction="row" alignItems="center" gap={1}>
+                <StorefrontIcon fontSize="small" color="action" />
+                <Typography variant="body1" fontWeight={700} sx={{ color: "#1a1a1a", fontSize: { xs: "0.95rem", sm: "1.05rem" } }}>
+                  {order.channel || "—"}
+                </Typography>
+              </Stack>
+            </Stack>
+
+            {/* วิธีชำระเงิน */}
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Typography variant="body1" color="text.secondary" fontWeight={600} sx={{ minWidth: 64 }}>
+                ชำระด้วย
+              </Typography>
+              <Stack direction="row" alignItems="center" gap={1}>
+                <PaymentsIcon fontSize="small" color="action" />
+                <Typography variant="body1" fontWeight={700} sx={{ color: order.paidAt ? "#15803D" : "#1a1a1a", fontSize: { xs: "0.95rem", sm: "1.05rem" } }}>
+                  {order.paymentMethod || "—"}
+                  {order.paidAt && (
+                    <Typography component="span" sx={{ ml: 1, fontSize: "0.8rem", color: "#15803D", fontWeight: 600 }}>
+                      (ชำระแล้ว)
+                    </Typography>
+                  )}
+                </Typography>
+              </Stack>
+            </Stack>
+
+            {/* โปรโมชั่น */}
+            {order.appliedPromoCode && (
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Typography variant="body1" color="text.secondary" fontWeight={600} sx={{ minWidth: 64 }}>
+                  โปรโมชั่น
+                </Typography>
+                <Stack direction="row" alignItems="center" gap={1}
+                  sx={{ bgcolor: "#f0fdf4", px: 1.5, py: 0.5, borderRadius: 1.5, border: "1px solid #bbf7d0" }}
+                >
+                  <LocalOfferIcon sx={{ fontSize: 16, color: "#16a34a" }} />
+                  <Typography variant="body2" fontWeight={800} sx={{ color: "#15803D", fontSize: "0.9rem", letterSpacing: 0.5 }}>
+                    {order.appliedPromoCode}
+                  </Typography>
+                </Stack>
+              </Stack>
             )}
+
+            <Divider />
+
+            {/* เวลาสั่ง */}
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Typography variant="body1" color="text.secondary" fontWeight={600} sx={{ minWidth: 64 }}>
+                สั่งเมื่อ
+              </Typography>
+              <Stack direction="row" alignItems="center" gap={1}>
+                <AccessTimeFilledIcon sx={{ fontSize: 16, color: "#6366F1" }} />
+                <Typography variant="body2" fontWeight={700} sx={{ color: "#1a1a1a", fontSize: "0.95rem" }}>
+                  {formatThaiDate(order.createdAt)}{" "}{formatThaiTime(order.createdAt)} น.
+                </Typography>
+              </Stack>
+            </Stack>
+
+
           </Stack>
         )}
       </CardContent>

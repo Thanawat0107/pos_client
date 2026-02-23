@@ -8,6 +8,7 @@ import {
   Font,
 } from "@react-pdf/renderer";
 import type { OrderHeader } from "../../../../../@types/dto/OrderHeader";
+import { formatThaiDate, formatThaiTime } from "../../../../../utility/utils";
 
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -258,23 +259,9 @@ interface Props {
 }
 
 export default function OrderReceiptPDF({ order }: Props) {
-  const dt = new Date(order.createdAt);
-  const dateStr = dt.toLocaleDateString("th-TH", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-  const timeStr = dt.toLocaleTimeString("th-TH", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const printedAt = new Date().toLocaleString("th-TH", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const dateStr = formatThaiDate(order.createdAt, { day: "2-digit", month: "short", year: "numeric" });
+  const timeStr = formatThaiTime(order.createdAt);
+  const printedAt = `${formatThaiDate(new Date(), { day: "2-digit", month: "short", year: "numeric" })} ${formatThaiTime(new Date())} น.`;
 
   const activeItems = order.orderDetails?.filter((i) => !i.isCancelled) ?? [];
   const cancelledItems =
@@ -421,13 +408,7 @@ export default function OrderReceiptPDF({ order }: Props) {
           <View style={[S.infoRow, { marginTop: 5 }]}>
             <Text style={S.infoLabel}>{"ชำระเงินเมื่อ"}</Text>
             <Text style={S.infoValue}>
-              {new Date(order.paidAt).toLocaleString("th-TH", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }) + " น."}
+              {formatThaiDate(order.paidAt, { day: "2-digit", month: "short", year: "numeric" }) + " " + formatThaiTime(order.paidAt) + " น."}
             </Text>
           </View>
         ) : null}

@@ -13,6 +13,7 @@ import {
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
+import { formatThaiDate, formatThaiTime } from "../../../../utility/utils";
 
 // ฟังก์ชันจัดรูปแบบเงินบาท
 function formatCurrencyTHB(n: number) {
@@ -151,17 +152,14 @@ export default function ManageMenuItem({
       <TableCell sx={{ whiteSpace: "nowrap", width: 160, py: 2.5 }}>
         <Box>
           <Typography sx={{ fontSize: "0.9rem" }} display="block" color="text.secondary">
-            {new Date(row.updatedAt).toLocaleDateString("th-TH")}
+            {formatThaiDate(row.updatedAt)}
           </Typography>
           <Typography
             display="block"
             color="text.disabled"
             sx={{ fontSize: "0.8rem", mt: 0.25 }}
           >
-            {new Date(row.updatedAt).toLocaleTimeString("th-TH", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}{" "}
+            {formatThaiTime(row.updatedAt)}{" "}
             น.
           </Typography>
         </Box>

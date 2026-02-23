@@ -10,6 +10,7 @@ import {
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { Recipe } from "../../../../@types/dto/Recipe";
+import { formatThaiDate } from "../../../../utility/utils";
 
 type MobileRecipeItemProps = {
   row: Recipe;
@@ -47,7 +48,7 @@ export default function MobileRecipeItem({
                   sx={{ height: 20, fontSize: 10 }} 
                 />
                <Typography variant="caption" color="text.secondary">
-                 {new Date(row.createdAt).toLocaleDateString("th-TH")}
+                 {formatThaiDate(row.createdAt)}
                </Typography>
             </Stack>
           </Box>

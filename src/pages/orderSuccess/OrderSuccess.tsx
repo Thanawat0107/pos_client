@@ -21,6 +21,7 @@ import {
 } from "../../services/orderApi";
 
 import { paymentMethods, Sd } from "../../helpers/SD";
+import { formatThaiTime } from "../../utility/utils";
 import { useAppSelector } from "../../hooks/useAppHookState";
 import { SD_Roles } from "../../@types/Enum";
 
@@ -399,10 +400,7 @@ export default function OrderSuccess() {
               sx={{ opacity: 0.6, fontSize: "0.8rem" }}
             >
               สั่งเมื่อ{" "}
-              {new Date(order.createdAt).toLocaleTimeString("th-TH", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
+              {formatThaiTime(order.createdAt)}{" "}
               น.
             </Typography>
           </Box>

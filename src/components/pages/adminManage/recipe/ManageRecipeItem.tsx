@@ -10,6 +10,7 @@ import {
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { Recipe } from "../../../../@types/dto/Recipe";
+import { formatThaiDate } from "../../../../utility/utils";
 
 type Props = {
   row: Recipe;
@@ -45,7 +46,7 @@ export default function ManageRecipeItem({
             {row.menuItemName || `Menu ID: ${row.menuItemId}`}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-             v.{row.version} • {new Date(row.createdAt).toLocaleDateString("th-TH")}
+             v.{row.version} • {formatThaiDate(row.createdAt)}
           </Typography>
         </Stack>
       </TableCell>

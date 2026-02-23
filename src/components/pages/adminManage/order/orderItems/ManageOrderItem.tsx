@@ -8,6 +8,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WhatshotIcon from "@mui/icons-material/Whatshot";
 import type { OrderHeader } from "../../../../../@types/dto/OrderHeader";
 import { paymentMethods, Sd } from "../../../../../helpers/SD";
+import { formatThaiDate, formatThaiTime } from "../../../../../utility/utils";
 import { useConfirmPaymentMutation, useUpdateOrderStatusMutation } from "../../../../../services/orderApi";
 import OrderItemInfo from "./OrderItemInfo";
 import OrderItemCustomer from "./OrderItemCustomer";
@@ -198,13 +199,13 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
             <Stack direction="row" spacing={0.75} alignItems="center">
               <AccessTimeIcon sx={{ fontSize: 17, color: "text.disabled" }} />
               <Typography sx={{ fontSize: "1.05rem", fontWeight: 800, lineHeight: 1, color: "#1E293B" }}>
-                {new Date(row.createdAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.
+                {formatThaiTime(row.createdAt)} น.
               </Typography>
             </Stack>
 
             {/* วัน + elapsed */}
             <Typography sx={{ fontSize: "0.8rem", color: "#94A3B8", fontWeight: 500 }}>
-              {new Date(row.createdAt).toLocaleDateString("th-TH", { day: "numeric", month: "short" })}
+              {formatThaiDate(row.createdAt, { day: "numeric", month: "short" })}
               {" · "}
               <Box component="span" sx={{ color: createdMins < 15 ? "#16A34A" : "#94A3B8", fontWeight: createdMins < 15 ? 700 : 500 }}>
                 {formatElapsed(createdMins)}
