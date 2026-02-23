@@ -4,7 +4,7 @@ import { useHomeData } from "./useHomeData";
 import HomeHeader from "../../components/pages/home/HomeHeader";
 import HomePromotions from "../../components/pages/home/HomePromotions";
 import HomeMenu from "../../components/pages/home/HomeMenu";
-import HomeNews from "../../components/pages/home/HomeNews";
+import HomeNews from "../../components/pages/home/HomeNews/HomeNews";
 
 export default function Home() {
   const { menuItems, banners, promotions, news, menuError } = useHomeData();
