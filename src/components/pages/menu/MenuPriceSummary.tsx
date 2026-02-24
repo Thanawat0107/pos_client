@@ -18,26 +18,27 @@ export default function MenuPriceSummary({
   const theme = useTheme();
 
   return (
-    <div className="shrink-0 sticky top-24" style={{ width: 340 }}>
+    <div style={{ flexShrink: 0, position: "sticky", top: "6rem", width: 340 }}>
       {/* รูปอาหาร (desktop) */}
-      <div className="rounded-3xl overflow-hidden shadow-2xl">
+      <div style={{ borderRadius: "1.5rem", overflow: "hidden", boxShadow: "0 25px 50px rgba(0,0,0,0.25)" }}>
         <img
           src={imageUrl || "https://placehold.co/680x680?text=Menu"}
           alt={name}
-          className="w-full"
-          style={{ aspectRatio: "1", objectFit: "cover" }}
+          style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }}
         />
       </div>
 
       {/* สรุปราคา */}
       <div
-        className="rounded-3xl p-6 mt-5"
         style={{
+          borderRadius: "1.5rem",
+          padding: "1.5rem",
+          marginTop: "1.25rem",
           backgroundColor: theme.palette.background.paper,
           boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
         }}
       >
-        <div className="flex justify-between items-center mb-4">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <Typography variant="body1" color="text.secondary" fontWeight={600}>
             ราคาต่อชิ้น
           </Typography>
@@ -46,7 +47,7 @@ export default function MenuPriceSummary({
           </Typography>
         </div>
 
-        <div className="flex justify-between items-center mb-5">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
           <Typography variant="body1" color="text.secondary" fontWeight={600}>
             จำนวน
           </Typography>
@@ -56,8 +57,11 @@ export default function MenuPriceSummary({
         </div>
 
         <div
-          className="flex justify-between items-center pt-5"
           style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingTop: "1.25rem",
             borderTop: `1px solid ${alpha(theme.palette.text.primary, 0.08)}`,
           }}
         >

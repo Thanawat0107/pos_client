@@ -170,8 +170,11 @@ export default function MenuDetails() {
   return (
     <Fade in={!isLoading}>
       <div
-        style={{ backgroundColor: theme.palette.background.default, minHeight: "100vh" }}
-        className="pb-36 md:pb-12"
+        style={{
+          backgroundColor: theme.palette.background.default,
+          minHeight: "100vh",
+          paddingBottom: isMobile ? "9rem" : "3rem",
+        }}
       >
         {/* Hero รูปอาหาร */}
         <MenuHeroImage
@@ -190,15 +193,19 @@ export default function MenuDetails() {
             backgroundColor: theme.palette.background.default,
           }}
         >
-          <Container maxWidth="lg" sx={{ pt: { xs: 4, md: 7 }, px: { xs: 3, sm: 4, md: 4 } }}>
-            <div className={`flex gap-12 ${isMobile ? "flex-col" : "flex-row items-start"}`}>
+          <Container
+            maxWidth="lg"
+            sx={{ pt: { xs: 5, md: 8 } }}
+            style={{ paddingLeft: isMobile ? 24 : 64, paddingRight: isMobile ? 24 : 64 }}
+          >
+            <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? undefined : "flex-start", gap: "3rem" }}>
 
               {/* ── ซ้าย: รายละเอียด + ตัวเลือก ── */}
-              <div className={isMobile ? "w-full" : "flex-1 min-w-0"}>
+              <div style={{ width: isMobile ? "100%" : undefined, flex: isMobile ? undefined : 1, minWidth: 0 }}>
 
                 {/* ชื่อ + ราคา */}
-                <div className="flex items-start justify-between gap-5 mb-8">
-                  <div className="flex-1 min-w-0">
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1.25rem", marginBottom: "2rem" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Typography
                       variant={isMobile ? "h4" : "h3"}
                       fontWeight={900}
@@ -217,8 +224,16 @@ export default function MenuDetails() {
                     )}
                   </div>
                   <div
-                    className="shrink-0 rounded-2xl px-5 py-3 text-right"
-                    style={{ backgroundColor: alpha(theme.palette.primary.main, 0.08) }}
+                    style={{
+                      flexShrink: 0,
+                      borderRadius: "1rem",
+                      paddingLeft: "1.25rem",
+                      paddingRight: "1.25rem",
+                      paddingTop: "0.75rem",
+                      paddingBottom: "0.75rem",
+                      textAlign: "right",
+                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    }}
                   >
                     <Typography
                       variant="caption"
@@ -229,7 +244,7 @@ export default function MenuDetails() {
                     >
                       ราคาเริ่มต้น
                     </Typography>
-                    <Typography variant="h4" color="primary.main" fontWeight={900} sx={{ lineHeight: 1.2 }}>
+                    <Typography variant="h4" color="primary.main" fontWeight={900} sx={{ lineHeight: 1.2, fontSize: isMobile ? "1.4rem" : undefined }}>
                       ฿{menu.basePrice.toLocaleString()}
                     </Typography>
                   </div>
@@ -237,13 +252,12 @@ export default function MenuDetails() {
 
                 {/* เส้นคั่น */}
                 <div
-                  className="my-8"
-                  style={{ borderTop: `1.5px dashed ${alpha(theme.palette.text.primary, 0.1)}` }}
+                  style={{ marginTop: "2.5rem", marginBottom: "2.5rem", borderTop: `1.5px dashed ${alpha(theme.palette.text.primary, 0.15)}` }}
                 />
 
                 {/* กลุ่มตัวเลือก */}
                 {menu.menuItemOptionGroups.length > 0 && (
-                  <div className="flex flex-col gap-5">
+                <div className="flex flex-col" style={{ gap: "1.5rem" }}>
                     {menu.menuItemOptionGroups.map((group) => (
                       <MenuOptionGroup
                         key={group.menuItemOptionId}
@@ -258,7 +272,7 @@ export default function MenuDetails() {
                 {/* หมายเหตุ */}
                 <MenuNoteField value={note} onChange={setNote} />
 
-                {!isMobile && <div className="h-20" />}
+                {!isMobile && <div style={{ height: "5rem" }} />}
               </div>
 
               {/* ── ขวา: รูป + สรุปราคา (desktop เท่านั้น) ── */}

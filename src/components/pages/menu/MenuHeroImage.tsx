@@ -15,30 +15,28 @@ export default function MenuHeroImage({ imageUrl, name, categoryName, onBack }: 
 
   return (
     <div
-      className="relative w-full overflow-hidden"
-      style={{ height: isMobile ? "55vw" : 420, maxHeight: 520 }}
+      style={{ position: "relative", width: "100%", overflow: "hidden", height: isMobile ? "75vw" : 520, maxHeight: 620 }}
     >
       {/* รูปอาหาร */}
       <img
         src={imageUrl || "https://placehold.co/1200x600?text=Menu"}
         alt={name}
-        className="w-full h-full object-cover"
-        style={{ filter: "brightness(0.88)" }}
+        style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.88)", display: "block" }}
       />
 
       {/* Gradient overlay */}
       <div
-        className="absolute inset-0"
         style={{
+          position: "absolute",
+          inset: 0,
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.65) 100%)",
         }}
       />
 
       {/* ปุ่มย้อนกลับ */}
       <div
-        className="absolute z-10"
-        style={{ top: isMobile ? 16 : 24, left: isMobile ? 16 : 32 }}
+        style={{ position: "absolute", zIndex: 10, top: isMobile ? 16 : 24, left: isMobile ? 16 : 32 }}
       >
         <IconButton
           onClick={onBack}
@@ -56,7 +54,7 @@ export default function MenuHeroImage({ imageUrl, name, categoryName, onBack }: 
       </div>
 
       {/* Category badge */}
-      <div className="absolute bottom-4 left-4 md:bottom-6 md:left-8">
+      <div style={{ position: "absolute", bottom: isMobile ? 48 : 24, left: isMobile ? 16 : 32 }}>
         <Chip
           icon={
             <LocalOfferRoundedIcon

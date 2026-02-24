@@ -14,15 +14,16 @@ export default function MenuOptionGroup({ group, selectedIds, onToggle }: MenuOp
 
   return (
     <div
-      className="rounded-3xl p-6"
       style={{
         backgroundColor: theme.palette.background.paper,
         boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
+        padding: "1.75rem",
+        borderRadius: "1.5rem",
       }}
     >
       {/* หัวข้อกลุ่ม */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <Typography
             variant="h6"
             fontWeight={800}
@@ -33,8 +34,14 @@ export default function MenuOptionGroup({ group, selectedIds, onToggle }: MenuOp
           </Typography>
           {opt.isRequired && (
             <span
-              className="text-xs font-bold px-3 py-1 rounded-full"
               style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                paddingLeft: "0.75rem",
+                paddingRight: "0.75rem",
+                paddingTop: "0.25rem",
+                paddingBottom: "0.25rem",
+                borderRadius: "9999px",
                 backgroundColor: alpha(theme.palette.error.main, 0.12),
                 color: theme.palette.error.main,
               }}
@@ -51,16 +58,27 @@ export default function MenuOptionGroup({ group, selectedIds, onToggle }: MenuOp
       </div>
 
       {/* ตัวเลือก (pills) */}
-      <div className="flex flex-wrap gap-3">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
         {opt.menuOptionDetails.map((detail) => {
           const isSelected = selectedIds.includes(detail.id);
           return (
             <button
               key={detail.id}
               onClick={() => onToggle(opt.id, detail.id, opt.isMultiple)}
-              className="flex items-center gap-2 px-5 py-3 rounded-full font-semibold transition-all duration-200 cursor-pointer border-2"
               style={{
-                fontSize: "0.95rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.625rem",
+                paddingLeft: "1.5rem",
+                paddingRight: "1.5rem",
+                paddingTop: "0.875rem",
+                paddingBottom: "0.875rem",
+                borderRadius: "9999px",
+                fontWeight: 600,
+                cursor: "pointer",
+                border: "2px solid",
+                fontSize: "1.05rem",
+                transition: "all 0.2s",
                 borderColor: isSelected
                   ? theme.palette.primary.main
                   : alpha(theme.palette.text.primary, 0.15),
@@ -76,12 +94,18 @@ export default function MenuOptionGroup({ group, selectedIds, onToggle }: MenuOp
                   : "none",
               }}
             >
-              {isSelected && <CheckCircleRoundedIcon sx={{ fontSize: 18 }} />}
+              {isSelected && <CheckCircleRoundedIcon sx={{ fontSize: 22 }} />}
               <span>{detail.name}</span>
               <span
-                className="font-bold px-2 py-0.5 rounded-full ml-1"
                 style={{
-                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  paddingLeft: "0.625rem",
+                  paddingRight: "0.625rem",
+                  paddingTop: "0.25rem",
+                  paddingBottom: "0.25rem",
+                  borderRadius: "9999px",
+                  marginLeft: "0.25rem",
                   backgroundColor: alpha(theme.palette.primary.main, 0.1),
                   color: theme.palette.primary.main,
                 }}

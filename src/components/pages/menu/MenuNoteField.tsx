@@ -11,10 +11,12 @@ export default function MenuNoteField({ value, onChange }: MenuNoteFieldProps) {
 
   return (
     <div
-      className="rounded-3xl p-6 mt-5"
+      className="rounded-3xl"
       style={{
         backgroundColor: theme.palette.background.paper,
         boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
+        padding: "1.75rem",
+        marginTop: "1.5rem",
       }}
     >
       {/* หัวข้อ */}
