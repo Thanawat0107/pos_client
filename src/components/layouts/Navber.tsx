@@ -83,7 +83,7 @@ export default function Navbar() {
       >
         <Toolbar
           sx={{
-            height: isScrolled ? 64 : 80,
+            height: isScrolled ? { xs: 60, md: 72 } : { xs: 72, md: 96 },
             px: { xs: 2, md: 6 },
             justifyContent: "space-between",
             transition: "0.3s",
@@ -146,6 +146,8 @@ export default function Navbar() {
               sx={{
                 borderRadius: "12px",
                 textTransform: "none",
+                fontSize: "1rem",
+                px: 2.5,
                 display: { xs: "none", md: "inline-flex" },
               }}
             >

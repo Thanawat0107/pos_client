@@ -15,7 +15,8 @@ export const DesktopMenu = ({ isAdmin, onOpenAdminMenu }: DesktopMenuProps) => {
     borderRadius: "12px",
     textTransform: "none",
     fontWeight: 600,
-    px: 2,
+    fontSize: "1rem",
+    px: 2.5,
     color: active ? "primary.main" : "inherit",
     backgroundColor: active
       ? (theme: Theme) => alpha(theme.palette.primary.main, 0.08)

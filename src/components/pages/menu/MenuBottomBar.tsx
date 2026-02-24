@@ -57,7 +57,7 @@ export default function MenuBottomBar({
             display: "flex",
             alignItems: "center",
             gap: "1rem",
-            padding: isMobile ? "1rem 1.25rem 1.25rem" : "1.25rem 0",
+            padding: isMobile ? "0.6rem 1.25rem 0.75rem" : "0.75rem 0",
           }}
         >
           {/* ตัวเลือกจำนวน */}
@@ -111,11 +111,13 @@ export default function MenuBottomBar({
             disabled={!isFormValid || isAdding}
             onClick={onAddToCart}
             sx={{
-              py: isMobile ? 1.75 : 2,
+              py: isMobile ? 0.85 : 1.25,
+              px: isMobile ? 1.5 : 2,
               borderRadius: "14px",
               fontWeight: 800,
-              fontSize: "1rem",
+              fontSize: isMobile ? "0.875rem" : "1rem",
               textTransform: "none",
+              whiteSpace: "nowrap",
               boxShadow: isFormValid
                 ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.40)}`
                 : "none",
@@ -132,19 +134,21 @@ export default function MenuBottomBar({
                 <span>กำลังเพิ่ม...</span>
               </span>
             ) : isFormValid ? (
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingLeft: "0.25rem", paddingRight: "0.25rem" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <ShoppingBagRoundedIcon sx={{ fontSize: 20 }} />
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: "0.75rem" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "0.4rem", whiteSpace: "nowrap" }}>
+                  <ShoppingBagRoundedIcon sx={{ fontSize: isMobile ? 18 : 20, flexShrink: 0 }} />
                   <span>ใส่ตะกร้า</span>
                 </span>
                 <span
                   style={{
                     backgroundColor: "rgba(255,255,255,0.22)",
                     borderRadius: "8px",
-                    padding: "0.2rem 0.75rem",
-                    fontSize: "1rem",
+                    padding: isMobile ? "0.15rem 0.5rem" : "0.2rem 0.75rem",
+                    fontSize: isMobile ? "0.875rem" : "1rem",
                     fontWeight: 900,
                     letterSpacing: "0.01em",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   ฿{totalPrice.toLocaleString()}

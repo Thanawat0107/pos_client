@@ -1,5 +1,5 @@
 ﻿/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Box, Card, IconButton, Stack, Typography, alpha } from "@mui/material";
+import { Box, IconButton, Typography, alpha, useTheme } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
@@ -9,6 +9,7 @@ import { useUpdateCartItemMutation, useRemoveCartItemMutation } from "../../../s
 
 export default function CartItem({ item }: { item: any }) {
   const dispatch = useAppDispatch();
+  const theme = useTheme();
   const cartToken = localStorage.getItem("cartToken");
   const [updateCart] = useUpdateCartItemMutation();
   const [removeCart] = useRemoveCartItemMutation();
@@ -25,72 +26,139 @@ export default function CartItem({ item }: { item: any }) {
   };
 
   return (
-    <Card sx={{ 
-      p: 2, borderRadius: 4, border: '1px solid #E0E0E0', 
-      boxShadow: 'none', transition: '0.3s',
-      '&:hover': { boxShadow: '0 8px 24px rgba(0,0,0,0.08)', borderColor: 'transparent' }
-    }}>
-      <Stack direction="row" spacing={3}>
-        {/* Large Product Image */}
+    <Box
+      sx={{
+        display: "flex",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        bgcolor: "background.paper",
+        border: `1px solid ${alpha(theme.palette.divider, 0.07)}`,
+        boxShadow: "0 2px 16px rgba(0,0,0,0.05)",
+        transition: "box-shadow 0.2s, border-color 0.2s",
+        "&:hover": {
+          boxShadow: "0 6px 24px rgba(0,0,0,0.09)",
+          borderColor: alpha(theme.palette.primary.main, 0.2),
+        },
+      }}
+    >
+      {/* ── Image ── */}
+      <Box sx={{ position: "relative", flexShrink: 0 }}>
         <Box
           component="img"
           src={item.menuItemImage || "https://via.placeholder.com/150"}
-          sx={{ 
-            width: { xs: 100, sm: 140 }, 
-            height: { xs: 100, sm: 140 }, 
-            borderRadius: 3, 
-            objectFit: "cover",
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          sx={{
+            width: { xs: 80, sm: 96 },
+            height: { xs: 80, sm: 96 },
+            borderRadius: 2,
+            display: "block",
           }}
         />
+      </Box>
 
-        {/* Content Info */}
-        <Stack flex={1} justifyContent="space-between">
-          <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.2, mb: 0.5 }}>
-                {item.menuItemName}
+      {/* ── Content ── */}
+      <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        {/* Name + Price row */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
+          <Typography
+            fontWeight={800}
+            sx={{
+              fontSize: { xs: "0.9rem", sm: "1rem" },
+              lineHeight: 1.3,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {item.menuItemName}
+          </Typography>
+          <Typography
+            fontWeight={900}
+            color="primary"
+            sx={{ fontSize: { xs: "1rem", sm: "1.1rem" }, flexShrink: 0, whiteSpace: "nowrap" }}
+          >
+            ฿{(item.price * item.quantity).toLocaleString()}
+          </Typography>
+        </Box>
+
+        {/* Option chips */}
+        {item.options?.length > 0 && (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.75 }}>
+            {item.options.map((o: any) => (
+              <Typography
+                key={o.id}
+                variant="caption"
+                sx={{
+                  px: 1.25,
+                  py: 0.25,
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  bgcolor: alpha(theme.palette.text.primary, 0.06),
+                  color: "text.secondary",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {o.optionValueName}
               </Typography>
-              <Typography variant="h6" fontWeight={900} color="primary">
-                ฿{(item.price * item.quantity).toLocaleString()}
-              </Typography>
-            </Stack>
-            
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {item.options?.map((o: any) => (
-                <span key={o.id} style={{ background: '#F0F2F5', padding: '2px 8px', borderRadius: '4px' }}>
-                  {o.optionValueName}
-                </span>
-              ))}
+            ))}
+          </Box>
+        )}
+
+        {item.note && (
+          <Typography variant="caption" sx={{ color: "warning.main", fontWeight: 600, mt: 0.5, display: "block" }}>
+            📝 {item.note}
+          </Typography>
+        )}
+
+        {/* Qty controls + delete */}
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 1.25 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              borderRadius: 2,
+              border: `1.5px solid ${alpha(theme.palette.primary.main, 0.18)}`,
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+              px: 0.5,
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={() => handleQty(item.quantity - 1)}
+              disabled={item.quantity <= 1}
+              sx={{ color: "primary.main", width: 28, height: 28, "&:disabled": { opacity: 0.3 } }}
+            >
+              <RemoveRoundedIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+            <Typography sx={{ minWidth: 20, textAlign: "center", fontWeight: 900, fontSize: "0.9rem", color: "primary.main" }}>
+              {item.quantity}
             </Typography>
-            
-            {item.note && (
-              <Typography variant="caption" sx={{ color: 'orange', fontWeight: 600, mt: 1, display: 'block' }}>
-                📝 หมายเหตุ: {item.note}
-              </Typography>
-            )}
+            <IconButton
+              size="small"
+              onClick={() => handleQty(item.quantity + 1)}
+              sx={{ color: "primary.main", width: 28, height: 28 }}
+            >
+              <AddRoundedIcon sx={{ fontSize: 15 }} />
+            </IconButton>
           </Box>
 
-          {/* Action Bar */}
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
-            <Stack direction="row" alignItems="center" sx={{ bgcolor: '#F8F9FA', borderRadius: 3, p: 0.5 }}>
-              <IconButton size="small" onClick={() => handleQty(item.quantity - 1)} disabled={item.quantity <= 1}>
-                <RemoveRoundedIcon fontSize="small" />
-              </IconButton>
-              <Typography sx={{ mx: 2, minWidth: 20, textAlign: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
-                {item.quantity}
-              </Typography>
-              <IconButton size="small" onClick={() => handleQty(item.quantity + 1)}>
-                <AddRoundedIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-
-            <IconButton color="error" onClick={handleRemove} sx={{ bgcolor: alpha('#FF4842', 0.1) }}>
-              <DeleteOutlineRoundedIcon />
-            </IconButton>
-          </Stack>
-        </Stack>
-      </Stack>
-    </Card>
+          <IconButton
+            size="small"
+            onClick={handleRemove}
+            sx={{
+              color: "text.disabled",
+              width: 30,
+              height: 30,
+              "&:hover": { color: "error.main", bgcolor: alpha(theme.palette.error.main, 0.08) },
+              transition: "color 0.2s, background 0.2s",
+            }}
+          >
+            <DeleteOutlineRoundedIcon sx={{ fontSize: 17 }} />
+          </IconButton>
+        </Box>
+      </Box>
+    </Box>
   );
 }
