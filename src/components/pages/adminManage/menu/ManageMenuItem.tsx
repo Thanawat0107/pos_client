@@ -14,6 +14,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { MenuItemDto } from "../../../../@types/dto/MenuItem";
 import { formatThaiDate, formatThaiTime } from "../../../../utility/utils";
+import { getImage } from "../../../../helpers/imageHelper";
 
 // ฟังก์ชันจัดรูปแบบเงินบาท
 function formatCurrencyTHB(n: number) {
@@ -48,14 +49,8 @@ export default function ManageMenuItem({
       <TableCell width={110} sx={{ py: 2.5 }}>
         <Avatar
           variant="rounded"
-          src={row.imageUrl || ""}
+          src={getImage(row.imageUrl, "https://placehold.co/96x96?text=No+Img")}
           alt={row.name}
-          imgProps={{
-            onError: (e) => {
-              e.currentTarget.src =
-                "https://via.placeholder.com/96x96.png?text=No+Img";
-            },
-          }}
           sx={{
             width: 80,
             height: 80,

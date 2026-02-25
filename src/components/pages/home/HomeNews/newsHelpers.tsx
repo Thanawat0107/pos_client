@@ -3,7 +3,6 @@ import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import NewspaperOutlinedIcon from "@mui/icons-material/NewspaperOutlined";
 import { ContentType } from "../../../../@types/Enum";
-import { baseUrl } from "../../../../helpers/SD";
 
 // ─── Animation ────────────────────────────────────────────────────────────────
 export const fadeSlideUp = keyframes`
@@ -11,14 +10,8 @@ export const fadeSlideUp = keyframes`
   to   { opacity: 1; transform: translateY(0); }
 `;
 
-// ─── Image helper ─────────────────────────────────────────────────────────────
-export function getImage(
-  raw?: string,
-  fallback = "https://placehold.co/800x500?text=News"
-) {
-  if (!raw) return fallback;
-  return raw.startsWith("http") ? raw : baseUrl + raw;
-}
+// ─── Image helper — re-export จาก helpers/imageHelper ────────────────────────
+export { getImage } from "../../../../helpers/imageHelper";
 
 // ─── Type config ──────────────────────────────────────────────────────────────
 export function getTypeConfig(contentType: string) {

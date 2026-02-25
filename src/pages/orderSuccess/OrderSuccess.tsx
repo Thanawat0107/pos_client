@@ -20,7 +20,7 @@ import {
   useCancelOrderMutation,
 } from "../../services/orderApi";
 
-import { paymentMethods, Sd } from "../../helpers/SD";
+import { paymentMethods, Sd, ROOT_PATH } from "../../helpers/SD";
 import { formatThaiTime } from "../../utility/utils";
 import { useAppSelector } from "../../hooks/useAppHookState";
 import { SD_Roles } from "../../@types/Enum";
@@ -234,7 +234,7 @@ export default function OrderSuccess() {
           ไม่พบข้อมูลออเดอร์
         </Typography>
         <Button
-          onClick={() => navigate("/")}
+          onClick={() => navigate(ROOT_PATH)}
           variant="contained"
           sx={{ mt: 3, borderRadius: 3, px: 4, py: 1.5, fontSize: "1.1rem" }}
         >
@@ -366,7 +366,7 @@ export default function OrderSuccess() {
               variant="contained"
               size="large"
               startIcon={<HomeIcon sx={{ fontSize: "1.5rem" }} />}
-              onClick={() => navigate("/")}
+              onClick={() => navigate(ROOT_PATH)}
               sx={{
                 borderRadius: 4,
                 py: { xs: 2, sm: 2.5 },

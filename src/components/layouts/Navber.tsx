@@ -20,6 +20,7 @@ import { useColorMode } from "../../contexts/color-mode";
 import { useAppDispatch, useAppSelector } from "../../hooks/useAppHookState";
 import { logoutAndClear } from "../../stores/slices/authSlice";
 import { storage } from "../../helpers/storageHelper";
+import { ROOT_PATH } from "../../helpers/SD";
 import { SD_Roles } from "../../@types/Enum";
 import { useGetCartQuery } from "../../services/shoppingCartApi";
 import { Logo } from "./nav-bar/Logo";
@@ -63,7 +64,7 @@ export default function Navbar() {
     storage.remove("token");
     setAnchorProfile(null);
     setOpenDrawer(false);
-    navigate("/");
+    navigate(ROOT_PATH);
   };
 
   return (

@@ -13,6 +13,7 @@ import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { MenuItemDto } from "../../../@types/dto/MenuItem";
+import { getImage } from "../../../helpers/imageHelper";
 
 type Props = {
   menu: MenuItemDto;
@@ -28,7 +29,7 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx, onClick }: Props) {
 
   const { id, name, basePrice, imageUrl, description } = menu;
 
-  const displayImage = imageUrl || "https://placehold.co/600x400?text=No+Image";
+  const displayImage = getImage(imageUrl, "https://placehold.co/600x400?text=No+Image");
 
   // ฟังก์ชันกลางสำหรับการกดที่การ์ด
   const handleCardClick = () => {

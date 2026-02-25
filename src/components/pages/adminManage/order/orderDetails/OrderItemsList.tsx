@@ -15,6 +15,7 @@ import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { Sd } from "../../../../../helpers/SD";
+import { getImage } from "../../../../../helpers/imageHelper";
 
 const getItemStatusInfo = (status: string) => {
   switch (status) {
@@ -110,7 +111,7 @@ export default function OrderItemsList({
               <Stack direction="row" spacing={2}>
                 <Avatar
                   variant="rounded"
-                  src={item.menuItemImage}
+                  src={getImage(item.menuItemImage, "https://placehold.co/80x80?text=Food")}
                   sx={{
                     width: { xs: 72, sm: 80 },
                     height: { xs: 72, sm: 80 },

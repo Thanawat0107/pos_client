@@ -26,6 +26,7 @@ import type { Content } from "../../../../@types/dto/Content";
 import type { CreateContent } from "../../../../@types/createDto/CreateContent";
 import type { UpdateContent } from "../../../../@types/UpdateDto/UpdateContent";
 import { contentSchema } from "../../../../helpers/validationSchema";
+import { getImage } from "../../../../helpers/imageHelper";
 import { CONTENT_TYPE_OPTIONS, ContentType } from "../../../../@types/Enum";
 
 const DISCOUNT_TYPES = [
@@ -157,7 +158,7 @@ export default function FormContent({
   // 2. Lifecycle & Effects
   useEffect(() => {
     if (open) {
-      setImagePreview(initial?.imageUrl || null);
+      setImagePreview(initial?.imageUrl ? getImage(initial.imageUrl) : null);
     } else {
       resetForm();
       setImagePreview(null);

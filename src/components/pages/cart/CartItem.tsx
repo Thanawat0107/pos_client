@@ -6,6 +6,7 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { useAppDispatch } from "../../../hooks/useAppHookState";
 import { updateItemLocal, removeItemLocal } from "../../../stores/slices/shoppingSlice";
 import { useUpdateCartItemMutation, useRemoveCartItemMutation } from "../../../services/shoppingCartApi";
+import { getImage } from "../../../helpers/imageHelper";
 
 export default function CartItem({ item }: { item: any }) {
   const dispatch = useAppDispatch();
@@ -46,7 +47,7 @@ export default function CartItem({ item }: { item: any }) {
       <Box sx={{ position: "relative", flexShrink: 0 }}>
         <Box
           component="img"
-          src={item.menuItemImage || "https://via.placeholder.com/150"}
+          src={getImage(item.menuItemImage, "https://placehold.co/150x150?text=Food")}
           sx={{
             width: { xs: 80, sm: 96 },
             height: { xs: 80, sm: 96 },

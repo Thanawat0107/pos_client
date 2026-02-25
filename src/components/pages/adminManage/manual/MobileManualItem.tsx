@@ -17,6 +17,7 @@ import PlaceIcon from "@mui/icons-material/Place";
 import { useState } from "react";
 import type { Manual } from "../../../../@types/dto/Manual";
 import ManualFilesDialog from "./ManualFilesDialog";
+import { getImage } from "../../../../helpers/imageHelper";
 
 type Props = {
   row: Manual;
@@ -109,7 +110,7 @@ export default function MobileManualItem({
               ) : (
                 <Box
                   component="img"
-                  src={firstFile}
+                  src={getImage(firstFile)}
                   alt="preview"
                   sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                 />

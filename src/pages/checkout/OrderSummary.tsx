@@ -13,6 +13,7 @@ import {
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import PaymentIcon from "@mui/icons-material/Payment";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
+import { getImage } from "../../helpers/imageHelper";
 
 interface OrderSummaryProps {
   cartItems: any[];
@@ -103,7 +104,7 @@ export default function OrderSummary({
             <Box
               component="img"
               src={
-                item.menuItemImage || "https://placehold.co/100x100?text=Food"
+                getImage(item.menuItemImage, "https://placehold.co/100x100?text=Food")
               }
               sx={{
                 width: { xs: 70, sm: 80 }, // ย่อขนาดรูปเล็กน้อยบนมือถือ

@@ -24,7 +24,8 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import { motion } from "framer-motion";
 
 import { useGetOrderHistoryQuery } from "../../services/orderApi";
-import { Sd } from "../../helpers/SD";
+import { Sd, ROOT_PATH } from "../../helpers/SD";
+import { getImage } from "../../helpers/imageHelper";
 import { formatThaiDate, formatThaiTime } from "../../utility/utils";
 import { useAppSelector } from "../../hooks/useAppHookState";
 
@@ -216,7 +217,7 @@ export default function MyOrders() {
                           }}
                         >
                           {order.orderDetails?.map((item: any, i: number) => (
-                            <Avatar key={i} src={item.menuItemImage} />
+                            <Avatar key={i} src={getImage(item.menuItemImage, "https://placehold.co/50x50?text=Food")} />
                           ))}
                         </AvatarGroup>
                         <Box sx={{ flexGrow: 1 }}>
@@ -303,7 +304,7 @@ export default function MyOrders() {
             </Typography>
             <Button
               variant="contained"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(ROOT_PATH)}
               sx={{ mt: 2, px: 4, borderRadius: 3, fontWeight: 900 }}
             >
               ไปที่หน้าเมนู

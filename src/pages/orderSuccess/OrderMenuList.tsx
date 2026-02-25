@@ -17,6 +17,7 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { getItemStatusConfig } from "../../utility/OrderHelpers";
 import { Sd } from "../../helpers/SD";
+import { getImage } from "../../helpers/imageHelper";
 import type { OrderHeader } from "../../@types/dto/OrderHeader";
 import OrderReceiptPDF from "../../components/pages/adminManage/order/orderDetails/OrderReceiptPDF";
 
@@ -145,7 +146,7 @@ export default function OrderMenuList({
                 {/* รูปภาพอาหาร */}
                 <Grid size="auto">
                   <Avatar
-                    src={item.menuItemImage}
+                    src={getImage(item.menuItemImage, "https://placehold.co/85x85?text=Food")}
                     variant="rounded"
                     sx={{
                       width: { xs: 70, sm: 85 },

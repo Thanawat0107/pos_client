@@ -9,7 +9,7 @@ import { useLazyVerifyPromoQuery } from "../../services/contentApi";
 import { useConfirmCartMutation } from "../../services/orderApi";
 import type { CreateOrder } from "../../@types/createDto/CreateOrder";
 import { clearLocalCart } from "../../stores/slices/shoppingSlice";
-import { Channel, paymentMethods } from "../../helpers/SD";
+import { Channel, paymentMethods, ROOT_PATH } from "../../helpers/SD";
 
 // นำเข้า Component ลูก
 import CustomerForm from "./CustomerForm";
@@ -67,7 +67,7 @@ export default function Checkout() {
 
   useEffect(() => {
     if (!isOrderPlaced && cartItems.length === 0 && !isConfirming) {
-      navigate("/");
+      navigate(ROOT_PATH);
     }
   }, [cartItems, navigate, isConfirming, isOrderPlaced]);
 
@@ -111,7 +111,7 @@ export default function Checkout() {
     const cartToken = localStorage.getItem("cartToken");
     if (!cartToken) {
       alert("ไม่พบข้อมูลตะกร้าสินค้า");
-      return navigate("/");
+      return navigate(ROOT_PATH);
     }
 
     const payload: CreateOrder = {

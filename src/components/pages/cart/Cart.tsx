@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "../../../hooks/useAppHookState";
 import { clearLocalCart } from "../../../stores/slices/shoppingSlice";
 import { useNavigate } from "react-router-dom";
 import { storage } from "../../../helpers/storageHelper";
+import { ROOT_PATH } from "../../../helpers/SD";
 
 export default function Cart() {
   const theme = useTheme();
@@ -99,7 +100,7 @@ export default function Cart() {
                     <Typography variant="h6" fontWeight={800} gutterBottom>ตะกร้ายังว่างเปล่า</Typography>
                     <Typography color="text.secondary" variant="body2">หิวแล้วหรือยัง? เลือกเมนูที่ถูกใจได้เลย</Typography>
                   </Box>
-                  <Button variant="contained" onClick={() => navigate("/")} sx={{ px: 4, py: 1.25, borderRadius: 2, fontWeight: 800, textTransform: "none" }}>
+                  <Button variant="contained" onClick={() => navigate(ROOT_PATH)} sx={{ px: 4, py: 1.25, borderRadius: 2, fontWeight: 800, textTransform: "none" }}>
                     ไปที่หน้าเมนู
                   </Button>
                 </Box>

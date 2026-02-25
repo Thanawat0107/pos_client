@@ -32,6 +32,7 @@ import type { Manual } from "../../../../@types/dto/Manual";
 import type { CreateManual } from "../../../../@types/createDto/CreateManual";
 import type { UpdateManual } from "../../../../@types/UpdateDto/UpdateManual";
 import { manualSchema } from "../../../../helpers/validationSchema";
+import { getImage } from "../../../../helpers/imageHelper";
 import { ROLES, SD_ServiceType } from "../../../../helpers/SD";
 import { useGetManualCategoriesQuery } from "../../../../services/manualApi";
 
@@ -261,7 +262,7 @@ export default function FormManual({
                         }}
                       >
                         <img
-                          src={url}
+                          src={getImage(url)}
                           alt="keep"
                           style={{ height: 100, objectFit: "cover" }}
                         />

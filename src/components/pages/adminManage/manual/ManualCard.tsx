@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ImageNotSupported,
 } from "@mui/icons-material";
-import { baseUrl, SD_ServiceType } from "../../../../helpers/SD";
+import { SD_ServiceType } from "../../../../helpers/SD";
+import { getImage } from "../../../../helpers/imageHelper";
 import type { Manual } from "../../../../@types/dto/Manual";
 
 const CATEGORY_META: Record<string, { bg: string; text: string; label: string }> = {
@@ -95,7 +96,7 @@ export const ManualCard = ({ manual, onOpen }: Props) => {
         {images.length > 0 ? (
           <Box
             component="img"
-            src={baseUrl + images[imgIndex]}
+            src={getImage(images[imgIndex])}
             sx={{
               width: "100%",
               height: "100%",

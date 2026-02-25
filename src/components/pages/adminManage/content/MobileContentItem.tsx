@@ -13,6 +13,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber"; // ไอคอนตั๋ว/โปรโมชั่น
 import type { Content } from "../../../../@types/dto/Content";
+import { getImage } from "../../../../helpers/imageHelper";
 
 // ✅ Helper จัดรูปแบบวันที่
 const formatDate = (date?: Date | string | null) => {
@@ -69,7 +70,7 @@ export default function MobileContentItem({
         <Box sx={{ position: "relative" }}>
           <Avatar
             variant="rounded"
-            src={row.imageUrl || "https://via.placeholder.com/150x150.png?text=Img"}
+            src={getImage(row.imageUrl, "https://placehold.co/150x150?text=No+Img")}
             sx={{
               width: 85,
               height: 85,

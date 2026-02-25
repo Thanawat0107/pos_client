@@ -12,6 +12,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import ImageIcon from "@mui/icons-material/Image";
+import { getImage } from "../../../../helpers/imageHelper";
 
 type Props = {
   open: boolean;
@@ -70,7 +71,7 @@ function FileCard({ src, index }: { src: string; index: number }) {
           /* Image card */
           <Box
             component="img"
-            src={src}
+            src={getImage(src)}
             alt={filename}
             sx={{
               width: "100%",

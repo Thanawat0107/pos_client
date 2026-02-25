@@ -16,6 +16,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EventIcon from "@mui/icons-material/Event";
 import GroupIcon from "@mui/icons-material/Group";
 import type { Content } from "../../../../@types/dto/Content";
+import { getImage } from "../../../../helpers/imageHelper";
 
 // ✅ Helper จัดรูปแบบวันที่: รองรับ undefined/null
 const formatDate = (date?: Date | string | null) => {
@@ -78,7 +79,7 @@ export default function ManageContentItem({
       <TableCell width={120}>
         <Avatar
           variant="rounded"
-          src={row.imageUrl || "https://via.placeholder.com/150x80.png?text=No+Image"}
+          src={getImage(row.imageUrl, "https://placehold.co/150x80?text=No+Image")}
           alt={row.title}
           sx={{
             width: 100,

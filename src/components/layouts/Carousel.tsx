@@ -6,7 +6,7 @@ import { Box, IconButton, Fade, useMediaQuery, Typography, Button, Stack } from 
 import { ArrowBackIosNew, ArrowForwardIos } from "@mui/icons-material";
 import { alpha, useTheme } from "@mui/material/styles";
 import type { Content } from "../../@types/dto/Content";
-import { baseUrl } from "../../helpers/SD";
+import { getImage } from "../../helpers/imageHelper";
 
 export default function Carousel({ items, autoPlay = true }: { items: Content[]; autoPlay?: boolean }) {
   const theme = useTheme();
@@ -52,7 +52,7 @@ export default function Carousel({ items, autoPlay = true }: { items: Content[];
             {/* 1. Image with Ken Burns Effect */}
             <Box
               component="img"
-              src={item.imageUrl?.startsWith("http") ? item.imageUrl : baseUrl + item.imageUrl}
+              src={getImage(item.imageUrl)}
               alt={item.title}
               sx={{
                 width: "100%", height: "100%", objectFit: "cover",

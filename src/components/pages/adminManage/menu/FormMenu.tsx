@@ -26,6 +26,7 @@ import type { CreateMenuItem } from "../../../../@types/createDto/createMenuItem
 import type { MenuItemOption } from "../../../../@types/dto/MenuItemOption";
 import type { UpdateMenuItem } from "../../../../@types/UpdateDto/updateMenuItem";
 import { menuSchema } from "../../../../helpers/validationSchema";
+import { getImage } from "../../../../helpers/imageHelper";
 
 type Props = {
   open: boolean;
@@ -118,7 +119,7 @@ export default function FormMenu({
   // Reset Form เมื่อเปิด/ปิด
   useEffect(() => {
     if (open) {
-      setImagePreview(initial?.imageUrl || null);
+      setImagePreview(initial?.imageUrl ? getImage(initial.imageUrl) : null);
     } else {
       resetForm();
       setImagePreview(null);

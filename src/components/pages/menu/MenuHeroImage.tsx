@@ -1,6 +1,7 @@
 import { IconButton, Chip, useTheme, useMediaQuery } from "@mui/material";
 import ArrowBackIosNewRoundedIcon from "@mui/icons-material/ArrowBackIosNewRounded";
 import LocalOfferRoundedIcon from "@mui/icons-material/LocalOfferRounded";
+import { getImage } from "../../../helpers/imageHelper";
 
 interface MenuHeroImageProps {
   imageUrl?: string;
@@ -19,7 +20,7 @@ export default function MenuHeroImage({ imageUrl, name, categoryName, onBack }: 
     >
       {/* รูปอาหาร */}
       <img
-        src={imageUrl || "https://placehold.co/1200x600?text=Menu"}
+        src={getImage(imageUrl, "https://placehold.co/1200x600?text=Menu")}
         alt={name}
         style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.88)", display: "block" }}
       />

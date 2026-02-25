@@ -1,10 +1,11 @@
 import { Box } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
+import { ROOT_PATH } from "../../../helpers/SD";
 
 export const Logo = () => (
   <Box
     component={RouterLink}
-    to="/"
+    to={ROOT_PATH}
     sx={{
       textDecoration: "none",
       color: "inherit",

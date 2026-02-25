@@ -19,6 +19,7 @@ import ActiveOrderFloating from "../pages/activeOrder/ActiveOrderFloating";
 import MyOrders from "../pages/order/MyOrders";
 import Dashboard from "../components/pages/adminManage/dashboard/Dashboard";
 import CustomerManual from "../pages/CustomerManual";
+import { ROOT_PATH } from "../helpers/SD";
 
 export default function Routers() {
   return (
@@ -26,7 +27,7 @@ export default function Routers() {
       {/* ใส่ไว้ตรงนี้! เพื่อให้ลอยอยู่เหนือทุกหน้า */}
       <ActiveOrderFloating />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path={ROOT_PATH} element={<Home />} />
         <Route path="/menuItem" element={<MenuItem />} />
         <Route path="/menu/:id" element={<MenuDetails />} />
         <Route path="/cart" element={<Cart />} />

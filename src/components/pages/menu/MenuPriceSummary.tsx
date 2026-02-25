@@ -1,4 +1,5 @@
 import { Typography, alpha, useTheme } from "@mui/material";
+import { getImage } from "../../../helpers/imageHelper";
 
 interface MenuPriceSummaryProps {
   imageUrl?: string;
@@ -22,7 +23,7 @@ export default function MenuPriceSummary({
       {/* รูปอาหาร (desktop) */}
       <div style={{ borderRadius: "1.5rem", overflow: "hidden", boxShadow: "0 25px 50px rgba(0,0,0,0.25)" }}>
         <img
-          src={imageUrl || "https://placehold.co/680x680?text=Menu"}
+          src={getImage(imageUrl, "https://placehold.co/680x680?text=Menu")}
           alt={name}
           style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }}
         />

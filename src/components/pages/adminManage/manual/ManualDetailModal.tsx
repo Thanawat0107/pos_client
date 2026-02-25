@@ -20,7 +20,8 @@ import {
   ImageNotSupported,
 } from "@mui/icons-material";
 import type { Manual } from "../../../../@types/dto/Manual";
-import { baseUrl, SD_ServiceType } from "../../../../helpers/SD";
+import { SD_ServiceType } from "../../../../helpers/SD";
+import { getImage } from "../../../../helpers/imageHelper";
 
 const CATEGORY_META: Record<string, { bg: string; text: string; label: string }> = {
   [SD_ServiceType.Water]:    { bg: "#E3F2FD", text: "#1565C0", label: "น้ำดื่ม" },
@@ -105,7 +106,7 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
         {images.length > 0 ? (
           <Box
             component="img"
-            src={baseUrl + images[imgIndex]}
+            src={getImage(images[imgIndex])}
             sx={{
               width: "100%",
               height: "100%",
