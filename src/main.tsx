@@ -12,6 +12,7 @@ import { registerPdfFonts } from "./hooks/useFont";
 registerPdfFonts();
 
 createRoot(document.getElementById("root")!).render(
+  // <BrowserRouter basename="/cs66/s07/cnmswep">
   <BrowserRouter>
     <AppProviders>
       <App />

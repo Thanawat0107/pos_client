@@ -2,6 +2,8 @@ import { Box } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { ROOT_PATH } from "../../../helpers/SD";
 
+const path = "http://tee.kru.ac.th/cs66/s07/cnmswep/";
+
 export const Logo = () => (
   <Box
     component={RouterLink}
@@ -16,7 +18,7 @@ export const Logo = () => (
   >
     <Box
       component="img"
-      src="/logo/logo.png"
+      src={`${path}logo/logo.png`}
       alt="POS Logo"
       sx={{
         height: { xs: 64, sm: 84, md: 104 },

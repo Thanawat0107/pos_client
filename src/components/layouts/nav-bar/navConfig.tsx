@@ -7,6 +7,7 @@ import AnnouncementOutlinedIcon from "@mui/icons-material/AnnouncementOutlined";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import { ROOT_PATH } from "../../../helpers/SD";
 
 // กำหนดโครงสร้างข้อมูลให้ชัดเจน
 export interface NavItem {
@@ -19,7 +20,7 @@ export interface NavItem {
 export const MAIN_NAV: NavItem[] = [
   {
     text: "หน้าแรก",
-    path: "/",
+    path: ROOT_PATH,
     icon: <HomeOutlinedIcon />,
   },
   {

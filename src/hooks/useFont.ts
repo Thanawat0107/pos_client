@@ -1,19 +1,22 @@
 import { Font } from '@react-pdf/renderer';
 
+// const path = "http://tee.kru.ac.th/cs66/s07/cnmswep/";
+const path = "/";
+
 export const registerPdfFonts = () => {
 Font.register({
   family: "Sarabun",
   fonts: [
     {
-      src: "/fonts/Sarabun-Regular.ttf",
+      src: `${path}fonts/Sarabun-Regular.ttf`,
       fontWeight: "normal",
     },
     {
-      src: "/fonts/Sarabun-Bold.ttf",
+      src: `${path}fonts/Sarabun-Bold.ttf`,
       fontWeight: "bold",
     },
     {
-      src: "/fonts/Sarabun-Italic.ttf",
+      src: `${path}fonts/Sarabun-Italic.ttf`,
       fontStyle: "italic",
     },
   ],
