@@ -42,6 +42,8 @@ export default function OrderItemActions({
   onCancelClick,
   onViewClick,
 }: Props) {
+
+    const theme = useTheme();
   return (
     <TableCell align="right" sx={{ width: 220, py: 2.5, pr: 2.5 }}>
       <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
