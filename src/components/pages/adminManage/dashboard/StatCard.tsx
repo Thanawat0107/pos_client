@@ -34,7 +34,7 @@ const StatCard = ({ item }: { item: any; index: number }) => {
       sx={{
         height: "100%",
         borderRadius: "32px", // มนขึ้นอีกนิดเพื่อให้เข้ากับส่วนอื่น
-        bgcolor: "white",
+        bgcolor: "background.paper",
         border: "1px solid",
         borderColor: alpha(actualColor, 0.1),
         transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",

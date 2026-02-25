@@ -74,8 +74,9 @@ export const ManualCard = ({ manual, onOpen }: Props) => {
         textAlign: "left",
         borderRadius: "24px",
         overflow: "hidden",
-        border: "1.5px solid #F0F0F0",
-        bgcolor: "white",
+        border: "1.5px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
         transition: "box-shadow 0.2s ease",
         "&:hover": { boxShadow: "0 10px 28px rgba(0,0,0,0.10)" },
       }}
@@ -88,7 +89,7 @@ export const ManualCard = ({ manual, onOpen }: Props) => {
           position: "relative",
           width: "100%",
           height: 240,
-          bgcolor: "#F3F4F6",
+          bgcolor: "action.hover",
           flexShrink: 0,
           touchAction: "pan-y",
         }}
@@ -110,8 +111,8 @@ export const ManualCard = ({ manual, onOpen }: Props) => {
             justifyContent="center"
             sx={{ width: "100%", height: "100%", gap: 1 }}
           >
-            <ImageNotSupported sx={{ fontSize: 48, color: "#D1D5DB" }} />
-            <Typography sx={{ color: "#9CA3AF", fontSize: 14, fontWeight: 600 }}>
+            <ImageNotSupported sx={{ fontSize: 48, color: "text.disabled" }} />
+            <Typography sx={{ color: "text.secondary", fontSize: 14, fontWeight: 600 }}>
               ไม่มีรูปภาพ
             </Typography>
           </Stack>
@@ -244,7 +245,6 @@ export const ManualCard = ({ manual, onOpen }: Props) => {
               sx={{
                 fontSize: "20px",
                 fontWeight: 900,
-                color: "#111827",
                 lineHeight: 1.25,
                 mb: 0.75,
               }}
@@ -254,9 +254,9 @@ export const ManualCard = ({ manual, onOpen }: Props) => {
 
             {/* ตำแหน่ง */}
             <Stack direction="row" spacing={0.5} alignItems="center">
-              <Place sx={{ fontSize: 18, color: "#EF4444" }} />
+              <Place sx={{ fontSize: 18, color: "error.main" }} />
               <Typography
-                sx={{ fontSize: "15px", fontWeight: 600, color: "#6B7280" }}
+                sx={{ fontSize: "15px", fontWeight: 600, color: "text.secondary" }}
               >
                 {manual.location || "—"}
               </Typography>
@@ -266,7 +266,7 @@ export const ManualCard = ({ manual, onOpen }: Props) => {
           {/* ลูกศรชี้ขวา */}
           <Box
             sx={{
-              bgcolor: "#F3F4F6",
+              bgcolor: "action.hover",
               borderRadius: "50%",
               width: 40,
               height: 40,
@@ -276,7 +276,7 @@ export const ManualCard = ({ manual, onOpen }: Props) => {
               flexShrink: 0,
             }}
           >
-            <ChevronRight sx={{ color: "#9CA3AF", fontSize: 24 }} />
+            <ChevronRight sx={{ color: "text.disabled", fontSize: 24 }} />
           </Box>
         </Stack>
       </ButtonBase>

@@ -163,16 +163,17 @@ const DashboardHeader = ({
                 }
                 IconComponent={ChevronDown}
                 sx={{
-                  bgcolor: "white",
+                  bgcolor: "background.paper",
                   borderRadius: "16px",
                   fontWeight: 800,
                   fontSize: "0.95rem",
-                  color: "#334155",
+                  color: "text.primary",
                   "& .MuiOutlinedInput-notchedOutline": {
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid",
+                    borderColor: "divider",
                   },
                   "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "#cbd5e1",
+                    borderColor: "action.selected",
                   },
                   boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
                   "& .MuiSelect-select": { py: 1.5, px: 2.5 },
@@ -196,11 +197,12 @@ const DashboardHeader = ({
               spacing={0.5}
               alignItems="center"
               sx={{
-                bgcolor: "white",
+                bgcolor: "background.paper",
                 px: 2,
                 py: 0.5,
                 borderRadius: "16px",
-                border: "1px solid #e2e8f0",
+                border: "1px solid",
+                borderColor: "divider",
               }}
             >
               <DatePicker
@@ -216,19 +218,18 @@ const DashboardHeader = ({
                       "& .MuiOutlinedInput-notchedOutline": { border: "none" },
                       "& .MuiInputBase-input": {
                         fontWeight: 800,
-                        color: "#1e293b",
                         fontSize: "0.95rem",
                       },
                       "& .MuiInputLabel-root": {
                         fontWeight: 700,
-                        color: "#94a3b8",
+                        color: "text.disabled",
                         mt: -0.5,
                       },
                     },
                   },
                 }}
               />
-              <Typography sx={{ color: "#cbd5e1", fontWeight: 900, px: 1 }}>
+              <Typography sx={{ color: "text.disabled", fontWeight: 900, px: 1 }}>
                 –
               </Typography>
               <DatePicker
@@ -244,12 +245,11 @@ const DashboardHeader = ({
                       "& .MuiOutlinedInput-notchedOutline": { border: "none" },
                       "& .MuiInputBase-input": {
                         fontWeight: 800,
-                        color: "#1e293b",
                         fontSize: "0.95rem",
                       },
                       "& .MuiInputLabel-root": {
                         fontWeight: 700,
-                        color: "#94a3b8",
+                        color: "text.disabled",
                         mt: -0.5,
                       },
                     },
@@ -267,16 +267,16 @@ const DashboardHeader = ({
                 sx={{
                   width: 60,
                   height: 60,
-                  bgcolor: "white",
+                  bgcolor: "background.paper",
                   border: "2px solid",
-                  borderColor: "#f1f5f9",
-                  color: "#64748b",
+                  borderColor: "divider",
+                  color: "text.secondary",
                   borderRadius: "20px",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
                   transition:
                     "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                   "&:hover": {
-                    bgcolor: "#f8fafc",
+                    bgcolor: "action.hover",
                     transform: "rotate(180deg)",
                     color: "primary.main",
                     borderColor: "primary.light",

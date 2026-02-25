@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { alpha } from "@mui/material/styles";
 import {
   Card,
   Typography,
@@ -56,12 +57,13 @@ export default function OrderSummary({
     <Card
       sx={{
         p: { xs: 2.5, sm: 3, md: 4 }, // ปรับ Padding ตามขนาดหน้าจอ
-        borderRadius: 5,
+        borderRadius: 2,
         position: { md: "sticky" },
         top: { md: 24 },
-        border: "1px solid #e0e0e0",
+        border: "1px solid",
+        borderColor: "divider",
         boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
-        bgcolor: "#fff",
+        bgcolor: "background.paper",
       }}
     >
       <Typography
@@ -72,7 +74,6 @@ export default function OrderSummary({
           display: "flex",
           alignItems: "center",
           gap: 1.5,
-          color: "#1a2a3a",
           mb: 3,
           fontSize: { xs: "1.25rem", sm: "1.5rem" }, // ปรับขนาดฟอนต์หัวข้อ
         }}
@@ -95,7 +96,7 @@ export default function OrderSummary({
           "&::-webkit-scrollbar": { width: "5px" },
           "&::-webkit-scrollbar-thumb": {
             background: "#e0e0e0",
-            borderRadius: "10px",
+            borderRadius: "4px",
           },
         }}
       >
@@ -109,9 +110,10 @@ export default function OrderSummary({
               sx={{
                 width: { xs: 70, sm: 80 }, // ย่อขนาดรูปเล็กน้อยบนมือถือ
                 height: { xs: 70, sm: 80 },
-                borderRadius: 3,
+                borderRadius: 2,
                 objectFit: "cover",
-                border: "1px solid #f0f0f0",
+                border: "1px solid",
+                borderColor: "divider",
               }}
             />
             <Box sx={{ flex: 1 }}>
@@ -140,7 +142,7 @@ export default function OrderSummary({
               <Typography
                 variant="body1"
                 fontWeight={700}
-                sx={{ mt: 0.5, color: "#2c3e50" }}
+                sx={{ mt: 0.5 }}
               >
                 ฿{calculateItemTotal(item).toLocaleString()}
               </Typography>
@@ -165,7 +167,7 @@ export default function OrderSummary({
           helperText={promoMessage.text}
           InputProps={{
             sx: {
-              borderRadius: 3,
+              borderRadius: 2,
               height: { xs: "50px", sm: "55px" }, // ลดความสูงเล็กน้อย
               fontSize: { xs: "0.9rem", sm: "1rem" },
               fontWeight: 600,
@@ -213,7 +215,7 @@ export default function OrderSummary({
           <Stack
             direction="row"
             justifyContent="space-between"
-            sx={{ bgcolor: "#fff3f3", p: 1, borderRadius: 2 }}
+            sx={{ bgcolor: (t) => alpha(t.palette.error.main, 0.08), p: 1, borderRadius: 1 }}
           >
             <Typography
               fontWeight={600}
@@ -235,8 +237,8 @@ export default function OrderSummary({
         <Box
           sx={{
             p: { xs: 1.5, sm: 2 },
-            bgcolor: "#f8f9fa",
-            borderRadius: 3,
+            bgcolor: "background.default",
+            borderRadius: 2,
             mt: 1,
           }}
         >
@@ -247,7 +249,6 @@ export default function OrderSummary({
           >
             <Typography
               fontWeight={900}
-              color="#1a2a3a"
               sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
             >
               ยอดสุทธิ
@@ -270,7 +271,7 @@ export default function OrderSummary({
         onClick={handleConfirmOrder}
         disabled={isConfirming || cartItems.length === 0}
         sx={{
-          borderRadius: 4,
+          borderRadius: 2,
           py: { xs: 2, sm: 2.5 },
           fontSize: { xs: "1.05rem", sm: "1.25rem" }, // ลดขนาดฟอนต์บนปุ่มมือถือ
           fontWeight: 900,

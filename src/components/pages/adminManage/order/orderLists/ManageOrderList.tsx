@@ -57,7 +57,7 @@ export default function ManageOrderList() {
   }
 
   return (
-    <Box className="min-h-screen bg-[#F5F6F8] pb-12 font-sans">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: 6 }}>
       <Container maxWidth="xl" className="px-4 md:px-8 pt-6 md:pt-8">
         <Stack spacing={2.5}>
 
@@ -71,8 +71,7 @@ export default function ManageOrderList() {
           {/* ── 2. Filter Card ── */}
           <Paper
             elevation={0}
-            className="bg-white rounded-3xl shadow-sm border border-gray-200"
-            sx={{ px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
+            sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
           >
             <OrderFilterBar
               q={filters.q}
@@ -85,12 +84,11 @@ export default function ManageOrderList() {
               onChannelChange={(v) => setFilters((prev) => ({ ...prev, channel: v }))}
             />
             <Typography
-              className="text-[#E63946] font-bold mt-4 flex items-center gap-2"
-              sx={{ fontSize: { xs: "0.95rem", md: "1.1rem" }, fontWeight: 700, mt: 2 }}
+              sx={{ color: "primary.main", fontWeight: 700, fontSize: { xs: "0.95rem", md: "1.1rem" }, mt: 2, display: "flex", alignItems: "center", gap: 1 }}
             >
               <Box
                 component="span"
-                sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#E63946", display: "inline-block" }}
+                sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "primary.main", display: "inline-block" }}
               />
               รายการที่พบทั้งหมด: {filteredRows.length} รายการ
             </Typography>
@@ -98,9 +96,9 @@ export default function ManageOrderList() {
 
           {/* ── 3. Table Card ── */}
           {isLoading ? (
-            <Box className="flex flex-col justify-center items-center min-h-64 gap-4">
-              <CircularProgress size={56} thickness={4} sx={{ color: "#D32F2F" }} />
-              <Typography variant="h6" className="text-gray-500 font-semibold">
+            <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: 256, gap: 2 }}>
+              <CircularProgress size={56} thickness={4} color="primary" />
+              <Typography variant="h6" sx={{ color: "text.secondary", fontWeight: 600 }}>
                 กำลังโหลดข้อมูล...
               </Typography>
             </Box>

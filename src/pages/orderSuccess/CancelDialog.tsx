@@ -1,3 +1,4 @@
+import { alpha } from "@mui/material/styles";
 import {
   Dialog,
   DialogTitle,
@@ -46,7 +47,7 @@ export default function CancelDialog({
       maxWidth="xs"
       PaperProps={{
         sx: {
-          borderRadius: 5, // ปรับให้มนเท่ากับ Card ส่วนอื่น
+          borderRadius: 1,
           p: { xs: 1, sm: 2 },
           backgroundImage: "none",
         },
@@ -55,7 +56,7 @@ export default function CancelDialog({
       <Box sx={{ textAlign: "center", pt: 4, px: 2 }}>
         <Box
           sx={{
-            bgcolor: "#FFF4E5",
+            bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
             width: { xs: 70, sm: 80 },
             height: { xs: 70, sm: 80 },
             borderRadius: "50%",
@@ -76,7 +77,7 @@ export default function CancelDialog({
             p: 0, 
             fontWeight: 900, 
             fontSize: { xs: "1.5rem", sm: "1.7rem" }, // หัวข้อใหญ่ชัดเจน
-            color: "#1A1A1A",
+            color: "text.primary",
             lineHeight: 1.2
           }}
         >
@@ -128,8 +129,8 @@ export default function CancelDialog({
           sx={{
             mt: 1,
             "& .MuiFilledInput-root": {
-              borderRadius: "12px 12px 0 0",
-              bgcolor: "#F5F5F5",
+              borderRadius: "4px 4px 0 0",
+              bgcolor: "action.hover",
               "&:before, &:after": { borderBottom: "2px solid" }
             },
           }}
@@ -153,9 +154,9 @@ export default function CancelDialog({
           variant="text"
           disabled={isCancelling}
           sx={{
-            borderRadius: 3,
+            borderRadius: 1,
             fontWeight: 700,
-            color: "#757575",
+            color: "text.secondary",
             fontSize: "1rem",
             textTransform: "none",
             py: 1.5 // เพิ่มความหนาปุ่ม
@@ -171,7 +172,7 @@ export default function CancelDialog({
           color="error"
           disabled={isCancelling}
           sx={{
-            borderRadius: 3,
+            borderRadius: 1,
             py: 1.8, // ปุ่มยืนยันต้องหนาและเด่น
             fontWeight: 900,
             boxShadow: "0 6px 16px rgba(211, 47, 47, 0.3)",

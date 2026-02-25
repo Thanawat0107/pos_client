@@ -95,7 +95,7 @@ export default function MyOrders() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#FAFAFA", py: { xs: 4, sm: 6 } }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", py: { xs: 4, sm: 6 } }}>
       <Container maxWidth="sm">
         {/* Header Section */}
         <motion.div
@@ -161,7 +161,7 @@ export default function MyOrders() {
                       cursor: "pointer",
                       border: "1px solid",
                       borderColor: alpha(theme.palette.divider, 0.1),
-                      background: "#fff",
+                      bgcolor: "background.paper",
                       transition: "all 0.3s ease",
                       "&:hover": {
                         transform: "translateY(-6px)",
@@ -212,7 +212,8 @@ export default function MyOrders() {
                             "& .MuiAvatar-root": {
                               width: { xs: 40, sm: 50 },
                               height: { xs: 40, sm: 50 },
-                              border: "2px solid #fff",
+                              border: "2px solid",
+                              borderColor: "background.paper",
                             },
                           }}
                         >
@@ -282,9 +283,10 @@ export default function MyOrders() {
             textAlign="center"
             py={{ xs: 6, sm: 12 }}
             sx={{
-              bgcolor: alpha("#fff", 0.5),
+              bgcolor: alpha(theme.palette.background.paper, 0.5),
               borderRadius: 10,
-              border: "3px dashed #E0E0E0",
+              border: "3px dashed",
+              borderColor: "divider",
             }}
           >
             <FastfoodIcon

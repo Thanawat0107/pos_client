@@ -86,7 +86,10 @@ function MenuCard({ menu, onAddToCart, currency = "USD", sx, onClick }: Props) {
           label={basePrice.toLocaleString(undefined, { style: "currency", currency, minimumFractionDigits: 0 })}
           size="small"
           sx={{
-            position: "absolute", top: 12, right: 12, fontWeight: 700, backgroundColor: alpha(theme.palette.common.white, 0.9), backdropFilter: "blur(4px)", boxShadow: 2, height: 28,
+            position: "absolute", top: 12, right: 12, fontWeight: 700,
+            backgroundColor: alpha(theme.palette.common.white, 0.9),
+            color: "rgba(0,0,0,0.87)",
+            backdropFilter: "blur(4px)", boxShadow: 2, height: 28,
           }}
         />
       </Box>

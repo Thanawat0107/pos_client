@@ -12,6 +12,7 @@ import {
   Button,
   Chip,
 } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 import ManageOrderItem from "../orderItems/ManageOrderItem";
 import type { OrderHeader } from "../../../../../@types/dto/OrderHeader";
 import { Sd } from "../../../../../helpers/SD";
@@ -32,16 +33,16 @@ type Props = {
   onClearFilters: () => void;
 };
 
-const headCellSx = {
-  fontWeight: 800,
-  color: "#475569",
-  fontSize: "1rem",
-  bgcolor: "#F8FAFC",
-  py: 2.25,
-  letterSpacing: "0.01em",
-};
-
 export default function ManageOrderTable({ rows, totalCount, page, pageSize, onPageChange, onPageSizeChange, onSelectOrder, onClearFilters }: Props) {
+  const theme = useTheme();
+  const headCellSx = {
+    fontWeight: 800,
+    color: "text.secondary",
+    fontSize: "1rem",
+    bgcolor: "action.hover",
+    py: 2.25,
+    letterSpacing: "0.01em",
+  };
   const pendingCount    = rows.filter((r) => r.orderStatus === Sd.Status_Pending).length;
   const unpaidCount     = rows.filter((r) => r.orderStatus === Sd.Status_PendingPayment).length;
   const preparingCount  = rows.filter((r) => r.orderStatus === Sd.Status_Preparing).length;
@@ -52,13 +53,13 @@ export default function ManageOrderTable({ rows, totalCount, page, pageSize, onP
   return (
     <Paper
       elevation={0}
-      className="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm"
+      sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}
     >
       {/* ── Urgency Summary Strip ── */}
       {(hasAlerts || newCount > 0) && (
-        <Box sx={{ px: 3.5, py: 2, bgcolor: "#FAFAFA", borderBottom: "1px solid #F0F0F0" }}>
+        <Box sx={{ px: 3.5, py: 2, bgcolor: "background.default", borderBottom: "1px solid", borderColor: "divider" }}>
           <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
-            <Typography sx={{ fontSize: "0.82rem", fontWeight: 800, color: "#94A3B8", mr: 0.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            <Typography sx={{ fontSize: "0.82rem", fontWeight: 800, color: "text.disabled", mr: 0.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
               ต้องดำเนินการ
             </Typography>
 
@@ -67,12 +68,13 @@ export default function ManageOrderTable({ rows, totalCount, page, pageSize, onP
                 size="small"
                 label={`ใหม่ ${newCount} รายการ`}
                 sx={{
-                  bgcolor: "#EFF6FF", color: "#1D4ED8", fontWeight: 800,
-                  border: "1.5px solid #BFDBFE",
+                  bgcolor: alpha(theme.palette.info.main, 0.12), color: "info.dark", fontWeight: 800,
+                  border: "1.5px solid",
+                  borderColor: alpha(theme.palette.info.main, 0.3),
                   fontSize: "0.85rem",
                   height: 30,
                   animation: "pulse 2s infinite",
-                  boxShadow: "0 0 8px #93C5FD66",
+                  boxShadow: `0 0 8px ${alpha(theme.palette.info.main, 0.25)}`,
                   "& .MuiChip-label": { px: 1.5 },
                 }}
               />
@@ -83,13 +85,14 @@ export default function ManageOrderTable({ rows, totalCount, page, pageSize, onP
                 icon={<NotificationsActiveIcon sx={{ fontSize: "1rem !important" }} />}
                 label={`รออนุมัติ ${pendingCount}`}
                 sx={{
-                  bgcolor: "#FFF7ED", color: "#C2410C", fontWeight: 800,
-                  border: "1.5px solid #FED7AA",
+                  bgcolor: alpha(theme.palette.warning.main, 0.12), color: "warning.dark", fontWeight: 800,
+                  border: "1.5px solid",
+                  borderColor: alpha(theme.palette.warning.main, 0.3),
                   animation: "pulse 1.5s infinite",
                   fontSize: "0.85rem",
                   height: 30,
-                  boxShadow: "0 0 8px #FED7AA88",
-                  "& .MuiChip-icon": { color: "#C2410C" },
+                  boxShadow: `0 0 8px ${alpha(theme.palette.warning.main, 0.25)}`,
+                  "& .MuiChip-icon": { color: "warning.dark" },
                 }}
               />
             )}
@@ -99,13 +102,14 @@ export default function ManageOrderTable({ rows, totalCount, page, pageSize, onP
                 icon={<PaidIcon sx={{ fontSize: "1rem !important" }} />}
                 label={`รอชำระ ${unpaidCount}`}
                 sx={{
-                  bgcolor: "#FFF1F2", color: "#BE123C", fontWeight: 800,
-                  border: "1.5px solid #FECDD3",
+                  bgcolor: alpha(theme.palette.error.main, 0.12), color: "error.dark", fontWeight: 800,
+                  border: "1.5px solid",
+                  borderColor: alpha(theme.palette.error.main, 0.3),
                   animation: "pulse 1.5s infinite",
                   fontSize: "0.85rem",
                   height: 30,
-                  boxShadow: "0 0 8px #FECDD388",
-                  "& .MuiChip-icon": { color: "#BE123C" },
+                  boxShadow: `0 0 8px ${alpha(theme.palette.error.main, 0.25)}`,
+                  "& .MuiChip-icon": { color: "error.dark" },
                 }}
               />
             )}
@@ -115,8 +119,9 @@ export default function ManageOrderTable({ rows, totalCount, page, pageSize, onP
                 icon={<SoupKitchenIcon sx={{ fontSize: "1rem !important" }} />}
                 label={`กำลังปรุง ${preparingCount}`}
                 sx={{
-                  bgcolor: "#FAF5FF", color: "#7E22CE", fontWeight: 800,
-                  border: "1.5px solid #DDD6FE",
+                  bgcolor: alpha("#7E22CE", 0.1), color: "#7E22CE", fontWeight: 800,
+                  border: "1.5px solid",
+                  borderColor: alpha("#7E22CE", 0.25),
                   fontSize: "0.85rem",
                   height: 30,
                   "& .MuiChip-icon": { color: "#7E22CE" },
@@ -129,13 +134,14 @@ export default function ManageOrderTable({ rows, totalCount, page, pageSize, onP
                 icon={<CheckCircleOutlineIcon sx={{ fontSize: "1rem !important" }} />}
                 label={`พร้อมรับ ${readyCount}`}
                 sx={{
-                  bgcolor: "#F0FDF4", color: "#15803D", fontWeight: 800,
-                  border: "1.5px solid #BBF7D0",
+                  bgcolor: alpha(theme.palette.success.main, 0.12), color: "success.dark", fontWeight: 800,
+                  border: "1.5px solid",
+                  borderColor: alpha(theme.palette.success.main, 0.3),
                   animation: "pulse 2s infinite",
                   fontSize: "0.85rem",
                   height: 30,
-                  boxShadow: "0 0 8px #BBF7D088",
-                  "& .MuiChip-icon": { color: "#15803D" },
+                  boxShadow: `0 0 8px ${alpha(theme.palette.success.main, 0.25)}`,
+                  "& .MuiChip-icon": { color: "success.dark" },
                 }}
               />
             )}
@@ -176,7 +182,7 @@ export default function ManageOrderTable({ rows, totalCount, page, pageSize, onP
                       onClick={onClearFilters}
                       sx={{
                         fontWeight: 700,
-                        color: "#E63946",
+                        color: "primary.main",
                         textDecoration: "underline",
                         textTransform: "none",
                       }}
@@ -206,8 +212,9 @@ export default function ManageOrderTable({ rows, totalCount, page, pageSize, onP
           sx={{
             px: 4,
             py: 2.5,
-            bgcolor: "#FAFAFA",
-            borderTop: "1px solid #F0F0F0",
+            bgcolor: "background.default",
+            borderTop: "1px solid",
+            borderColor: "divider",
           }}
         >
           <PaginationBar

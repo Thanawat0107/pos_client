@@ -1,11 +1,11 @@
- import {
+import { alpha } from "@mui/material/styles";
+import {
   Paper,
   Box,
   Stack,
   Typography,
   IconButton,
   Chip,
-  Grid, // ใช้ Grid เพื่อการจัดการพื้นที่ที่แม่นยำขึ้น
   Avatar,
   Button,
   Divider,
@@ -68,7 +68,7 @@ export default function OrderMenuList({
     <Paper
       sx={{
         p: 0,
-        borderRadius: 4,
+        borderRadius: 1,
         overflow: "hidden",
         boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
         mb: 3,
@@ -79,8 +79,9 @@ export default function OrderMenuList({
       <Box
         sx={{
           p: { xs: 2, sm: 2.5 },
-          bgcolor: "#fff",
-          borderBottom: "1px solid #eee",
+          bgcolor: "background.paper",
+          borderBottom: "1px solid",
+          borderBottomColor: "divider",
         }}
       >
         <Stack
@@ -102,7 +103,7 @@ export default function OrderMenuList({
             <Chip
               label={`${orderDetails?.length || 0}`}
               size="small"
-              sx={{ fontWeight: 700, bgcolor: "#f5f5f5", fontSize: "0.9rem" }}
+              sx={{ fontWeight: 700, bgcolor: "action.hover", fontSize: "0.9rem" }}
             />
           </Typography>
 
@@ -115,7 +116,7 @@ export default function OrderMenuList({
               <IconButton
                 className="no-print"
                 disabled={loading}
-                sx={{ bgcolor: "#f5f5f5", p: 1 }}
+                sx={{ bgcolor: "action.hover", p: 1 }}
               >
                 <PrintIcon fontSize="small" />
               </IconButton>
@@ -137,156 +138,138 @@ export default function OrderMenuList({
 
           return (
             <Box key={index} sx={{ opacity, transition: "opacity 0.3s" }}>
-              <Grid
-                container
-                spacing={2}
-                alignItems="flex-start"
-                sx={{ py: 2.5 }}
-              >
+              {/* Row: image + content (full width on mobile) */}
+              <Box sx={{ display: "flex", gap: 1.5, py: 2, alignItems: "flex-start" }}>
                 {/* รูปภาพอาหาร */}
-                <Grid size="auto">
-                  <Avatar
-                    src={getImage(item.menuItemImage, "https://placehold.co/85x85?text=Food")}
-                    variant="rounded"
-                    sx={{
-                      width: { xs: 70, sm: 85 },
-                      height: { xs: 70, sm: 85 },
-                      bgcolor: "#f9f9f9",
-                      border: item.isCancelled
-                        ? "2px solid #ddd"
-                        : "1px solid #eee",
-                    }}
-                  >
-                    <RestaurantIcon color="disabled" sx={{ fontSize: 30 }} />
-                  </Avatar>
-                </Grid>
+                <Avatar
+                  src={getImage(item.menuItemImage, "https://placehold.co/85x85?text=Food")}
+                  variant="rounded"
+                  sx={{
+                    width: { xs: 64, sm: 80 },
+                    height: { xs: 64, sm: 80 },
+                    flexShrink: 0,
+                    bgcolor: "background.default",
+                    borderWidth: item.isCancelled ? 2 : 1,
+                    borderStyle: "solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <RestaurantIcon color="disabled" sx={{ fontSize: 28 }} />
+                </Avatar>
 
-                {/* รายละเอียดอาหาร - เพิ่มพื้นที่ให้กางออก */}
-                <Grid size="grow" sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="subtitle1"
-                    fontWeight={800}
-                    lineHeight={1.3}
-                    sx={{
-                      fontSize: { xs: "1.05rem", sm: "1.1rem" },
-                      textDecoration: item.isCancelled
-                        ? "line-through"
-                        : "none",
-                      mb: 0.5,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {item.quantity}x {item.menuItemName}
-                  </Typography>
+                {/* รายละเอียดอาหาร */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  {/* ชื่อ + status chip อยู่แถวเดียวกัน */}
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={800}
+                      lineHeight={1.3}
+                      sx={{
+                        fontSize: { xs: "1rem", sm: "1.1rem" },
+                        textDecoration: item.isCancelled ? "line-through" : "none",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {item.quantity}x {item.menuItemName}
+                    </Typography>
 
-                  {/* ✅ ปรับแก้ส่วน Options: ให้เรียงแนวนอนซ้ายไปขวา */}
+                    {/* Status chip — ขวามือชื่ออาหาร */}
+                    <Chip
+                      label={item.isCancelled ? "ยกเลิกแล้ว" : itemStatus.label}
+                      size="small"
+                      sx={{
+                        flexShrink: 0,
+                        fontWeight: 800,
+                        fontSize: "0.7rem",
+                        bgcolor: (theme) => item.isCancelled ? alpha(theme.palette.error.main, 0.1) : "transparent",
+                        border: (theme) => `1.5px solid ${item.isCancelled ? theme.palette.error.light : itemStatus.border}`,
+                        color: item.isCancelled ? "error.main" : itemStatus.text,
+                      }}
+                    />
+                  </Box>
+
+                  {/* Options chips — เรียงแนวนอน มีพื้นที่เต็ม */}
                   {item.orderDetailOptions?.length > 0 && (
                     <Box
                       sx={{
                         display: "flex",
-                        flexDirection: "row", // บังคับแนวขวาง
-                        flexWrap: "wrap", // ถ้าเต็มหน้าจอให้ตัดขึ้นแถวใหม่
-                        gap: 0.6, // ระยะห่างระหว่างตัวเลือก
-                        mt: 1,
-                        mb: 1,
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        gap: "5px",
+                        mt: 0.75,
+                        mb: 0.75,
                       }}
                     >
-                      {item.orderDetailOptions.map((o, i) => (
-                        <Chip
-                          key={i}
-                          label={
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
+                      {item.orderDetailOptions.map((o, i) => {
+                        const labelText = [
+                          o.quantity > 1 ? `${o.quantity}x` : "",
+                          o.optionValueName,
+                          o.extraPrice > 0
+                            ? `(+${(o.extraPrice * o.quantity).toLocaleString()})`
+                            : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
+                        return (
+                          <Chip
+                            key={i}
+                            label={labelText}
+                            size="small"
+                            sx={{
+                              height: "24px",
+                              bgcolor: (theme) =>
+                                item.isCancelled
+                                  ? theme.palette.action.hover
+                                  : alpha(theme.palette.success.main, 0.1),
+                              color: item.isCancelled ? "text.disabled" : "success.main",
+                              border: "1px solid",
+                              borderColor: item.isCancelled ? "divider" : "success.light",
+                              "& .MuiChip-label": {
+                                px: 1,
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
                                 whiteSpace: "nowrap",
-                              }}
-                            >
-                              {o.quantity > 1 && (
-                                <Typography
-                                  component="span"
-                                  variant="caption"
-                                  sx={{ fontWeight: 900, mr: 0.3 }}
-                                >
-                                  {o.quantity}x
-                                </Typography>
-                              )}
-                              {o.optionValueName}
-                              {o.extraPrice > 0 && (
-                                <Typography
-                                  component="span"
-                                  variant="caption"
-                                  sx={{ ml: 0.4, opacity: 0.8 }}
-                                >
-                                  (+
-                                  {(o.extraPrice * o.quantity).toLocaleString()}
-                                  )
-                                </Typography>
-                              )}
-                            </Box>
-                          }
-                          size="small"
-                          sx={{
-                            height: "24px",
-                            bgcolor: item.isCancelled ? "#eee" : "#F1F8E9",
-                            color: item.isCancelled ? "#999" : "#2E7D32",
-                            border: "1px solid",
-                            borderColor: item.isCancelled ? "#ddd" : "#C8E6C9",
-                            "& .MuiChip-label": {
-                              px: 1,
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                            },
-                          }}
-                        />
-                      ))}
+                              },
+                            }}
+                          />
+                        );
+                      })}
                     </Box>
                   )}
 
-                  <Typography
-                    variant="h6"
-                    fontWeight={800}
-                    color={item.isCancelled ? "text.disabled" : "primary.main"}
-                    sx={{ mt: 0.5, fontSize: { xs: "1.05rem", sm: "1.15rem" } }}
-                  >
-                    ฿{item.totalPrice.toLocaleString()}
-                  </Typography>
-                </Grid>
-
-                {/* สถานะและการยกเลิก */}
-                <Grid size="auto" sx={{ textAlign: "right", minWidth: 80 }}>
-                  <Chip
-                    label={item.isCancelled ? "ยกเลิกแล้ว" : itemStatus.label}
-                    size="small"
-                    sx={{
-                      fontWeight: 800,
-                      fontSize: "0.7rem",
-                      bgcolor: item.isCancelled ? "#ffebee" : "transparent",
-                      border: `1.5px solid ${item.isCancelled ? "#ffcdd2" : itemStatus.border}`,
-                      color: item.isCancelled ? "#d32f2f" : itemStatus.text,
-                    }}
-                  />
-                  {showCancelButton && (
-                    <Button
-                      className="no-print"
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      onClick={() => onCancelItem(item.id, item.menuItemName)}
-                      sx={{
-                        fontSize: "0.75rem",
-                        py: 0.5,
-                        width: "100%",
-                        mt: 1,
-                        borderRadius: 2,
-                        fontWeight: 800,
-                      }}
+                  {/* ราคา + ปุ่มยกเลิกอยู่แถวเดียวกัน */}
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 0.5 }}>
+                    <Typography
+                      variant="h6"
+                      fontWeight={800}
+                      color={item.isCancelled ? "text.disabled" : "primary.main"}
+                      sx={{ fontSize: { xs: "1.05rem", sm: "1.15rem" } }}
                     >
-                      ยกเลิก
-                    </Button>
-                  )}
-                </Grid>
-              </Grid>
+                      ฿{item.totalPrice.toLocaleString()}
+                    </Typography>
+
+                    {showCancelButton && (
+                      <Button
+                        className="no-print"
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        onClick={() => onCancelItem(item.id, item.menuItemName)}
+                        sx={{
+                          fontSize: "0.75rem",
+                          py: 0.5,
+                          px: 1.5,
+                          borderRadius: 1,
+                          fontWeight: 800,
+                        }}
+                      >
+                        ยกเลิก
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
               {index < orderDetails.length - 1 && (
                 <Divider sx={{ borderStyle: "dashed", my: 1, opacity: 0.6 }} />
               )}
@@ -299,8 +282,9 @@ export default function OrderMenuList({
       <Box
         sx={{
           p: { xs: 2.5, sm: 3 },
-          bgcolor: "#F8F9FA",
-          borderTop: "3px dashed #eee",
+          bgcolor: "background.default",
+          borderTop: "3px dashed",
+          borderTopColor: "divider",
         }}
       >
         <Stack spacing={1.5}>

@@ -446,7 +446,7 @@ export default function FormManual({
 
           {/* Footer */}
           <Divider />
-          <Stack direction="row" spacing={2} sx={{ p: 2.5, bgcolor: "white" }}>
+          <Stack direction="row" spacing={2} sx={{ p: 2.5, bgcolor: "background.paper" }}>
             <Button
               fullWidth
               variant="outlined"

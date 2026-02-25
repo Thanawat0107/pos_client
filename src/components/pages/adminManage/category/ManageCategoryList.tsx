@@ -19,7 +19,7 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -151,17 +151,17 @@ export default function ManageCategoryList() {
 
   if (isLoading)
     return (
-      <Box className="flex flex-col justify-center items-center min-h-100 gap-4">
-        <CircularProgress size={60} thickness={4} sx={{ color: "#D32F2F" }} />
-        <Typography variant="h6" className="text-gray-600 font-bold">
+      <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: 400, gap: 2 }}>
+        <CircularProgress size={60} thickness={4} color="primary" />
+        <Typography variant="h6" sx={{ color: "text.secondary", fontWeight: 700 }}>
           กำลังโหลดข้อมูล...
         </Typography>
       </Box>
     );
 
   return (
-    <Box className="min-h-screen bg-[#F5F6F8] pb-28 md:pb-12 font-sans">
-      <Container maxWidth="xl" disableGutters={!isSmUp} className="px-6 md:px-12 pt-6 md:pt-8">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: { xs: 14, md: 6 } }}>
+      <Container maxWidth="xl" disableGutters={!isSmUp} sx={{ px: { xs: 3, md: 6 }, pt: { xs: 3, md: 4 } }}>
         <Stack spacing={{ xs: 2, md: 2.5 }}>
 
           {/* =========================================
@@ -175,10 +175,9 @@ export default function ManageCategoryList() {
           >
             <Box>
               <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
-                <CategoryIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "#D32F2F" }} />
+                <CategoryIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "primary.main" }} />
                 <Typography
                   sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", md: "2.2rem" }, letterSpacing: "-0.02em" }}
-                  className="text-gray-900"
                 >
                   จัดการหมวดหมู่
                 </Typography>
@@ -187,16 +186,16 @@ export default function ManageCategoryList() {
                   label={`${rows.length} หมวด`}
                   sx={{
                     fontWeight: 700,
-                    bgcolor: "#FFF1F2",
-                    color: "#BE123C",
-                    border: "1.5px solid #FECDD3",
+                    bgcolor: alpha(theme.palette.error.main, 0.1),
+                    color: "error.dark",
+                    border: "1.5px solid",
+                    borderColor: alpha(theme.palette.error.main, 0.3),
                     borderRadius: "50px",
                   }}
                 />
               </Stack>
               <Typography
-                className="text-gray-500"
-                sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
+                sx={{ color: "text.secondary", fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
               >
                 จัดการหมวดหมู่สำหรับเมนูอาหารทั้งหมดในระบบ
               </Typography>
@@ -215,8 +214,6 @@ export default function ManageCategoryList() {
                   fontWeight: 700,
                   textTransform: "none",
                   fontSize: { xs: "0.85rem", md: "1rem" },
-                  bgcolor: "#D32F2F",
-                  "&:hover": { bgcolor: "#B71C1C" },
                 }}
               >
                 เพิ่มหมวดหมู่
@@ -233,10 +230,8 @@ export default function ManageCategoryList() {
                   fontWeight: 700,
                   textTransform: "none",
                   fontSize: { xs: "0.85rem", md: "1rem" },
-                  borderColor: "#D32F2F",
                   borderWidth: "1.5px",
-                  color: "#D32F2F",
-                  "&:hover": { borderColor: "#B71C1C", borderWidth: "1.5px", bgcolor: "#FFF1F2" },
+                  "&:hover": { borderWidth: "1.5px", bgcolor: alpha(theme.palette.primary.main, 0.05) },
                 }}
               >
                 ย้อนกลับ
@@ -249,10 +244,11 @@ export default function ManageCategoryList() {
                     sx={{
                       p: 1,
                       borderRadius: "50%",
-                      bgcolor: "white",
-                      border: "1px solid #E5E7EB",
+                      bgcolor: "background.paper",
+                      border: "1px solid",
+                      borderColor: "divider",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                      "&:hover": { bgcolor: "#F9FAFB" },
+                      "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
                     <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
@@ -267,8 +263,7 @@ export default function ManageCategoryList() {
              ========================================= */}
           <Paper
             elevation={0}
-            className="bg-white rounded-3xl shadow-sm border border-gray-200"
-            sx={{ px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
+            sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
           >
             <CategoryFilterBar
               q={filters.q}
@@ -278,10 +273,9 @@ export default function ManageCategoryList() {
             />
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }} flexWrap="wrap">
               <Typography
-                className="text-[#E63946] font-bold"
-                sx={{ fontSize: { xs: "0.95rem", md: "1.1rem" }, fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}
+                sx={{ color: "primary.main", fontWeight: 700, fontSize: { xs: "0.95rem", md: "1.1rem" }, display: "flex", alignItems: "center", gap: 1 }}
               >
-                <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#E63946", display: "inline-block", mr: 0.75 }} />
+                <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "primary.main", display: "inline-block", mr: 0.75 }} />
                 รายการที่พบทั้งหมด: {filtered.length} รายการ
               </Typography>
               {filters.status !== "all" && (
@@ -311,32 +305,32 @@ export default function ManageCategoryList() {
               // Desktop View
               <Paper
                 elevation={0}
-                className="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm"
+                sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}
               >
                 <TableContainer>
                   <Table sx={{ minWidth: 600 }}>
-                    <TableHead className="bg-[#F8FAFC]">
+                    <TableHead>
                       <TableRow>
                         <TableCell
                           align="center"
-                          sx={{ fontWeight: 800, color: "#475569", fontSize: "1.05rem", bgcolor: "#F8FAFC", py: 2.5, pl: 4, width: 80 }}
+                          sx={{ fontWeight: 800, color: "text.secondary", fontSize: "1.05rem", bgcolor: "action.hover", py: 2.5, pl: 4, width: 80 }}
                         >
                           ลำดับ
                         </TableCell>
                         <TableCell
-                          sx={{ fontWeight: 800, color: "#475569", fontSize: "1.05rem", bgcolor: "#F8FAFC", py: 2.5 }}
+                          sx={{ fontWeight: 800, color: "text.secondary", fontSize: "1.05rem", bgcolor: "action.hover", py: 2.5 }}
                         >
                           ชื่อหมวดหมู่
                         </TableCell>
                         <TableCell
                           align="center"
-                          sx={{ fontWeight: 800, color: "#475569", fontSize: "1.05rem", bgcolor: "#F8FAFC", py: 2.5, width: 200 }}
+                          sx={{ fontWeight: 800, color: "text.secondary", fontSize: "1.05rem", bgcolor: "action.hover", py: 2.5, width: 200 }}
                         >
                           สถานะ
                         </TableCell>
                         <TableCell
                           align="right"
-                          sx={{ fontWeight: 800, color: "#475569", fontSize: "1.05rem", bgcolor: "#F8FAFC", py: 2.5, pr: 4, width: 120 }}
+                          sx={{ fontWeight: 800, color: "text.secondary", fontSize: "1.05rem", bgcolor: "action.hover", py: 2.5, pr: 4, width: 120 }}
                         >
                           จัดการ
                         </TableCell>
@@ -368,7 +362,7 @@ export default function ManageCategoryList() {
                     </TableBody>
                   </Table>
                 </TableContainer>
-                <Box className="px-6 py-5 bg-gray-50/50 border-t border-gray-100">
+                <Box sx={{ px: 3, py: 2.5, bgcolor: "background.default", borderTop: "1px solid", borderColor: "divider" }}>
                   <PaginationBar
                     page={page}
                     pageSize={pageSize}
@@ -385,8 +379,8 @@ export default function ManageCategoryList() {
               // Mobile View
               <Stack spacing={2}>
                 {pageRows.length === 0 ? (
-                  <Box className="text-center py-16 bg-white rounded-3xl border border-gray-200 shadow-sm">
-                    <Typography variant="h6" className="text-gray-500 font-bold">
+                  <Box sx={{ textAlign: "center", py: 8, bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", boxShadow: 1 }}>
+                    <Typography variant="h6" sx={{ color: "text.secondary", fontWeight: 700 }}>
                       ไม่พบหมวดหมู่
                     </Typography>
                   </Box>
@@ -409,8 +403,11 @@ export default function ManageCategoryList() {
 
         {/* Mobile Pagination */}
         {!isSmUp && pageRows.length > 0 && (
-          <Box className="fixed bottom-6 left-4 right-4 z-1200">
-            <Paper elevation={16} className="rounded-[30px] px-2 py-2 border border-gray-200 bg-white/95 backdrop-blur-md shadow-2xl">
+          <Box sx={{ position: "fixed", bottom: 24, left: 16, right: 16, zIndex: 1200 }}>
+            <Paper
+              elevation={16}
+              sx={{ borderRadius: "30px", px: 1, py: 1, border: "1px solid", borderColor: "divider", bgcolor: alpha(theme.palette.background.paper, 0.95), backdropFilter: "blur(12px)" }}
+            >
               <PaginationBar
                 page={page}
                 pageSize={pageSize}

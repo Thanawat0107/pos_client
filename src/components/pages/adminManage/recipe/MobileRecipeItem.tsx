@@ -9,6 +9,7 @@
   Avatar,
   Divider,
 } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -30,6 +31,7 @@ export default function MobileRecipeItem({
   onDelete,
   onToggleActive,
 }: MobileRecipeItemProps) {
+  const theme = useTheme();
   const isActive = row.isUsed;
 
   return (
@@ -67,11 +69,12 @@ export default function MobileRecipeItem({
                 width: 88,
                 height: 88,
                 borderRadius: 2.5,
-                bgcolor: "#FFF1F2",
-                border: "1.5px solid #FECDD3",
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                border: "1.5px solid",
+                borderColor: alpha(theme.palette.error.main, 0.3),
               }}
             >
-              <MenuBookIcon sx={{ fontSize: "2.5rem", color: "#D32F2F" }} />
+              <MenuBookIcon sx={{ fontSize: "2.5rem", color: "primary.main" }} />
             </Avatar>
             <Box
               sx={{

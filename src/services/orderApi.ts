@@ -125,7 +125,31 @@ export const orderApi = createApi({
           const handleUpdate = (updatedOrder: OrderHeader) => {
             if (updatedOrder.id !== arg.id) return;
             updateCachedData((draft) => {
+              // เก็บ orderDetailOptions เดิมไว้ก่อน เพราะ payload จาก SignalR
+              // อาจส่งมาแบบไม่มี orderDetailOptions (DTO เบา) ทำให้ตัวเลือกเสริมหายไป
+              const existingDetails = draft.orderDetails
+                ? draft.orderDetails.map((d) => ({
+                    id: d.id,
+                    orderDetailOptions: d.orderDetailOptions,
+                  }))
+                : [];
+
               Object.assign(draft, updatedOrder);
+
+              // คืนค่า orderDetailOptions ให้แต่ละรายการ ถ้า payload ใหม่ไม่มีข้อมูลนั้น
+              if (draft.orderDetails) {
+                draft.orderDetails.forEach((detail) => {
+                  if (
+                    !detail.orderDetailOptions ||
+                    detail.orderDetailOptions.length === 0
+                  ) {
+                    const prev = existingDetails.find((d) => d.id === detail.id);
+                    if (prev?.orderDetailOptions?.length) {
+                      detail.orderDetailOptions = prev.orderDetailOptions;
+                    }
+                  }
+                });
+              }
             });
           };
 
@@ -281,6 +305,10 @@ export const orderApi = createApi({
         method: "POST",
         body: request,
       }),
+      invalidatesTags: (_result, _error, arg) => [
+        { type: "Order", id: arg.id },
+        { type: "Order", id: "LIST" },
+      ],
     }),
 
     getOrderByPickUpCode: builder.query<OrderHeader, string>({

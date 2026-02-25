@@ -7,6 +7,7 @@ import {
   Tooltip,
   IconButton,
 } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 import CancelIcon from "@mui/icons-material/Cancel";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 
@@ -84,11 +85,12 @@ export default function OrderItemActions({
               onClick={onCancelClick}
               disabled={isLoading}
               sx={{
-                border: "1.5px solid #FECDD3",
-                bgcolor: "#FFF1F2",
+                border: "1.5px solid",
+                borderColor: alpha(theme.palette.error.main, 0.4),
+                bgcolor: alpha(theme.palette.error.main, 0.08),
                 width: 38,
                 height: 38,
-                "&:hover": { bgcolor: "#FFE4E6", transform: "scale(1.1)" },
+                "&:hover": { bgcolor: alpha(theme.palette.error.main, 0.15), transform: "scale(1.1)" },
                 transition: "transform 0.15s",
               }}
             >
@@ -103,12 +105,13 @@ export default function OrderItemActions({
             size="medium"
             onClick={(e) => { e.stopPropagation(); onViewClick(); }}
             sx={{
-              color: "#94A3B8",
+              color: "text.secondary",
               width: 38,
               height: 38,
-              bgcolor: "#F8FAFC",
-              border: "1.5px solid #E2E8F0",
-              "&:hover": { bgcolor: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE", transform: "scale(1.1)" },
+              bgcolor: "action.hover",
+              border: "1.5px solid",
+              borderColor: "divider",
+              "&:hover": { bgcolor: alpha(theme.palette.info.main, 0.1), color: "info.main", borderColor: alpha(theme.palette.info.main, 0.4), transform: "scale(1.1)" },
               transition: "all 0.15s",
             }}
           >

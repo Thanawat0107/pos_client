@@ -1,8 +1,13 @@
-@import "tailwindcss";
+/*
+ * Tailwind v4 + MUI integration:
+ * - ข้ามการ import "preflight" เพื่อไม่ให้ทับกับ MUI CssBaseline
+ * - @layer ของ Tailwind มีลำดับต่ำกว่า unlayered emotion styles ของ MUI
+ *   ดังนั้น sx prop / theme tokens จะ override Tailwind utilities เสมอ
+ */
+@import "tailwindcss/theme" layer(tailwind-theme);
+@import "tailwindcss/utilities" layer(tailwind-utilities);
 
 *{
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
     font-family: 'poppins', sans-serif;
 }

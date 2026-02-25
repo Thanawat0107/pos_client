@@ -10,6 +10,7 @@ import {
   Button,
   useMediaQuery,
   useTheme,
+  alpha,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -85,7 +86,7 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
         sx: {
           borderRadius: isMobile ? 0 : "28px",
           overflow: "hidden",
-          bgcolor: "#FAFAFA",
+          bgcolor: "background.default",
           display: "flex",
           flexDirection: "column",
         },
@@ -99,7 +100,7 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
           position: "relative",
           flexShrink: 0,
           height: isMobile ? 220 : 280,
-          bgcolor: "#E5E7EB",
+          bgcolor: "action.hover",
           touchAction: "pan-y",
         }}
       >
@@ -120,8 +121,8 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
             justifyContent="center"
             sx={{ width: "100%", height: "100%", gap: 1 }}
           >
-            <ImageNotSupported sx={{ fontSize: 56, color: "#D1D5DB" }} />
-            <Typography sx={{ color: "#9CA3AF", fontSize: 15, fontWeight: 600 }}>
+            <ImageNotSupported sx={{ fontSize: 56, color: "text.disabled" }} />
+            <Typography sx={{ color: "text.secondary", fontSize: 15, fontWeight: 600 }}>
               ไม่มีรูปภาพ
             </Typography>
           </Stack>
@@ -249,7 +250,7 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
 
         {/* ชื่อ */}
         <Typography
-          sx={{ fontSize: "30px", fontWeight: 900, color: "#111827", lineHeight: 1.15, mb: 1.5 }}
+          sx={{ fontSize: "30px", fontWeight: 900, lineHeight: 1.15, mb: 1.5 }}
         >
           {manual.title}
         </Typography>
@@ -258,7 +259,7 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 3 }}>
           <Box
             sx={{
-              bgcolor: "#FEE2E2",
+              bgcolor: alpha(theme.palette.error.main, 0.1),
               borderRadius: "12px",
               px: 1.5,
               py: 0.75,
@@ -267,8 +268,8 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
               gap: 0.75,
             }}
           >
-            <PlaceIcon sx={{ fontSize: 22, color: "#DC2626" }} />
-            <Typography sx={{ fontSize: "20px", fontWeight: 700, color: "#DC2626" }}>
+            <PlaceIcon sx={{ fontSize: 22, color: "error.main" }} />
+            <Typography sx={{ fontSize: "20px", fontWeight: 700, color: "error.main" }}>
               {manual.location || "จุดบริการ"}
             </Typography>
           </Box>
@@ -281,7 +282,7 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
               sx={{
                 fontSize: "18px",
                 fontWeight: 800,
-                color: "#6B7280",
+                color: "text.secondary",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
                 mb: 2,
@@ -312,16 +313,17 @@ export const ManualDetailModal = ({ open, onClose, manual }: Props) => {
 
                   <Box
                     sx={{
-                      bgcolor: "white",
+                      bgcolor: "background.paper",
                       borderRadius: "16px",
                       px: 2.5,
                       py: 1.75,
                       flex: 1,
-                      border: "1.5px solid #F3F4F6",
+                      border: "1.5px solid",
+                      borderColor: "divider",
                     }}
                   >
                     <Typography
-                      sx={{ fontSize: "20px", fontWeight: 600, color: "#1F2937", lineHeight: 1.4 }}
+                      sx={{ fontSize: "20px", fontWeight: 600, lineHeight: 1.4 }}
                     >
                       {step}
                     </Typography>

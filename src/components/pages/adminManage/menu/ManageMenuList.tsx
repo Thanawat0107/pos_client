@@ -21,7 +21,7 @@ import {
   IconButton,
   Chip,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
@@ -186,9 +186,9 @@ export default function ManageMenuList() {
 
   if (isLoading)
     return (
-      <Box className="flex flex-col justify-center items-center min-h-[400px] gap-4">
-        <CircularProgress size={60} thickness={4} sx={{ color: "#D32F2F" }} />
-        <Typography variant="h6" className="text-gray-600 font-bold text-xl">
+      <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: 400, gap: 2 }}>
+        <CircularProgress size={60} thickness={4} color="primary" />
+        <Typography variant="h6" sx={{ color: "text.secondary", fontWeight: 700, fontSize: "1.25rem" }}>
           กำลังโหลดข้อมูลเมนู...
         </Typography>
       </Box>
@@ -214,11 +214,11 @@ export default function ManageMenuList() {
 
   return (
     // สีพื้นหลังเป็นสีเทาอ่อน เพื่อให้กล่องสีขาวด้านในลอยเด่นขึ้นมา
-    <Box className="min-h-screen bg-[#F5F6F8] pb-28 md:pb-12 font-sans">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: { xs: 14, md: 6 } }}>
       <Container
         maxWidth="xl"
         disableGutters={!isSmUp}
-        className="px-6 md:px-12 pt-6 md:pt-8"
+        sx={{ px: { xs: 3, md: 6 }, pt: { xs: 3, md: 4 } }}
       >
         {/* ใช้ Stack สร้างระยะห่าง (Gap) ระหว่าง Section ให้ขาดออกจากกันอย่างชัดเจน */}
         <Stack spacing={{ xs: 2, md: 2.5 }}>
@@ -233,9 +233,8 @@ export default function ManageMenuList() {
           >
             <Box>
               <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
-                <RestaurantMenuIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "#D32F2F" }} />
+                <RestaurantMenuIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "primary.main" }} />
                 <Typography
-                  className="text-gray-900"
                   sx={{
                     fontWeight: 800,
                     fontSize: { xs: "1.6rem", md: "2.2rem" },
@@ -249,16 +248,16 @@ export default function ManageMenuList() {
                   label={`${rows.length} รายการ`}
                   sx={{
                     fontWeight: 700,
-                    bgcolor: "#FFF1F2",
-                    color: "#BE123C",
-                    border: "1.5px solid #FECDD3",
+                    bgcolor: alpha(theme.palette.error.main, 0.1),
+                    color: "error.dark",
+                    border: "1.5px solid",
+                    borderColor: alpha(theme.palette.error.main, 0.3),
                     borderRadius: "50px",
                   }}
                 />
               </Stack>
               <Typography
-                className="text-gray-500"
-                sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
+                sx={{ color: "text.secondary", fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
               >
                 ตรวจสอบ เพิ่ม แก้ไข หรือปิดการขายรายการอาหาร
               </Typography>
@@ -276,8 +275,6 @@ export default function ManageMenuList() {
                   fontWeight: 700,
                   textTransform: "none",
                   fontSize: { xs: "0.85rem", md: "1rem" },
-                  bgcolor: "#D32F2F",
-                  "&:hover": { bgcolor: "#B71C1C" },
                 }}
               >
                 เพิ่มเมนูใหม่
@@ -293,10 +290,8 @@ export default function ManageMenuList() {
                   fontWeight: 700,
                   textTransform: "none",
                   fontSize: { xs: "0.85rem", md: "1rem" },
-                  borderColor: "#D32F2F",
                   borderWidth: "1.5px",
-                  color: "#D32F2F",
-                  "&:hover": { borderColor: "#B71C1C", borderWidth: "1.5px", bgcolor: "#FFF1F2" },
+                  "&:hover": { borderWidth: "1.5px", bgcolor: alpha(theme.palette.primary.main, 0.05) },
                 }}
               >
                 ตัวเลือกเพิ่มเติม
@@ -312,10 +307,8 @@ export default function ManageMenuList() {
                   fontWeight: 700,
                   textTransform: "none",
                   fontSize: { xs: "0.85rem", md: "1rem" },
-                  borderColor: "#D32F2F",
                   borderWidth: "1.5px",
-                  color: "#D32F2F",
-                  "&:hover": { borderColor: "#B71C1C", borderWidth: "1.5px", bgcolor: "#FFF1F2" },
+                  "&:hover": { borderWidth: "1.5px", bgcolor: alpha(theme.palette.primary.main, 0.05) },
                 }}
               >
                 สูตรอาหาร
@@ -329,14 +322,15 @@ export default function ManageMenuList() {
                     sx={{
                       p: 1,
                       borderRadius: "50%",
-                      bgcolor: "white",
-                      border: "1px solid #E5E7EB",
+                      bgcolor: "background.paper",
+                      border: "1px solid",
+                      borderColor: "divider",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                      "&:hover": { bgcolor: "#F9FAFB" },
+                      "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
                     {isLoading ? (
-                      <CircularProgress size={20} sx={{ color: "#D32F2F" }} />
+                      <CircularProgress size={20} color="primary" />
                     ) : (
                       <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
                     )}
@@ -351,8 +345,7 @@ export default function ManageMenuList() {
              ========================================= */}
           <Paper
             elevation={0}
-            className="bg-white rounded-[24px] shadow-sm border border-gray-200"
-            sx={{ px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
+            sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
           >
             <MenuFilterBar
               q={filters.q}
@@ -363,14 +356,14 @@ export default function ManageMenuList() {
               onCategoryChange={(v: any) => handleFilterChange("cat", v)}
               onStatusChange={(v: any) => handleFilterChange("status", v)}
             />
-            {/* ตัวหนังสือ "รายการที่พบทั้งหมด" สีแดงตามภาพ */}
-            <Typography
-              className="text-[#E63946] font-bold mt-4 flex items-center gap-2"
-              sx={{ fontSize: { xs: "1.1rem", md: "1.2rem" }, fontWeight: 700 }}
-            >
-              <span className="h-2 w-2 rounded-full bg-[#E63946]"></span>
-              รายการที่พบทั้งหมด: {filteredSorted.length} รายการ
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 2 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />
+              <Typography
+                sx={{ color: "primary.main", fontWeight: 700, fontSize: { xs: "1.1rem", md: "1.2rem" } }}
+              >
+                รายการที่พบทั้งหมด: {filteredSorted.length} รายการ
+              </Typography>
+            </Stack>
           </Paper>
 
           {/* =========================================
@@ -378,56 +371,48 @@ export default function ManageMenuList() {
              ========================================= */}
           <Box>
             {isSmUp ? (
-              // Desktop Table Box
               <Paper
                 elevation={0}
-                className="border border-gray-200 rounded-[24px] overflow-hidden bg-white shadow-sm"
+                sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}
               >
                 <TableContainer>
                   <Table sx={{ minWidth: 900 }}>
-                    <TableHead className="bg-[#F8FAFC]">
+                    <TableHead>
                       <TableRow>
                         <TableCell
-                          className="font-bold text-gray-700"
-                          sx={{ fontSize: "1.1rem", py: 2.5, pl: 4 }}
+                          sx={{ fontWeight: 700, color: "text.secondary", fontSize: "1.1rem", bgcolor: "action.hover", py: 2.5, pl: 4 }}
                         >
                           ลำดับ
                         </TableCell>
                         <TableCell
-                          className="font-bold text-gray-700"
-                          sx={{ fontSize: "1.1rem", py: 2.5 }}
+                          sx={{ fontWeight: 700, color: "text.secondary", fontSize: "1.1rem", bgcolor: "action.hover", py: 2.5 }}
                         >
                           รูปภาพ
                         </TableCell>
                         <TableCell
-                          className="font-bold text-gray-700"
-                          sx={{ fontSize: "1.1rem", py: 2.5 }}
+                          sx={{ fontWeight: 700, color: "text.secondary", fontSize: "1.1rem", bgcolor: "action.hover", py: 2.5 }}
                         >
                           ชื่อเมนู / รายละเอียด
                         </TableCell>
                         <TableCell
                           align="right"
-                          className="font-bold text-gray-700"
-                          sx={{ fontSize: "1.1rem", py: 2.5 }}
+                          sx={{ fontWeight: 700, color: "text.secondary", fontSize: "1.1rem", bgcolor: "action.hover", py: 2.5 }}
                         >
                           ราคา
                         </TableCell>
                         <TableCell
-                          className="font-bold text-gray-700"
-                          sx={{ fontSize: "1.1rem", py: 2.5 }}
+                          sx={{ fontWeight: 700, color: "text.secondary", fontSize: "1.1rem", bgcolor: "action.hover", py: 2.5 }}
                         >
                           หมวดหมู่
                         </TableCell>
                         <TableCell
-                          className="font-bold text-gray-700"
-                          sx={{ fontSize: "1.1rem", py: 2.5 }}
+                          sx={{ fontWeight: 700, color: "text.secondary", fontSize: "1.1rem", bgcolor: "action.hover", py: 2.5 }}
                         >
                           สถานะการขาย
                         </TableCell>
                         <TableCell
                           align="right"
-                          className="font-bold text-gray-700"
-                          sx={{ fontSize: "1.1rem", py: 2.5, pr: 4 }}
+                          sx={{ fontWeight: 700, color: "text.secondary", fontSize: "1.1rem", bgcolor: "action.hover", py: 2.5, pr: 4 }}
                         >
                           จัดการ
                         </TableCell>
@@ -447,7 +432,7 @@ export default function ManageMenuList() {
                     </TableBody>
                   </Table>
                 </TableContainer>
-                <Box className="px-6 py-5 bg-gray-50/50 border-t border-gray-100">
+                <Box sx={{ px: 3, py: 2.5, bgcolor: "background.default", borderTop: "1px solid", borderColor: "divider" }}>
                   <PaginationBar
                     page={page}
                     pageSize={pageSize}
@@ -464,7 +449,7 @@ export default function ManageMenuList() {
                   pageRows.map((r, i) => (
                     <Box
                       key={r.id}
-                      className="bg-white rounded-[24px] p-2 shadow-sm border border-gray-200"
+                      sx={{ bgcolor: "background.paper", borderRadius: 3, p: 1, boxShadow: 1, border: "1px solid", borderColor: "divider" }}
                     >
                       <MobileMenuItem
                         row={r}
@@ -476,11 +461,11 @@ export default function ManageMenuList() {
                     </Box>
                   ))
                 ) : (
-                  <Box className="text-center py-16 bg-white rounded-[24px] border border-gray-200 shadow-sm">
-                    <RestaurantMenuIcon className="text-gray-300 text-7xl mb-4" />
+                  <Box sx={{ textAlign: "center", py: 8, bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", boxShadow: 1 }}>
+                    <RestaurantMenuIcon sx={{ fontSize: "4.5rem", color: "text.disabled", mb: 2 }} />
                     <Typography
                       variant="h6"
-                      className="text-gray-500 font-bold"
+                      sx={{ color: "text.secondary", fontWeight: 700 }}
                     >
                       ไม่พบเมนูที่คุณค้นหา
                     </Typography>
@@ -493,10 +478,10 @@ export default function ManageMenuList() {
 
         {/* 4. Floating Mobile Pagination (กล่องโค้งมนด้านล่าง) */}
         {!isSmUp && (
-          <Box className="fixed bottom-6 left-4 right-4 z-[1200]">
+          <Box sx={{ position: "fixed", bottom: 24, left: 16, right: 16, zIndex: 1200 }}>
             <Paper
               elevation={16}
-              className="rounded-[30px] px-2 py-2 border border-gray-200 bg-white/95 backdrop-blur-md shadow-2xl"
+              sx={{ borderRadius: "30px", px: 1, py: 1, border: "1px solid", borderColor: "divider", bgcolor: alpha(theme.palette.background.paper, 0.95), backdropFilter: "blur(12px)" }}
             >
               <PaginationBar
                 page={page}

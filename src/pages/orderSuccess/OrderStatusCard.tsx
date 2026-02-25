@@ -84,15 +84,15 @@ export default function OrderStatusCard({
           <CheckCircleIcon
             sx={{
               ...iconStyle,
-              color: "#2E7D32",
+              color: "success.main",
               animation: `${pulse("#2E7D3244")} 2s infinite`,
             }}
           />
         );
       case Sd.Status_Completed:
-        return <CheckCircleIcon sx={{ ...iconStyle, color: "#2E7D32" }} />;
+        return <CheckCircleIcon sx={{ ...iconStyle, color: "success.main" }} />;
       case Sd.Status_Cancelled:
-        return <CancelIcon sx={{ ...iconStyle, color: "#D32F2F" }} />;
+        return <CancelIcon sx={{ ...iconStyle, color: "error.main" }} />;
       default:
         return <StorefrontIcon sx={iconStyle} />;
     }
@@ -115,7 +115,7 @@ export default function OrderStatusCard({
         <Typography
           component="span"
           variant="body1"
-          sx={{ ...labelStyle, color: "#1976D2" }}
+          sx={{ ...labelStyle, color: "primary.main" }}
         >
           โอนจ่าย (PromptPay / QR)
         </Typography>
@@ -126,7 +126,7 @@ export default function OrderStatusCard({
         <Typography
           component="span"
           variant="body1"
-          sx={{ ...labelStyle, color: "#455A64" }}
+          sx={{ ...labelStyle, color: "text.secondary" }}
         >
           เงินสด (ชำระหน้าร้าน)
         </Typography>
@@ -150,8 +150,9 @@ export default function OrderStatusCard({
       sx={{
         p: { xs: 3, sm: 5 }, // เพิ่ม Padding แนวตั้งให้ดูโปร่งขึ้น
         textAlign: "center",
-        borderRadius: { xs: 5, sm: 6 },
-        background: "#fff",
+        borderRadius: { xs: 1, sm: 2 },
+        background: undefined,
+        bgcolor: "background.paper",
         boxShadow: "0 15px 50px rgba(0,0,0,0.06)", // เงาให้นุ่มขึ้น
         borderTop: `12px solid ${config.iconColor}`,
         transition: "all 0.5s ease",
@@ -182,7 +183,7 @@ export default function OrderStatusCard({
             border: `2px dashed ${config.iconColor}`,
             py: { xs: 2.5, sm: 3.5 }, // เพิ่มพื้นที่ให้เลขคิวดูเด่น
             px: 2,
-            borderRadius: 5,
+            borderRadius: 1,
             mb: 3,
             mx: "auto",
             maxWidth: { xs: 240, sm: 280 },
@@ -221,7 +222,7 @@ export default function OrderStatusCard({
             my: 4,
             p: 3,
             bgcolor: config.bg,
-            borderRadius: 4,
+            borderRadius: 1,
             border: `1.5px dashed ${config.iconColor}`,
           }}
         >
@@ -255,12 +256,12 @@ export default function OrderStatusCard({
         label={config.label}
         sx={{
           bgcolor: config.iconColor,
-          color: "#fff",
+          color: "common.white",
           fontWeight: 800,
           px: { xs: 2, sm: 4 },
           height: { xs: 45, sm: 50 }, // ความสูงที่พอดีกับมือถือ
           fontSize: { xs: "1rem", sm: "1.1rem" },
-          borderRadius: "100px",
+          borderRadius: 1,
           boxShadow: `0 8px 25px ${config.iconColor}55`,
           "& .MuiChip-label": { px: { xs: 2, sm: 3 } },
         }}

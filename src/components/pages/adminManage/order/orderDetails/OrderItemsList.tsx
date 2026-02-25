@@ -71,11 +71,11 @@ export default function OrderItemsList({
   return (
     <Card elevation={0} sx={{ borderRadius: 3, border: "1px solid #e0e0e0" }}>
       {/* Header */}
-      <Box sx={{ px: { xs: 2, sm: 3 }, py: 2, bgcolor: "#fafafa", borderBottom: "1px solid #eee" }}>
+      <Box sx={{ px: { xs: 2, sm: 3 }, py: 2, bgcolor: "background.default", borderBottom: "1px solid", borderColor: "divider" }}>
         <Typography
           variant="h6"
           fontWeight={800}
-          sx={{ display: "flex", alignItems: "center", gap: 1, color: "#222" }}
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
         >
           <RestaurantMenuIcon color="action" fontSize="medium" /> รายการอาหาร ({order.orderDetails.length} รายการ)
         </Typography>

@@ -278,8 +278,8 @@ export default function FormContent({
                       position: "absolute",
                       top: 8,
                       right: 8,
-                      bgcolor: "white",
-                      "&:hover": { bgcolor: "#f5f5f5" },
+                      bgcolor: "background.paper",
+                      "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
                     <CloseIcon fontSize="small" />

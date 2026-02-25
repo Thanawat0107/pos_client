@@ -16,6 +16,8 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import MenuIcon from "@mui/icons-material/Menu";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
 import { useColorMode } from "../../contexts/color-mode";
 import { useAppDispatch, useAppSelector } from "../../hooks/useAppHookState";
 import { logoutAndClear } from "../../stores/slices/authSlice";
@@ -126,6 +128,12 @@ export default function Navbar() {
                 >
                   <ShoppingCartOutlinedIcon />
                 </Badge>
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title={mode === "dark" ? "โหมดสว่าง" : "โหมดมืด"} sx={{ display: { xs: "none", md: "inline-flex" } }}>
+              <IconButton onClick={toggle} color="inherit">
+                {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
               </IconButton>
             </Tooltip>
 

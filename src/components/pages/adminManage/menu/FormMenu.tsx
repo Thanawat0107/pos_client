@@ -213,9 +213,9 @@ export default function FormMenu({
                       position: "absolute",
                       top: 10,
                       right: 10,
-                      bgcolor: "white",
+                      bgcolor: "background.paper",
                       boxShadow: 2,
-                      "&:hover": { bgcolor: "#f5f5f5" },
+                      "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
                     <CloseIcon sx={{ fontSize: "1.2rem" }} />

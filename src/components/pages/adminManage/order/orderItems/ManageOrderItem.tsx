@@ -1,5 +1,6 @@
 import React from "react";
 import { TableRow, TableCell, Typography, Stack, Box, Tooltip } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import PaidIcon from "@mui/icons-material/Paid";
 import SoupKitchenIcon from "@mui/icons-material/SoupKitchen";
@@ -31,13 +32,13 @@ interface RowDesign {
 const getRowDesign = (status: string): RowDesign => {
   switch (status) {
     case Sd.Status_Pending:
-      return { accentColor: "#F59E0B", bgColor: "#FFFBEB", bgHover: "#FEF3C7", animationName: "pulse-amber" };
+      return { accentColor: "#F59E0B", bgColor: alpha("#F59E0B", 0.07), bgHover: alpha("#F59E0B", 0.13), animationName: "pulse-amber" };
     case Sd.Status_PendingPayment:
-      return { accentColor: "#EF4444", bgColor: "#FFF1F2", bgHover: "#FFE4E6", animationName: "pulse-red" };
+      return { accentColor: "#EF4444", bgColor: alpha("#EF4444", 0.07), bgHover: alpha("#EF4444", 0.13), animationName: "pulse-red" };
     case Sd.Status_Preparing:
-      return { accentColor: "#9333EA", bgColor: "#FAF5FF", bgHover: "#F3E8FF", animationName: "" };
+      return { accentColor: "#9333EA", bgColor: alpha("#9333EA", 0.06), bgHover: alpha("#9333EA", 0.11), animationName: "" };
     case Sd.Status_Ready:
-      return { accentColor: "#22C55E", bgColor: "#F0FDF4", bgHover: "#DCFCE7", animationName: "pulse-green" };
+      return { accentColor: "#22C55E", bgColor: alpha("#22C55E", 0.06), bgHover: alpha("#22C55E", 0.11), animationName: "pulse-green" };
     case Sd.Status_Approved:
     case Sd.Status_Paid:
       return { accentColor: "#3B82F6", bgColor: "transparent", bgHover: "#EFF6FF", animationName: "" };
@@ -98,6 +99,7 @@ type Props = {
 };
 
 export default function ManageOrderItem({ row, index, onView }: Props) {
+  const theme = useTheme();
   const actionInfo = getNextActionConfig(row);
   const totalItems = row.orderDetails.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -204,10 +206,10 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
             </Stack>
 
             {/* วัน + elapsed */}
-            <Typography sx={{ fontSize: "0.8rem", color: "#94A3B8", fontWeight: 500 }}>
+            <Typography sx={{ fontSize: "0.8rem", color: "text.disabled", fontWeight: 500 }}>
               {formatThaiDate(row.createdAt, { day: "numeric", month: "short" })}
               {" · "}
-              <Box component="span" sx={{ color: createdMins < 15 ? "#16A34A" : "#94A3B8", fontWeight: createdMins < 15 ? 700 : 500 }}>
+              <Box component="span" sx={{ color: createdMins < 15 ? "success.main" : "text.disabled", fontWeight: createdMins < 15 ? 700 : 500 }}>
                 {formatElapsed(createdMins)}
               </Box>
             </Typography>
@@ -224,8 +226,8 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
                     py: 0.35,
                     borderRadius: "8px",
                     display: "inline-flex",
-                    bgcolor: isCookingLong ? "#FFF1F2" : "#FAF5FF",
-                    border: `1.5px solid ${isCookingLong ? "#FECDD3" : "#DDD6FE"}`,
+                    bgcolor: isCookingLong ? alpha(theme.palette.error.main, 0.1) : alpha("#9333EA", 0.08),
+                    border: `1.5px solid ${isCookingLong ? alpha(theme.palette.error.main, 0.35) : alpha("#9333EA", 0.3)}`,
                     width: "fit-content",
                     cursor: "help",
                     boxShadow: isCookingLong ? "0 0 8px #FECDD388" : "none",
@@ -233,7 +235,7 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
                   }}
                 >
                   {isCookingLong ? (
-                    <WhatshotIcon sx={{ fontSize: "0.9rem", color: "#BE123C" }} />
+                    <WhatshotIcon sx={{ fontSize: "0.9rem", color: "error.main" }} />
                   ) : (
                     <SoupKitchenIcon sx={{ fontSize: "0.9rem", color: "#7E22CE" }} />
                   )}
@@ -241,7 +243,7 @@ export default function ManageOrderItem({ row, index, onView }: Props) {
                     sx={{
                       fontSize: "0.78rem",
                       fontWeight: 800,
-                      color: isCookingLong ? "#BE123C" : "#7E22CE",
+                      color: isCookingLong ? "error.main" : "#7E22CE",
                       lineHeight: 1,
                     }}
                   >

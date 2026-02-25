@@ -156,7 +156,7 @@ export default function FormRecipe({
       PaperProps={{
         sx: {
           width: { xs: 1, sm: 520 },
-          bgcolor: "#FAFAFA",
+          bgcolor: "background.default",
         },
       }}
     >
@@ -171,8 +171,9 @@ export default function FormRecipe({
             px: 3,
             pt: "calc(env(safe-area-inset-top) + 16px)",
             pb: 2,
-            bgcolor: "white",
-            borderBottom: "1px solid #E5E7EB",
+            bgcolor: "background.paper",
+            borderBottom: "1px solid",
+            borderColor: "divider",
           }}
         >
           <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -190,8 +191,8 @@ export default function FormRecipe({
               onClick={onClose}
               disabled={isSubmitting}
               sx={{
-                bgcolor: "#F3F4F6",
-                "&:hover": { bgcolor: "#E5E7EB" },
+                bgcolor: "action.hover",
+                "&:hover": { bgcolor: "action.selected" },
                 borderRadius: "10px",
               }}
             >
@@ -359,8 +360,9 @@ export default function FormRecipe({
           sx={{
             px: 3,
             py: 2,
-            bgcolor: "white",
-            borderTop: "1px solid #E5E7EB",
+            bgcolor: "background.paper",
+            borderTop: "1px solid",
+            borderColor: "divider",
             pb: "calc(env(safe-area-inset-bottom) + 12px)",
           }}
         >
@@ -375,9 +377,9 @@ export default function FormRecipe({
                 py: 1.5,
                 fontWeight: 700,
                 textTransform: "none",
-                borderColor: "#E5E7EB",
+                borderColor: "divider",
                 color: "text.secondary",
-                "&:hover": { borderColor: "#D1D5DB", bgcolor: "#F9FAFB" },
+                "&:hover": { borderColor: "divider", bgcolor: "action.hover" },
               }}
             >
               ยกเลิก
@@ -392,8 +394,6 @@ export default function FormRecipe({
                 py: 1.5,
                 fontWeight: 700,
                 textTransform: "none",
-                bgcolor: "#D32F2F",
-                "&:hover": { bgcolor: "#B71C1C" },
               }}
             >
               {isSubmitting || isLoading ? (

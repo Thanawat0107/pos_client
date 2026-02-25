@@ -53,7 +53,7 @@ export default function Cart() {
 
   return (
     <Fade in>
-      <Box sx={{ bgcolor: theme.palette.mode === "dark" ? "background.default" : "#F4F5F8", minHeight: "100vh", pb: { xs: 18, md: 8 }, pt: { xs: 3, md: 5 } }}>
+      <Box sx={{ bgcolor: "background.default", minHeight: "100vh", pb: { xs: 18, md: 8 }, pt: { xs: 3, md: 5 } }}>
         <Container maxWidth="lg">
 
           {/* ── Header ── */}

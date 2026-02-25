@@ -37,7 +37,7 @@ export default function CustomerForm({
     <Paper
       sx={{
         p: { xs: 2.5, sm: 3, md: 4 }, // ปรับ Padding ตามขนาดหน้าจอ
-        borderRadius: 4,
+        borderRadius: 2,
         boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
       }}
     >
@@ -50,7 +50,7 @@ export default function CustomerForm({
           display: "flex",
           alignItems: "center",
           gap: 1.5,
-          color: "#1a2a3a",
+
           mb: { xs: 2.5, md: 3.5 }, // ลดระยะห่างบนมือถือ
           fontSize: { xs: "1.25rem", sm: "1.5rem" }, // ปรับขนาดตัวอักษรหัวข้อ
         }}
@@ -78,7 +78,7 @@ export default function CustomerForm({
               sx: {
                 fontSize: { xs: "1rem", sm: "1.1rem" },
                 fontWeight: 600,
-                borderRadius: 3,
+                borderRadius: 2,
                 height: { xs: "56px", sm: "60px" }, // ลดความสูงลงเล็กน้อยบนมือถือ
               },
               startAdornment: (
@@ -112,7 +112,7 @@ export default function CustomerForm({
               sx: {
                 fontSize: { xs: "1.1rem", sm: "1.2rem" },
                 fontWeight: 700,
-                borderRadius: 3,
+                borderRadius: 2,
                 height: { xs: "56px", sm: "60px" },
                 letterSpacing: "1px",
               },
@@ -141,7 +141,7 @@ export default function CustomerForm({
             InputProps={{
               sx: {
                 fontSize: { xs: "1rem", sm: "1.1rem" },
-                borderRadius: 3,
+                borderRadius: 2,
                 p: { xs: 1.5, sm: 2 },
               },
               startAdornment: (

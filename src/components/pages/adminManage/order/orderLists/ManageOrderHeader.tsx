@@ -8,6 +8,7 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
@@ -22,6 +23,7 @@ export default function ManageOrderHeader({
   isFetching,
   onRefresh,
 }: Props) {
+  const theme = useTheme();
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
@@ -38,7 +40,6 @@ export default function ManageOrderHeader({
               fontSize: { xs: "1.6rem", md: "2.2rem" },
               letterSpacing: "-0.02em",
             }}
-            className="text-gray-900"
           >
             จัดการรายการคำสั่งซื้อ
           </Typography>
@@ -55,8 +56,7 @@ export default function ManageOrderHeader({
         </Stack>
 
         <Typography
-          className="text-gray-500"
-          sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
+          sx={{ color: "text.secondary", fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
         >
           รายการออเดอร์ทั้งหมดในระบบ
         </Typography>
@@ -69,11 +69,18 @@ export default function ManageOrderHeader({
             <IconButton
               onClick={onRefresh}
               disabled={isFetching}
-              className="bg-white border border-gray-200 hover:bg-gray-50 shadow-sm"
-              sx={{ p: 1, borderRadius: "50%" }}
+              sx={{
+                p: 1,
+                borderRadius: "50%",
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                "&:hover": { bgcolor: "action.hover" },
+              }}
             >
               {isFetching ? (
-                <CircularProgress size={20} sx={{ color: "#D32F2F" }} />
+                <CircularProgress size={20} color="primary" />
               ) : (
                 <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
               )}
@@ -92,19 +99,17 @@ export default function ManageOrderHeader({
           }
           onClick={onRefresh}
           disabled={isFetching}
-          className="bg-white hover:bg-red-50 whitespace-nowrap"
           sx={{
             borderRadius: "50px",
             px: { xs: 2, md: 3 },
             py: { xs: 1, md: 1.25 },
             fontSize: { xs: "0.85rem", md: "1rem" },
             fontWeight: 700,
-            borderColor: "#E63946",
             borderWidth: "1.5px",
-            color: "#D32F2F",
             textTransform: "none",
             display: { xs: "none", sm: "inline-flex" },
-            "&:hover": { borderColor: "#D32F2F", borderWidth: "1.5px" },
+            whiteSpace: "nowrap",
+            "&:hover": { borderWidth: "1.5px", bgcolor: alpha(theme.palette.primary.main, 0.05) },
           }}
         >
           รีเฟรชข้อมูล

@@ -18,7 +18,7 @@ import {
   Alert,
   Chip,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { useMemo, useState } from "react"; 
@@ -202,8 +202,8 @@ export default function ManageContentList() {
     );
 
   return (
-    <Box className="min-h-screen bg-[#F5F6F8] pb-28 md:pb-12 font-sans">
-      <Container maxWidth="xl" disableGutters={!isSmUp} className="px-6 md:px-12 pt-6 md:pt-8">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: { xs: 14, md: 6 } }}>
+      <Container maxWidth="xl" disableGutters={!isSmUp} sx={{ px: { xs: 3, md: 6 }, pt: { xs: 3, md: 4 } }}>
         <Stack spacing={{ xs: 2, md: 2.5 }}>
 
         {/* Header Section */}
@@ -217,7 +217,6 @@ export default function ManageContentList() {
             <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
               <Typography
                 sx={{ fontWeight: 800, fontSize: { xs: "1.6rem", md: "2.2rem" }, letterSpacing: "-0.02em" }}
-                className="text-gray-900"
               >
                 จัดการข่าวสารและโปรโมชั่น
               </Typography>
@@ -226,14 +225,15 @@ export default function ManageContentList() {
                 label={`${filteredSorted.length} รายการ`}
                 sx={{
                   fontWeight: 700,
-                  bgcolor: "#FFF1F2",
-                  color: "#BE123C",
-                  border: "1.5px solid #FECDD3",
+                  bgcolor: alpha(theme.palette.error.main, 0.1),
+                  color: "error.dark",
+                  border: "1.5px solid",
+                  borderColor: alpha(theme.palette.error.main, 0.3),
                   borderRadius: "50px",
                 }}
               />
             </Stack>
-            <Typography className="text-gray-500" sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}>
+            <Typography sx={{ color: "text.secondary", fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}>
               จัดการเนื้อหาข่าวสาร โปรโมชั่น และกิจกรรมของร้าน
             </Typography>
           </Box>
@@ -251,8 +251,6 @@ export default function ManageContentList() {
                 fontWeight: 700,
                 textTransform: "none",
                 fontSize: { xs: "0.85rem", md: "1rem" },
-                bgcolor: "#D32F2F",
-                "&:hover": { bgcolor: "#B71C1C" },
               }}
             >
               เพิ่มรายการ
@@ -267,11 +265,12 @@ export default function ManageContentList() {
                 py: { xs: 1, md: 1.25 },
                 fontWeight: 700,
                 fontSize: { xs: "0.85rem", md: "1rem" },
-                border: "1.5px solid #D32F2F",
-                color: "#D32F2F",
+                border: "1.5px solid",
+                borderColor: "primary.main",
+                color: "primary.main",
                 cursor: "pointer",
-                bgcolor: "white",
-                "&:hover": { bgcolor: "#FFF1F2" },
+                bgcolor: "background.paper",
+                "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.05) },
                 gap: 0.75,
               }}
               onClick={() => window.history.back()}
@@ -283,18 +282,19 @@ export default function ManageContentList() {
               sx={{
                 p: 1,
                 borderRadius: "50%",
-                bgcolor: "white",
-                border: "1px solid #E5E7EB",
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                 cursor: "pointer",
                 alignItems: "center",
                 justifyContent: "center",
-                "&:hover": { bgcolor: "#F9FAFB" },
+                "&:hover": { bgcolor: "action.hover" },
               }}
               onClick={() => refetch()}
             >
               {isLoading ? (
-                <CircularProgress size={20} sx={{ color: "#D32F2F" }} />
+                <CircularProgress size={20} color="primary" />
               ) : (
                 <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary", display: "block" }} />
               )}
@@ -303,7 +303,7 @@ export default function ManageContentList() {
         </Stack>
 
         {/* Filter Bar */}
-        <Paper elevation={0} className="bg-white rounded-3xl shadow-sm border border-gray-200" sx={{ px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}>
+        <Paper elevation={0} sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}>
           <ContentFilterBar
             q={filters.q}
             type={filters.type}
@@ -314,10 +314,9 @@ export default function ManageContentList() {
           />
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2, flexWrap: "wrap", gap: 1 }}>
             <Typography
-              className="text-[#E63946] font-bold flex items-center gap-2"
-              sx={{ fontSize: { xs: "1.1rem", md: "1.2rem" }, fontWeight: 700 }}
+              sx={{ color: "primary.main", fontWeight: 700, display: "flex", alignItems: "center", gap: 1, fontSize: { xs: "1.1rem", md: "1.2rem" } }}
             >
-              <span className="h-2 w-2 rounded-full bg-[#E63946]" />
+              <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "primary.main", display: "inline-block", mr: 0.75 }} />
               รายการที่พบทั้งหมด: {filteredSorted.length} รายการ
             </Typography>
             {filters.type !== "all" && (
@@ -344,19 +343,19 @@ export default function ManageContentList() {
         {/* Data Display - Desktop Table */}
         <Box>
           {isSmUp ? (
-            <Paper elevation={0} className="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm">
+            <Paper elevation={0} sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}>
               <TableContainer>
                 <Table sx={{ minWidth: 800 }}>
-                  <TableHead className="bg-[#F8FAFC]">
+                  <TableHead>
                     <TableRow>
-                      <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, pl: 4, width: 80 }}>#</TableCell>
-                      <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>รูป</TableCell>
-                      <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>หัวข้อ / รายละเอียด</TableCell>
-                      <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>การใช้งาน (สิทธิ์)</TableCell>
-                      <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>ประเภท</TableCell>
-                      <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>ระยะเวลา</TableCell>
-                      <TableCell className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5 }}>สถานะ</TableCell>
-                      <TableCell align="right" className="font-bold text-gray-700" sx={{ fontSize: "1.1rem", py: 2.5, pr: 4 }}>จัดการ</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "action.hover", fontSize: "1.1rem", py: 2.5, pl: 4, width: 80 }}>#</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "action.hover", fontSize: "1.1rem", py: 2.5 }}>รูป</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "action.hover", fontSize: "1.1rem", py: 2.5 }}>หัวข้อ / รายละเอียด</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "action.hover", fontSize: "1.1rem", py: 2.5 }}>การใช้งาน (สิทธิ์)</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "action.hover", fontSize: "1.1rem", py: 2.5 }}>ประเภท</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "action.hover", fontSize: "1.1rem", py: 2.5 }}>ระยะเวลา</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "action.hover", fontSize: "1.1rem", py: 2.5 }}>สถานะ</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "action.hover", fontSize: "1.1rem", py: 2.5, pr: 4 }}>จัดการ</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -374,12 +373,12 @@ export default function ManageContentList() {
                 </Table>
               </TableContainer>
               {pageRows.length === 0 && (
-                <Box className="text-center py-16">
-                  <Typography variant="h6" className="text-gray-500 font-bold">ไม่พบข้อมูลที่ตรงตามเงื่อนไข</Typography>
-                  <Typography className="text-gray-400 text-sm mt-1">ลองปรับเปลี่ยนคำค้นหาหรือตัวกรองใหม่</Typography>
+                <Box sx={{ textAlign: "center", py: 8 }}>
+                  <Typography variant="h6" sx={{ color: "text.secondary", fontWeight: 700 }}>ไม่พบข้อมูลที่ตรงตามเงื่อนไข</Typography>
+                  <Typography sx={{ color: "text.disabled", fontSize: "0.875rem", mt: 1 }}>ลองปรับเปลี่ยนคำค้นหาหรือตัวกรองใหม่</Typography>
                 </Box>
               )}
-              <Box className="px-6 py-5 bg-gray-50/50 border-t border-gray-100">
+              <Box sx={{ px: 3, py: 2.5, bgcolor: "background.default", borderTop: "1px solid", borderColor: "divider" }}>
                 <PaginationBar
                   page={page}
                   pageSize={pageSize}
@@ -395,7 +394,7 @@ export default function ManageContentList() {
             /* Data Display - Mobile List */
             <Stack spacing={2}>
               {pageRows.length > 0 ? pageRows.map((r) => (
-                <Box key={r.id} className="bg-white rounded-3xl p-2 shadow-sm border border-gray-200">
+                <Box key={r.id} sx={{ bgcolor: "background.paper", borderRadius: 3, p: 1, boxShadow: 1, border: "1px solid", borderColor: "divider" }}>
                   <MobileContentItem
                     row={r}
                     onEdit={() => handleOpenForm(r)}
@@ -416,8 +415,8 @@ export default function ManageContentList() {
 
         {/* Mobile Pagination */}
         {!isSmUp && pageRows.length > 0 && (
-          <Box className="fixed bottom-6 left-4 right-4 z-1200">
-            <Paper elevation={16} className="rounded-[30px] px-2 py-2 border border-gray-200 bg-white/95 backdrop-blur-md shadow-2xl">
+          <Box sx={{ position: "fixed", bottom: 24, left: 16, right: 16, zIndex: 1200 }}>
+            <Paper elevation={16} sx={{ borderRadius: "30px", px: 1, py: 1, border: "1px solid", borderColor: "divider", bgcolor: alpha(theme.palette.background.paper, 0.95), backdropFilter: "blur(12px)" }}>
               <PaginationBar
                 page={page}
                 pageSize={pageSize}

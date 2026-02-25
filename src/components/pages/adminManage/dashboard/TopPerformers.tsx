@@ -134,7 +134,7 @@ const TopPerformers = ({ items }: { items: any[] }) => {
             </Typography>
           </Stack>
 
-          <IconButton sx={{ bgcolor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <IconButton sx={{ bgcolor: "action.hover", border: "1px solid", borderColor: "divider" }}>
             <MoreVertical size={20} className="text-slate-400" />
           </IconButton>
         </Stack>
@@ -161,7 +161,7 @@ const TopPerformers = ({ items }: { items: any[] }) => {
                     p: 2.5,
                     borderRadius: "24px",
                     transition: "0.3s",
-                    "&:hover": { bgcolor: "#f8fafc" },
+                    "&:hover": { bgcolor: "action.hover" },
                   }}
                 >
                   <Stack
@@ -295,15 +295,15 @@ const TopPerformers = ({ items }: { items: any[] }) => {
             py: 2,
             borderRadius: "20px",
             borderColor: "#e2e8f0",
-            color: "#475569",
+            color: "text.secondary",
             fontWeight: 800,
             fontSize: "1rem",
             textTransform: "none",
             borderWidth: "2px",
             "&:hover": {
               borderWidth: "2px",
-              bgcolor: "#f8fafc",
-              borderColor: "#cbd5e1",
+              bgcolor: "action.hover",
+              borderColor: "divider",
             },
           }}
         >

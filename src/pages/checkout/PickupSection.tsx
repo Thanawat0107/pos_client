@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { alpha } from "@mui/material/styles";
 import {
   Paper,
   Typography,
@@ -60,7 +61,7 @@ export default function PickupSection({
 
   return (
     <Paper
-      sx={{ p: 4, borderRadius: 4, boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
+      sx={{ p: 4, borderRadius: 2, boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
     >
       <Typography
         variant="h5" // ปรับจาก h6 เป็น h5
@@ -70,7 +71,7 @@ export default function PickupSection({
           display: "flex",
           alignItems: "center",
           gap: 1.5,
-          color: "#1a2a3a",
+
           mb: 3,
         }}
       >
@@ -80,9 +81,10 @@ export default function PickupSection({
       <Box
         sx={{
           p: 2.5,
-          border: "3px solid #1976d2", // ขอบหนาขึ้น
-          bgcolor: "#f0f7ff",
-          borderRadius: 3,
+          border: "3px solid",
+          borderColor: "primary.main",
+          bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+          borderRadius: 2,
           display: "flex",
           alignItems: "center",
           gap: 2,
@@ -94,7 +96,7 @@ export default function PickupSection({
           sx={{ "& .MuiSvgIcon-root": { fontSize: 32 } }}
         />
         <Box>
-          <Typography fontSize="1.3rem" fontWeight={800} color="#1a2a3a">
+          <Typography fontSize="1.3rem" fontWeight={800}>
             รอรับหน้าร้าน
           </Typography>
           <Typography fontSize="1rem" color="text.secondary" fontWeight={500}>
@@ -107,7 +109,7 @@ export default function PickupSection({
         severity="info"
         sx={{
           mt: 3,
-          borderRadius: 3,
+          borderRadius: 2,
           "& .MuiAlert-message": { fontSize: "1.05rem", lineHeight: 1.6 }, // ตัวหนังสือใน Alert ใหญ่ขึ้น
         }}
       >

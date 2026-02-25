@@ -61,7 +61,7 @@ export default function OrderMenu({
       anchorOrigin={{ vertical: "top", horizontal: "right" }}
       transformOrigin={{ vertical: "bottom", horizontal: "right" }}
     >
-      <Box sx={{ p: 2, bgcolor: "#fafafa", borderBottom: "1px solid #eee" }}>
+      <Box sx={{ p: 2, bgcolor: "background.default", borderBottom: "1px solid", borderBottomColor: "divider" }}>
         <Typography variant="subtitle1" fontWeight={800} color="text.primary">
           รายการที่กำลังดำเนินการ
         </Typography>
@@ -85,9 +85,10 @@ export default function OrderMenu({
               onClick={() => onSelect(order.id)}
               sx={{
                 py: 2,
-                borderBottom: "1px solid #f0f0f0",
+                borderBottom: "1px solid",
+                borderBottomColor: "divider",
                 transition: "all 0.2s",
-                "&:hover": { bgcolor: "#f5f5f5" },
+                "&:hover": { bgcolor: "action.hover" },
               }}
             >
               <ListItemIcon sx={{ color: config.iconColor, minWidth: 40 }}>

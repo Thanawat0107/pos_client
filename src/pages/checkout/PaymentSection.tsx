@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { alpha } from "@mui/material/styles";
 import { Paper, Typography, Box, Alert } from "@mui/material";
 import PaymentIcon from "@mui/icons-material/Payment";
 // import MoneyIcon from '@mui/icons-material/Money'; // ปิดไว้เพราะไม่ได้ใช้
@@ -41,7 +42,7 @@ export default function PaymentSection({
     <Paper
       sx={{
         p: { xs: 2.5, sm: 4 }, // ปรับ Padding ตามขนาดหน้าจอ
-        borderRadius: 4,
+        borderRadius: 2,
         boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
       }}
     >
@@ -53,7 +54,6 @@ export default function PaymentSection({
           display: "flex",
           alignItems: "center",
           gap: 1.5,
-          color: "#1a2a3a",
           mb: { xs: 2.5, md: 3 },
           fontSize: { xs: "1.25rem", sm: "1.5rem" }, // ปรับขนาดตัวอักษรหัวข้อ
         }}
@@ -66,7 +66,7 @@ export default function PaymentSection({
         severity="success"
         sx={{
           mb: 3,
-          borderRadius: 3,
+          borderRadius: 2,
           "& .MuiAlert-message": { fontSize: { xs: "0.9rem", sm: "1rem" } },
         }}
       >
@@ -79,27 +79,28 @@ export default function PaymentSection({
           key={method.value}
           sx={{
             p: { xs: 2, sm: 3 }, // ปรับ Padding ของการ์ด
-            border: "3px solid #2e7d32",
-            bgcolor: "#f1f8e9",
-            borderRadius: 3,
+            border: "3px solid",
+            borderColor: "success.main",
+            bgcolor: (t) => alpha(t.palette.success.main, 0.08),
+            borderRadius: 2,
             display: "flex",
             alignItems: "center",
             gap: { xs: 1.5, sm: 2 },
             cursor: "pointer",
           }}
         >
-          <QrCodeIcon sx={{ fontSize: { xs: 35, sm: 45 }, color: "#2e7d32" }} />
+          <QrCodeIcon sx={{ fontSize: { xs: 35, sm: 45 }, color: "success.main" }} />
           <Box>
             <Typography
               fontWeight={800}
-              color="#1b5e20"
+              color="success.dark"
               sx={{ fontSize: { xs: "1.1rem", sm: "1.3rem" } }}
             >
               {method.label}
             </Typography>
             <Typography
               fontWeight={600}
-              color="#4caf50"
+              color="success.main"
               sx={{ fontSize: { xs: "0.85rem", sm: "1rem" } }}
             >
               {method.description}

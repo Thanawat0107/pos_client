@@ -60,7 +60,7 @@ export default function OrderCustomerInfo({
             <IconButton
               size="medium"
               onClick={() => setIsEditing(true)}
-              sx={{ bgcolor: "#f5f5f5", "&:hover": { bgcolor: "#e3f2fd" } }}
+              sx={{ bgcolor: "action.hover", "&:hover": { bgcolor: "action.selected" } }}
             >
               <EditIcon fontSize="small" />
             </IconButton>

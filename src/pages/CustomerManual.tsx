@@ -5,6 +5,7 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import type { Manual } from "../@types/dto/Manual";
 import { useGetManualsQuery } from "../services/manualApi";
 import { CategoryFilter } from "../components/pages/adminManage/manual/CategoryFilter";
@@ -12,6 +13,7 @@ import { ManualCard } from "../components/pages/adminManage/manual/ManualCard";
 import { ManualDetailModal } from "../components/pages/adminManage/manual/ManualDetailModal";
 
 const CustomerManual = () => {
+  useTheme(); // ensure theme context
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [activeManual, setActiveManual] = useState<Manual | null>(null);
 
@@ -74,19 +76,19 @@ const CustomerManual = () => {
 
         {/* จำนวนรายการ */}
         {!isLoading && count > 0 && (
-          <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "#9CA3AF", mb: 2 }}>
+          <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "text.secondary", mb: 2 }}>
             พบ {count} จุดบริการ
           </Typography>
         )}
 
         {isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-            <CircularProgress size={36} thickness={5} sx={{ color: "#EA580C" }} />
+            <CircularProgress size={36} thickness={5} color="primary" />
           </Box>
         ) : count === 0 ? (
-          <Box sx={{ textAlign: "center", py: 10, bgcolor: "white", borderRadius: "24px", border: "1.5px solid #FED7AA" }}>
+          <Box sx={{ textAlign: "center", py: 10, bgcolor: "background.paper", borderRadius: "24px", border: "1.5px solid", borderColor: "divider" }}>
             <Typography sx={{ fontSize: 48, mb: 1 }}>🔍</Typography>
-            <Typography sx={{ fontSize: "18px", fontWeight: 700, color: "#9CA3AF" }}>
+            <Typography sx={{ fontSize: "18px", fontWeight: 700, color: "text.secondary" }}>
               ไม่มีข้อมูลในหมวดหมู่นี้
             </Typography>
           </Box>

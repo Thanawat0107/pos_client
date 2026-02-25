@@ -117,18 +117,22 @@ const RevenueStream = ({ data, title }: RevenueStreamProps) => {
       theme: "light",
       custom: function ({ series, seriesIndex, dataPointIndex, w }: any) {
         const value = series[seriesIndex][dataPointIndex];
+        const bg = theme.palette.background.paper;
+        const textMuted = theme.palette.text.secondary;
+        const textMain = theme.palette.text.primary;
+        const border = theme.palette.divider;
         return `
-          <div style="padding: 16px; border-radius: 16px; border: none; box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1); background: #fff;">
-            <div style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; letter-spacing: 0.5px;">
+          <div style="padding: 16px; border-radius: 16px; border: 1px solid ${border}; box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1); background: ${bg};">
+            <div style="font-size: 12px; font-weight: 700; color: ${textMuted}; margin-bottom: 8px; letter-spacing: 0.5px;">
               วันที่ ${w.globals.labels[dataPointIndex]}
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
               <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${primaryColor}; box-shadow: 0 0 10px ${alpha(primaryColor, 0.5)}"></div>
-              <div style="font-size: 22px; font-weight: 900; color: #1e293b;">
+              <div style="font-size: 22px; font-weight: 900; color: ${textMain};">
                 ฿${value.toLocaleString()}
               </div>
             </div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 4px; font-weight: 500;">รายได้รวมทั้งหมด</div>
+            <div style="font-size: 11px; color: ${textMuted}; margin-top: 4px; font-weight: 500;">รายได้รวมทั้งหมด</div>
           </div>
         `;
       },
@@ -170,11 +174,11 @@ const RevenueStream = ({ data, title }: RevenueStreamProps) => {
                   display: "flex",
                   alignItems: "center",
                   gap: 0.5,
-                  bgcolor: "#f0fdf4",
+                  bgcolor: alpha("#10b981", 0.12),
                   px: 1.5,
                   py: 0.5,
                   borderRadius: "20px",
-                  border: "1px solid #d1fae5",
+                  border: `1px solid ${alpha("#10b981", 0.25)}`,
                 }}
               >
                 <Circle size={8} fill="#10b981" /> ข้อมูลแบบเรียลไทม์
@@ -225,8 +229,9 @@ const RevenueStream = ({ data, title }: RevenueStreamProps) => {
               borderRadius: "16px",
               fontWeight: 700,
               px: 2,
-              bgcolor: "#f8fafc",
-              border: "1px solid #e2e8f0",
+              bgcolor: "action.hover",
+              border: "1px solid",
+              borderColor: "divider",
               color: "text.primary",
             }}
           />
@@ -247,7 +252,7 @@ const RevenueStream = ({ data, title }: RevenueStreamProps) => {
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              bgcolor: "grey.50",
+              bgcolor: "action.hover",
               borderRadius: "24px",
               m: 2,
               border: "2px dashed",
@@ -257,7 +262,7 @@ const RevenueStream = ({ data, title }: RevenueStreamProps) => {
             <div
               style={{
                 padding: "20px",
-                background: "#fff",
+                background: theme.palette.background.paper,
                 borderRadius: "50%",
                 boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
                 marginBottom: "16px",

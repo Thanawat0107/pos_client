@@ -23,14 +23,14 @@ function CouponCard({ item }: { item: Content }) {
   return (
     <Box sx={{ 
       flex: "0 0 auto", 
-      py: 2, // เผื่อพื้นที่ให้เงาด้านบน/ล่าง
-      px: 1.5 
+      py: 1.5,
+      px: 1 
     }}>
       <Card 
         elevation={0}
         sx={{ 
-          width: 280, 
-          borderRadius: 6, 
+          width: { xs: 200, sm: 230 }, 
+          borderRadius: 4, 
           position: "relative",
           overflow: "visible",
           bgcolor: "background.paper",
@@ -45,9 +45,9 @@ function CouponCard({ item }: { item: Content }) {
       >
         {/* --- ส่วนบน: Ticket Header --- */}
         <Box sx={{ 
-          height: 90, 
+          height: 72, 
           background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, #FF8A65 100%)`, 
-          p: 2,
+          p: 1.5,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -75,23 +75,24 @@ function CouponCard({ item }: { item: Content }) {
               color: "white", 
               backdropFilter: "blur(8px)", 
               fontWeight: 700,
-              fontSize: "0.65rem",
+              fontSize: "0.6rem",
+              height: 18,
               mb: 0.5
             }} 
           />
-          <Typography variant="h4" fontWeight={900} color="white" sx={{ lineHeight: 1 }}>
+          <Typography variant="h5" fontWeight={900} color="white" sx={{ lineHeight: 1 }}>
             {isPercent ? `${item.discountValue}%` : `฿${item.discountValue}`}
             <Typography component="span" variant="button" sx={{ ml: 1, opacity: 0.8 }}>OFF</Typography>
           </Typography>
         </Box>
 
         {/* --- ส่วนล่าง: Ticket Details --- */}
-        <Box sx={{ p: 2.5, pt: 3 }}>
-          <Typography variant="subtitle1" fontWeight={800} noWrap sx={{ mb: 0.5, letterSpacing: "-0.5px" }}>
+        <Box sx={{ p: 1.5, pt: 2.5 }}>
+          <Typography variant="body2" fontWeight={800} noWrap sx={{ mb: 0.25, letterSpacing: "-0.3px" }}>
             {item.title}
           </Typography>
           
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2, fontWeight: 500 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5, fontWeight: 500 }}>
              ช้อปขั้นต่ำ ฿{item.minOrderAmount?.toLocaleString()}
           </Typography>
 
@@ -103,10 +104,11 @@ function CouponCard({ item }: { item: Content }) {
               onClick={handleCopy}
               startIcon={copied ? <CheckCircleIcon /> : <ContentCopyIcon sx={{ fontSize: 16 }} />}
               sx={{ 
-                borderRadius: "12px", 
+                borderRadius: "10px", 
                 textTransform: "none", 
                 fontWeight: 700,
-                py: 1,
+                py: 0.5,
+                fontSize: "0.75rem",
                 borderWidth: "2px",
                 "&:hover": { borderWidth: "2px" },
                 // เอฟเฟกต์สีเวลาคัดลอกสำเร็จ
@@ -121,7 +123,7 @@ function CouponCard({ item }: { item: Content }) {
         {/* เส้นประรอยตัดคูปอง */}
         <Box sx={{
           position: "absolute",
-          top: 90,
+          top: 72,
           left: 15,
           right: 15,
           borderBottom: `2px dashed ${alpha(theme.palette.divider, 0.1)}`,
@@ -136,7 +138,7 @@ export default function HomePromotions({ promotions }: { promotions: Content[] }
   if (!promotions?.length) return null;
 
   return (
-    <Box sx={{ py: 4, overflow: "hidden" }}>
+    <Box sx={{ py: 3, overflow: "hidden" }}>
       <Container maxWidth="xl">
         <Stack direction="row" alignItems="center" spacing={1.5} mb={3}>
           <Box sx={{ 
@@ -158,20 +160,25 @@ export default function HomePromotions({ promotions }: { promotions: Content[] }
         </Stack>
       </Container>
 
-      {/* Scrolling Container: ปรับแต่งให้เงามีพื้นที่แสดงผล */}
+      {/* Scrolling Container: ให้ขอบซ้ายของการ์ดแรกตรงกับ Container maxWidth="xl" เสมอ */}
       <Box 
         sx={{ 
           display: "flex", 
           gap: 0.5, 
           overflowX: "auto", 
-          px: { xs: 2, md: 5 }, // ให้เริ่มเลื่อนจากขอบ Container พอดี
-          pb: 4, 
+          // สูตรนี้จำลองพฤติกรรมของ Container maxWidth="xl" (gutter 16px xs / 24px sm+, centering เมื่อ > 1536px)
+          pl: {
+            xs: "max(16px, calc((100vw - 1536px) / 2 + 16px))",
+            sm: "max(24px, calc((100vw - 1536px) / 2 + 24px))",
+          },
+          pr: 0,
+          pb: 3, 
           cursor: "grab",
           "&:active": { cursor: "grabbing" },
           scrollBehavior: "smooth", 
           "&::-webkit-scrollbar": { display: "none" },
-          // ป้องกัน Shadow โดนตัดที่ขอบซ้ายขวา
-          "&::after": { content: '""', paddingRight: "20px" } 
+          // เว้นขวาให้การ์ดสุดท้ายไม่ชนขอบ
+          "&::after": { content: '""', paddingRight: "24px" } 
         }}
       >
         {promotions.map((promo) => (

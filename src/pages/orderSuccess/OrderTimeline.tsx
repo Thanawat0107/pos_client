@@ -98,10 +98,10 @@ export default function OrderTimeline({
     <Paper
       sx={{
         p: { xs: 2.5, sm: 3 }, // ปรับ Padding ให้เหมาะกับมือถือ
-        borderRadius: 4,
+        borderRadius: 1,
         boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
         mb: 3,
-        background: "linear-gradient(to bottom, #ffffff, #fafafa)",
+        bgcolor: "background.paper",
       }}
     >
       <Typography
@@ -129,7 +129,7 @@ export default function OrderTimeline({
           icon={alertConfig.icon}
           sx={{
             mb: { xs: 3, sm: 4 },
-            borderRadius: 3,
+            borderRadius: 1,
             boxShadow:
               alertConfig.severity === "success"
                 ? "0 4px 12px rgba(76, 175, 80, 0.2)"

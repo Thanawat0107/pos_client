@@ -19,7 +19,7 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -51,9 +51,9 @@ import { useGetMenuItemsQuery } from "../../../../services/menuItemApi";
 
 const headCellSx = {
   fontWeight: 800,
-  color: "#475569",
+  color: "text.secondary",
   fontSize: "1.05rem",
-  bgcolor: "#F8FAFC",
+  bgcolor: "action.hover",
   py: 2.5,
   letterSpacing: "0.01em",
 };
@@ -170,8 +170,8 @@ export default function ManageRecipeList() {
   const isBusy = isCreating || isUpdating || isDeleting;
 
   return (
-    <Box className="min-h-screen bg-[#F5F6F8] pb-12 font-sans">
-      <Container maxWidth="xl" className="px-4 md:px-8 pt-6 md:pt-8">
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: 6 }}>
+      <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 }, pt: { xs: 3, md: 4 } }}>
         <Stack spacing={2.5}>
 
           {/* ── 1. Header ── */}
@@ -183,14 +183,13 @@ export default function ManageRecipeList() {
           >
             <Box>
               <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap">
-                <MenuBookIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "#D32F2F" }} />
+                <MenuBookIcon sx={{ fontSize: { xs: "1.6rem", md: "2rem" }, color: "primary.main" }} />
                 <Typography
                   sx={{
                     fontWeight: 800,
                     fontSize: { xs: "1.6rem", md: "2.2rem" },
                     letterSpacing: "-0.02em",
                   }}
-                  className="text-gray-900"
                 >
                   จัดการสูตรอาหาร
                 </Typography>
@@ -199,16 +198,16 @@ export default function ManageRecipeList() {
                   label={`${rows.length} สูตร`}
                   sx={{
                     fontWeight: 700,
-                    bgcolor: "#FFF1F2",
-                    color: "#BE123C",
-                    border: "1.5px solid #FECDD3",
+                    bgcolor: alpha(theme.palette.error.main, 0.1),
+                    color: "error.dark",
+                    border: "1.5px solid",
+                    borderColor: alpha(theme.palette.error.main, 0.3),
                     borderRadius: "50px",
                   }}
                 />
               </Stack>
               <Typography
-                className="text-gray-500"
-                sx={{ fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
+                sx={{ color: "text.secondary", fontSize: { xs: "0.875rem", md: "1rem" }, mt: 0.25 }}
               >
                 รายการสูตรอาหารและวิธีปรุงทั้งหมดในระบบ
               </Typography>
@@ -227,8 +226,6 @@ export default function ManageRecipeList() {
                   fontWeight: 700,
                   textTransform: "none",
                   fontSize: { xs: "0.85rem", md: "1rem" },
-                  bgcolor: "#D32F2F",
-                  "&:hover": { bgcolor: "#B71C1C" },
                 }}
               >
                 เพิ่มสูตร
@@ -245,10 +242,8 @@ export default function ManageRecipeList() {
                   fontWeight: 700,
                   textTransform: "none",
                   fontSize: { xs: "0.85rem", md: "1rem" },
-                  borderColor: "#D32F2F",
                   borderWidth: "1.5px",
-                  color: "#D32F2F",
-                  "&:hover": { borderColor: "#B71C1C", borderWidth: "1.5px", bgcolor: "#FFF1F2" },
+                  "&:hover": { borderWidth: "1.5px", bgcolor: alpha(theme.palette.primary.main, 0.05) },
                 }}
               >
                 ย้อนกลับ
@@ -261,14 +256,15 @@ export default function ManageRecipeList() {
                     sx={{
                       p: 1,
                       borderRadius: "50%",
-                      bgcolor: "white",
-                      border: "1px solid #E5E7EB",
+                      bgcolor: "background.paper",
+                      border: "1px solid",
+                      borderColor: "divider",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-                      "&:hover": { bgcolor: "#F9FAFB" },
+                      "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
                     {isLoading ? (
-                      <CircularProgress size={20} sx={{ color: "#D32F2F" }} />
+                      <CircularProgress size={20} color="primary" />
                     ) : (
                       <RefreshIcon sx={{ fontSize: "1.4rem", color: "text.secondary" }} />
                     )}
@@ -281,8 +277,7 @@ export default function ManageRecipeList() {
           {/* ── 2. Filter Card ── */}
           <Paper
             elevation={0}
-            className="bg-white rounded-3xl shadow-sm border border-gray-200"
-            sx={{ px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
+            sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", px: { xs: 2.5, md: 4 }, py: { xs: 2, md: 3 } }}
           >
             <RecipeFilterBar
               q={filters.q}
@@ -292,12 +287,11 @@ export default function ManageRecipeList() {
             />
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }} flexWrap="wrap">
               <Typography
-                className="text-[#E63946] font-bold flex items-center gap-2"
-                sx={{ fontSize: { xs: "0.95rem", md: "1.1rem" }, fontWeight: 700 }}
+                sx={{ color: "primary.main", fontWeight: 700, fontSize: { xs: "0.95rem", md: "1.1rem" }, display: "flex", alignItems: "center", gap: 1 }}
               >
                 <Box
                   component="span"
-                  sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#E63946", display: "inline-block", mr: 0.75 }}
+                  sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "primary.main", display: "inline-block", mr: 0.75 }}
                 />
                 รายการที่พบทั้งหมด: {filtered.length} รายการ
               </Typography>
@@ -322,16 +316,16 @@ export default function ManageRecipeList() {
 
           {/* ── 3. Content Card ── */}
           {isLoading ? (
-            <Box className="flex flex-col justify-center items-center min-h-64 gap-4">
-              <CircularProgress size={56} thickness={4} sx={{ color: "#D32F2F" }} />
-              <Typography variant="h6" className="text-gray-500 font-semibold">
+            <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: 256, gap: 2 }}>
+              <CircularProgress size={56} thickness={4} color="primary" />
+              <Typography variant="h6" sx={{ color: "text.secondary", fontWeight: 600 }}>
                 กำลังโหลดข้อมูล...
               </Typography>
             </Box>
           ) : isSmUp ? (
             <Paper
               elevation={0}
-              className="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm"
+              sx={{ bgcolor: "background.paper", borderRadius: 3, border: "1px solid", borderColor: "divider", overflow: "hidden" }}
             >
               <TableContainer>
                 <Table sx={{ minWidth: 700 }}>
@@ -368,7 +362,7 @@ export default function ManageRecipeList() {
                                 handleFilterChange("q", "");
                                 handleFilterChange("status", "all");
                               }}
-                              sx={{ fontWeight: 700, color: "#E63946", textDecoration: "underline", textTransform: "none" }}
+                              sx={{ fontWeight: 700, color: "primary.main", textDecoration: "underline", textTransform: "none" }}
                             >
                               ล้างตัวกรองทั้งหมด
                             </Button>

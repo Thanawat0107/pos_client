@@ -118,9 +118,10 @@ export default function OrderTimeline({ status }: { status: string }) {
         width: "100%",
         py: { xs: 1.5, sm: 2 },
         px: { xs: 0.5, sm: 1 },
-        bgcolor: "white",
+        bgcolor: "background.paper",
         borderRadius: 3,
-        border: "1px solid #f0f0f0",
+        border: "1px solid",
+        borderColor: "divider",
       }}
     >
       <Stepper
@@ -142,7 +143,7 @@ export default function OrderTimeline({ status }: { status: string }) {
                     color: isActive
                       ? BRAND_COLOR
                       : isDone
-                      ? "#4caf50"
+                      ? "success.main"
                       : "text.disabled",
                     fontSize: { xs: "0.7rem", sm: "0.8rem" },
                     lineHeight: 1.3,

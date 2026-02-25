@@ -158,7 +158,7 @@ export default function Checkout() {
   };
 
   return (
-    <Box sx={{ bgcolor: "#f4f7f9", minHeight: "100vh", py: { xs: 2, md: 5 } }}>
+    <Box sx={{ bgcolor: "background.default", minHeight: "100vh", py: { xs: 2, md: 5 } }}>
       <Container maxWidth="lg">
         {/* Header Section: ปรับให้ Responsive */}
         <Box
@@ -185,7 +185,6 @@ export default function Checkout() {
           <Typography
             variant="h4"
             fontWeight={900}
-            color="#2c3e50"
             sx={{ 
                 fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" },
                 lineHeight: 1.2 

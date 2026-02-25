@@ -17,7 +17,7 @@ export default function HomeHeader() {
             <Typography variant="caption" color="text.secondary" fontWeight={600}>
               ยินดีต้อนรับ, 👋
             </Typography>
-            <Typography variant="h6" fontWeight={800} lineHeight={1.1} sx={{ color: "#333" }}>
+            <Typography variant="h6" fontWeight={800} lineHeight={1.1}>
               คุณลูกค้า
             </Typography>
           </Box>
@@ -26,10 +26,10 @@ export default function HomeHeader() {
         {/* Right: Notification */}
         <IconButton 
           sx={{ 
-            bgcolor: "white", 
+            bgcolor: "background.paper", 
             boxShadow: "0 4px 14px rgba(0,0,0,0.08)", 
             color: "#FF5722",
-            "&:hover": { bgcolor: "#FFF3E0" }
+            "&:hover": { bgcolor: "action.hover" }
           }}
         >
           <NotificationsNoneIcon />

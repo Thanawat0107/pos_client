@@ -10,6 +10,7 @@ import {
   Avatar,
   Grid,
 } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import TakeoutDiningIcon from "@mui/icons-material/TakeoutDining";
@@ -47,6 +48,7 @@ type Props = {
 };
 
 export default function OrderDetailDrawer({ open, onClose, order }: Props) {
+  const theme = useTheme();
   // --- API ---
   const [updateStatus, { isLoading: loadingStatus }] =
     useUpdateOrderStatusMutation();
@@ -200,8 +202,9 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
             px: { xs: 2, sm: 3 },
             pt: 2.5,
             pb: 2,
-            bgcolor: "white",
-            borderBottom: "2px solid #f0f0f0",
+            bgcolor: "background.paper",
+            borderBottom: "2px solid",
+            borderColor: "divider",
           }}
         >
           <div className="flex items-start justify-between gap-2">
@@ -211,7 +214,7 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Avatar
                   sx={{
-                    bgcolor: "#ffebee",
+                    bgcolor: alpha(BRAND_COLOR, 0.1),
                     color: BRAND_COLOR,
                     width: { xs: 44, sm: 52 },
                     height: { xs: 44, sm: 52 },
@@ -225,7 +228,6 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
                     variant="h5"
                     fontWeight={900}
                     sx={{
-                      color: "#1a1a1a",
                       lineHeight: 1.1,
                       fontSize: { xs: "1.3rem", sm: "1.6rem" },
                       letterSpacing: 0.5,
@@ -289,17 +291,17 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
                   alignItems="center"
                   spacing={1}
                   sx={{
-                    bgcolor: "#f5f5f5",
+                    bgcolor: "background.default",
                     borderRadius: 2,
                     px: 2,
                     py: 1,
                     width: "fit-content",
                   }}
                 >
-                  <TakeoutDiningIcon fontSize="small" sx={{ color: "#aaa" }} />
+                  <TakeoutDiningIcon fontSize="small" sx={{ color: "text.disabled" }} />
                   <Typography
                     variant="body2"
-                    sx={{ color: "#aaa", fontWeight: 600 }}
+                    sx={{ color: "text.disabled", fontWeight: 600 }}
                   >
                     ไม่มีรหัส Pick Up
                   </Typography>
@@ -312,9 +314,9 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
               <IconButton
                 onClick={onClose}
                 sx={{
-                  color: "#888",
-                  bgcolor: "#f5f5f5",
-                  "&:hover": { bgcolor: "#ffe0e0", color: BRAND_COLOR },
+                  color: "text.secondary",
+                  bgcolor: "action.hover",
+                  "&:hover": { bgcolor: alpha(BRAND_COLOR, 0.1), color: BRAND_COLOR },
                 }}
               >
                 <CloseIcon />
@@ -331,10 +333,10 @@ export default function OrderDetailDrawer({ open, onClose, order }: Props) {
                     disabled={loading}
                     title="ดาวน์โหลดใบเสร็จ PDF"
                     sx={{
-                      color: loading ? "#bbb" : "#2e7d32",
-                      bgcolor: "#f5f5f5",
+                      color: loading ? "text.disabled" : "success.dark",
+                      bgcolor: "action.hover",
                       borderRadius: 2,
-                      "&:hover": { bgcolor: "#e8f5e9", color: "#1b5e20" },
+                      "&:hover": { bgcolor: alpha(theme.palette.success.main, 0.1), color: "success.dark" },
                     }}
                   >
                     <LocalPrintshopIcon />

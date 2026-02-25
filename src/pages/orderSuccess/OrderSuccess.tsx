@@ -236,7 +236,7 @@ export default function OrderSuccess() {
         <Button
           onClick={() => navigate(ROOT_PATH)}
           variant="contained"
-          sx={{ mt: 3, borderRadius: 3, px: 4, py: 1.5, fontSize: "1.1rem" }}
+          sx={{ mt: 3, borderRadius: 1, px: 4, py: 1.5, fontSize: "1.1rem" }}
         >
           กลับหน้าหลัก
         </Button>
@@ -244,7 +244,7 @@ export default function OrderSuccess() {
     );
 
   return (
-    <Box sx={{ bgcolor: "#F5F7FA", minHeight: "100vh", py: { xs: 2, md: 5 } }}>
+    <Box sx={{ bgcolor: "background.default", minHeight: "100vh", py: { xs: 2, md: 5 } }}>
       <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
         <Stack
           spacing={{ xs: 2, md: 3 }}
@@ -257,7 +257,7 @@ export default function OrderSuccess() {
               variant="filled"
               icon={<CallIcon sx={{ fontSize: "2rem" }} />}
               sx={{
-                borderRadius: 4,
+                borderRadius: 1,
                 fontSize: { xs: "1rem", sm: "1.1rem" },
                 fontWeight: 600,
                 alignItems: "center",
@@ -302,7 +302,7 @@ export default function OrderSuccess() {
                     mt: 2,
                     p: 2.5,
                     bgcolor: "primary.50",
-                    borderRadius: 3,
+                    borderRadius: 1,
                     border: "2px dashed",
                     borderColor: "primary.main",
                     color: "primary.main",
@@ -349,7 +349,7 @@ export default function OrderSuccess() {
                 onClick={handleOpenCancelOrder}
                 disabled={isVerifying}
                 sx={{
-                  borderRadius: 4,
+                  borderRadius: 1,
                   borderWidth: 2,
                   py: { xs: 1.8, sm: 2 },
                   fontSize: { xs: "1rem", sm: "1.1rem" },
@@ -368,7 +368,7 @@ export default function OrderSuccess() {
               startIcon={<HomeIcon sx={{ fontSize: "1.5rem" }} />}
               onClick={() => navigate(ROOT_PATH)}
               sx={{
-                borderRadius: 4,
+                borderRadius: 1,
                 py: { xs: 2, sm: 2.5 },
                 fontWeight: 800,
                 fontSize: { xs: "1.1rem", sm: "1.25rem" },
@@ -430,7 +430,7 @@ export default function OrderSuccess() {
             variant="filled"
             sx={{
               width: "100%",
-              borderRadius: 3,
+              borderRadius: 1,
               fontSize: "1rem",
               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
             }}
