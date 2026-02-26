@@ -7,248 +7,528 @@ import {
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
+import dayjs from "dayjs";
 
 Font.registerHyphenationCallback((word) => [word]);
 
+// --- Color Palette (อิงตามโทนสีของเว็บ Dashboard) ---
+const colors = {
+  primary: "#111827", // ดำเข้ม (ส่วนหัวข้อหลัก)
+  secondary: "#6366f1", // สีม่วงอมน้ำเงิน (สำหรับกราฟ/ไฮไลท์)
+  success: "#10b981", // เขียว Emerald (สำหรับรายได้/สำเร็จ)
+  successBg: "#ecfdf5",
+  warning: "#f59e0b", // เหลือง/ส้ม (สำหรับรอดำเนินการ/สินค้าขายดี)
+  warningBg: "#fffbeb",
+  danger: "#f43f5e", // แดง (สำหรับยกเลิก)
+  dangerBg: "#fff1f2",
+  textDark: "#1f2937",
+  textMuted: "#6b7280",
+  bgLight: "#f9fafb",
+  border: "#e5e7eb",
+};
+
 const styles = StyleSheet.create({
   page: {
-    fontFamily: "Sarabun", // เรียกใช้ฟอนต์ที่ลงทะเบียนไว้ใน main.tsx
-    padding: 40,
+    fontFamily: "Sarabun",
+    padding: 35,
     backgroundColor: "#ffffff",
-    color: "#334155",
-  },
-  // --- Header Section ---
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 30,
-    borderBottom: "1pt solid #e2e8f0",
-    paddingBottom: 20,
-  },
-  brandContainer: {
-    flexDirection: "column",
-  },
-  brandTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#1e1b4b",
-    letterSpacing: -0.5,
-  },
-  brandSubtitle: {
-    fontSize: 9,
-    color: "#64748b",
-    marginTop: 2,
-  },
-  reportMeta: {
-    textAlign: "right",
-  },
-  metaText: {
-    fontSize: 8,
-    color: "#94a3b8",
-    marginBottom: 2,
-  },
-  metaValue: {
-    fontSize: 9,
-    fontWeight: "bold",
-    color: "#475569",
+    color: colors.textDark,
   },
 
-  // --- KPI Cards Section ---
-  kpiContainer: {
+  // --- Header ---
+  headerBox: {
     flexDirection: "row",
-    gap: 12,
+    justifyContent: "space-between",
+    alignItems: "flex-end",
     marginBottom: 25,
+    paddingBottom: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
   },
+  reportTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: colors.primary,
+    letterSpacing: -0.5,
+  },
+  reportSubtitle: { fontSize: 10, color: colors.textMuted, marginTop: 4 },
+  dateBox: { alignItems: "flex-end" },
+  dateLabel: {
+    fontSize: 8,
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  dateValue: { fontSize: 10, fontWeight: "bold", color: colors.primary },
+
+  // --- KPI Summary Cards ---
+  kpiContainer: { flexDirection: "row", gap: 12, marginBottom: 25 },
   kpiCard: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: colors.bgLight,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  kpiLabel: {
+    fontSize: 9,
+    color: colors.textMuted,
+    marginBottom: 8,
+    fontWeight: "bold",
+  },
+  kpiValueRow: { flexDirection: "row", alignItems: "baseline", gap: 4 },
+  kpiValue: { fontSize: 22, fontWeight: "bold", color: colors.primary },
+  kpiUnit: { fontSize: 10, color: colors.textMuted, fontWeight: "bold" },
+  kpiSub: { fontSize: 8, color: colors.textMuted, marginTop: 6 },
+
+  // --- Main Content Layout ---
+  row: { flexDirection: "row", gap: 20 },
+  colLeft: { flex: 1.2 }, // คอลัมน์ซ้ายใหญ่กว่านิดหน่อย
+  colRight: { flex: 1 },
+
+  // --- Sections ---
+  section: {
+    marginBottom: 25,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+  },
+  sectionTitleBox: {
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  sectionTitle: { fontSize: 12, fontWeight: "bold", color: colors.primary },
+
+  // --- Top Items (สินค้าขายดี) ---
+  itemRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  itemRankBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.warningBg,
+    borderWidth: 1,
+    borderColor: colors.warning,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  itemRankText: { fontSize: 10, fontWeight: "bold", color: colors.warning },
+  itemNameBox: { flex: 1 },
+  itemName: { fontSize: 10, fontWeight: "bold", color: colors.textDark },
+  itemQty: { fontSize: 8, color: colors.textMuted, marginTop: 2 },
+  itemPrice: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: colors.textDark,
+    textAlign: "right",
+  },
+
+  // --- Efficiency Bars (ประสิทธิภาพ) ---
+  barContainer: { marginBottom: 16 },
+  barHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 6,
+  },
+  barTitleBox: { flex: 1 },
+  barTitle: { fontSize: 10, fontWeight: "bold", color: colors.textDark },
+  barTarget: { fontSize: 8, color: colors.textMuted, marginTop: 2 },
+  barValue: { fontSize: 10, fontWeight: "bold" },
+  barTrack: {
+    height: 8,
+    backgroundColor: colors.bgLight,
+    borderRadius: 4,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  barFill: { height: "100%", borderRadius: 4 },
+
+  // --- Status Grid (สัดส่วนออเดอร์) ---
+  statusGrid: { flexDirection: "row", gap: 10 },
+  statusBox: {
     flex: 1,
     padding: 12,
     borderRadius: 8,
-    backgroundColor: "#f8fafc",
-    border: "0.5pt solid #e2e8f0",
-  },
-  kpiLabel: {
-    fontSize: 8,
-    color: "#64748b",
-    marginBottom: 4,
-    textTransform: "uppercase",
-  },
-  kpiValue: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#0f172a",
-  },
-
-  // --- Table Section ---
-  table: {
-    marginTop: 10,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#1e1b4b",
-    borderRadius: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  tableHeaderCell: {
-    color: "#ffffff",
-    fontWeight: "bold",
-    fontSize: 9,
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderBottomColor: "#f1f5f9",
-    borderBottomWidth: 0.5,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
     alignItems: "center",
+    borderWidth: 1,
   },
-  tableCell: {
-    fontSize: 9,
-    color: "#334155",
-  },
-  orderId: {
-    fontSize: 8,
-    color: "#94a3b8",
-  },
-
-  // --- Status Badges ---
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    fontSize: 7,
-    fontWeight: "bold",
-    textAlign: "center",
-    width: 65,
-  },
+  statusNum: { fontSize: 18, fontWeight: "bold", marginBottom: 4 },
+  statusLabel: { fontSize: 8, fontWeight: "bold" },
 
   // --- Footer ---
   footer: {
     position: "absolute",
-    bottom: 30,
-    left: 40,
-    right: 40,
-    borderTop: "0.5pt solid #f1f5f9",
+    bottom: 25,
+    left: 35,
+    right: 35,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
     paddingTop: 10,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
   },
-  footerText: {
-    fontSize: 8,
-    color: "#cbd5e1",
-  },
+  footerText: { fontSize: 8, color: colors.textMuted },
 });
 
-/**
- * 3. Helper Function: Status Logic
- * จัดการสีและข้อความสถานะให้ตรงกับระบบของคุณ
- */
-const getStatusTheme = (status: string) => {
-  const s = status?.toLowerCase();
-  if (s === "success" || s === "เสร็จสิ้น")
-    return { bg: "#ecfdf5", text: "#10b981", label: "สำเร็จ" };
-  if (s === "pending" || s === "รอดำเนินการ")
-    return { bg: "#fffbeb", text: "#d97706", label: "รอปรุง" };
-  if (s === "cancelled" || s === "ยกเลิก")
-    return { bg: "#fff1f2", text: "#e11d48", label: "ยกเลิก" };
-  return { bg: "#f1f5f9", text: "#64748b", label: status };
-};
+// --- Helper Functions ---
+const fmtMoney = (n: number) =>
+  (n ?? 0).toLocaleString("th-TH", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+const fmtNum = (n: number) => (n ?? 0).toLocaleString("th-TH");
 
-/**
- * 4. Main Component: PremiumReport
- */
-interface Props {
-  data: any;           // ข้อมูล KPI รวม
-  detailedData: any[]; // รายการข้อมูลในตาราง
-  filters: {
-    startDate: any;
-    endDate: any;
-  };
-}
+const EfficiencyBar = ({
+  label,
+  target,
+  value,
+  max,
+  color,
+  suffix = "",
+}: any) => {
+  const safeValue = isNaN(value) ? 0 : value;
+  let percent = max > 0 ? (safeValue / max) * 100 : 0;
+  percent = Math.max(0, Math.min(100, percent)); // ไม่ให้กราฟทะลุ 100%
 
-export const PremiumReport = ({ data, detailedData, filters }: Props) => (
-  <Document title={`Revenue-Report-${new Date().getTime()}`}>
-    <Page size="A4" style={styles.page}>
-      
-      {/* ส่วนที่ 1: Header */}
-      <View style={styles.header}>
-        <View style={styles.brandContainer}>
-          <Text style={styles.brandTitle}>Analysis Overview</Text>
-          <Text style={styles.brandSubtitle}>ระบบวิเคราะห์สถิติและประสิทธิภาพการดำเนินงาน</Text>
+  return (
+    <View style={styles.barContainer}>
+      <View style={styles.barHeader}>
+        <View style={styles.barTitleBox}>
+          <Text style={styles.barTitle}>{label}</Text>
+          <Text style={styles.barTarget}>{target}</Text>
         </View>
-        <View style={styles.reportMeta}>
-          <Text style={styles.metaText}>ช่วงเวลาที่เลือก</Text>
-          <Text style={styles.metaValue}>
-            {filters.startDate?.format?.("DD MMM YYYY") || filters.startDate} - {filters.endDate?.format?.("DD MMM YYYY") || filters.endDate}
-          </Text>
-        </View>
+        <Text style={[styles.barValue, { color }]}>
+          {safeValue.toLocaleString("th-TH", { maximumFractionDigits: 2 })}
+          {suffix}
+        </Text>
       </View>
-
-      {/* ส่วนที่ 2: KPI Summary Cards */}
-      <View style={styles.kpiContainer}>
-        <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>ยอดขายรวมทั้งหมด</Text>
-          <Text style={styles.kpiValue}>฿{data?.totalRevenue?.toLocaleString()}</Text>
-        </View>
-        <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>ออเดอร์ทั้งหมด</Text>
-          <Text style={styles.kpiValue}>{data?.totalOrders?.toLocaleString()} รายการ</Text>
-        </View>
-        <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>อัตราความสำเร็จ</Text>
-          <Text style={[styles.kpiValue, { color: "#10b981" }]}>{data?.successRate}%</Text>
-        </View>
-      </View>
-
-      {/* ส่วนที่ 3: Detailed Data Table */}
-      <View style={styles.table}>
-        {/* Table Header - ใช้ fixed เพื่อให้แสดงหัวตารางในทุกหน้าอัตโนมัติ */}
-        <View style={styles.tableHeader} fixed>
-          <View style={{ width: "20%" }}><Text style={styles.tableHeaderCell}>เลขออเดอร์</Text></View>
-          <View style={{ width: "40%" }}><Text style={styles.tableHeaderCell}>รายการอาหาร</Text></View>
-          <View style={{ width: "20%" }}><Text style={styles.tableHeaderCell}>สถานะ</Text></View>
-          <View style={{ width: "20%", textAlign: "right" }}><Text style={styles.tableHeaderCell}>ยอดสุทธิ</Text></View>
-        </View>
-
-        {/* Table Body */}
-        {(detailedData || data?.details)?.map((row: any, index: number) => {
-          const theme = getStatusTheme(row.status);
-          return (
-            <View key={index} style={styles.tableRow} wrap={false}>
-              <View style={{ width: "20%" }}>
-                <Text style={styles.orderId}>#{row.id || row.orderNumber}</Text>
-                <Text style={{ fontSize: 7, color: "#94a3b8" }}>{row.date || row.createdAt}</Text>
-              </View>
-              
-              <Text style={[styles.tableCell, { width: "40%", fontWeight: "bold" }]}>
-                {row.items || row.name}
-              </Text>
-
-              <View style={{ width: "20%" }}>
-                <View style={[styles.badge, { backgroundColor: theme.bg }]}>
-                  <Text style={{ color: theme.text }}>{theme.label}</Text>
-                </View>
-              </View>
-
-              <Text style={[styles.tableCell, { width: "20%", textAlign: "right", fontWeight: "bold" }]}>
-                ฿{row.amount?.toLocaleString() || row.totalAmount?.toLocaleString()}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-
-      {/* ส่วนที่ 4: Footer และเลขหน้า */}
-      <View style={styles.footer} fixed>
-        <Text style={styles.footerText}>เอกสารฉบับนี้สร้างขึ้นโดยระบบอัตโนมัติ</Text>
-        <Text 
-          style={styles.footerText} 
-          render={({ pageNumber, totalPages }) => `หน้า ${pageNumber} จาก ${totalPages}`} 
+      <View style={styles.barTrack}>
+        <View
+          style={[
+            styles.barFill,
+            { width: `${percent}%`, backgroundColor: color },
+          ]}
         />
       </View>
+    </View>
+  );
+};
 
-    </Page>
-  </Document>
-);
+interface Props {
+  data: any;
+  detailedData?: any[]; // เก็บรับค่าไว้แต่ไม่ได้นำมาปริ้นตารางแล้ว
+  filters: { startDate: any; endDate: any };
+}
+
+export const PremiumReport = ({ data, filters }: Props) => {
+  const startStr = filters.startDate?.format?.("DD/MM/YYYY") || "-";
+  const endStr = filters.endDate?.format?.("DD/MM/YYYY") || "-";
+  const generatedAt = dayjs().format("DD/MM/YYYY HH:mm");
+
+  const safeData = data || {};
+
+  // เช็ค Data อย่างรัดกุม ป้องกัน Error "Unknown Item"
+  const topItems = Array.isArray(safeData.topSellingItems)
+    ? safeData.topSellingItems
+    : Array.isArray(safeData.topSellingDetail)
+      ? safeData.topSellingDetail
+      : [];
+
+  const statusCount = safeData.orderStatusCount || {};
+
+  // รวบรวมสถานะ (รองรับหลาย format ทั้งภาษาไทยและอังกฤษที่อาจจะมาจาก API)
+  const countSuccess =
+    statusCount["success"] ||
+    statusCount["completed"] ||
+    statusCount["เสร็จสิ้น"] ||
+    statusCount["ชำระแล้ว"] ||
+    statusCount["paid"] ||
+    0;
+  const countPending =
+    statusCount["pending"] ||
+    statusCount["รอดำเนินการ"] ||
+    statusCount["รอชำระเงิน"] ||
+    statusCount["pendingPayment"] ||
+    0;
+  const countCancel = statusCount["cancelled"] || statusCount["ยกเลิก"] || 0;
+
+  return (
+    <Document title={`Report_${dayjs().format("YYYYMMDD")}`}>
+      <Page size="A4" style={styles.page}>
+        {/* ================= 1. HEADER ================= */}
+        <View style={styles.headerBox} fixed>
+          <View>
+            <Text style={styles.reportTitle}>ภาพรวมการวิเคราะห์ข้อมูล</Text>
+            <Text style={styles.reportSubtitle}>
+              ระบบวิเคราะห์สถิติอัจฉริยะและประสิทธิภาพการดำเนินงาน
+            </Text>
+          </View>
+          <View style={styles.dateBox}>
+            <Text style={styles.dateLabel}>รอบการวิเคราะห์ (Period)</Text>
+            <Text style={styles.dateValue}>
+              {startStr} - {endStr}
+            </Text>
+          </View>
+        </View>
+
+        {/* ================= 2. SUMMARY KPIs ================= */}
+        <View style={styles.kpiContainer}>
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>ยอดขายรวมทั้งหมด</Text>
+            <View style={styles.kpiValueRow}>
+              <Text style={styles.kpiValue}>
+                {fmtMoney(safeData.totalRevenue)}
+              </Text>
+              <Text style={styles.kpiUnit}>฿</Text>
+            </View>
+            <Text style={styles.kpiSub}>
+              ประมาณการกำไร: ฿{fmtMoney(safeData.totalProfit)}
+            </Text>
+          </View>
+
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>รายการออเดอร์ทั้งหมด</Text>
+            <View style={styles.kpiValueRow}>
+              <Text style={styles.kpiValue}>
+                {fmtNum(safeData.totalOrders)}
+              </Text>
+              <Text style={styles.kpiUnit}>รายการ</Text>
+            </View>
+            <Text style={styles.kpiSub}>
+              ยกเลิกแล้ว: {fmtNum(safeData.totalCancelledOrders || countCancel)}{" "}
+              รายการ
+            </Text>
+          </View>
+
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>ยอดสั่งซื้อเฉลี่ยต่อบิล (AOV)</Text>
+            <View style={styles.kpiValueRow}>
+              <Text style={styles.kpiValue}>
+                {fmtMoney(safeData.averageOrderValue)}
+              </Text>
+              <Text style={styles.kpiUnit}>฿</Text>
+            </View>
+            <Text style={styles.kpiSub}>เป้าหมายยอดขาย: ฿500 / บิล</Text>
+          </View>
+        </View>
+
+        {/* ================= 3. IN-DEPTH ANALYTICS ================= */}
+        <View style={styles.row}>
+          {/* --- COLUMN LEFT: ประสิทธิภาพ & สถานะ --- */}
+          <View style={styles.colLeft}>
+            {/* Section: ประสิทธิภาพการดำเนินงาน */}
+            <View style={styles.section}>
+              <View style={styles.sectionTitleBox}>
+                <Text style={styles.sectionTitle}>ประสิทธิภาพการดำเนินงาน</Text>
+              </View>
+
+              <EfficiencyBar
+                label="ยอดสั่งซื้อเฉลี่ยต่อบิล"
+                target="เป้าหมายยอดขาย ฿500"
+                value={safeData.averageOrderValue || 0}
+                max={500}
+                color={colors.secondary}
+                suffix=" ฿"
+              />
+              <EfficiencyBar
+                label="อัตราการทำรายการสำเร็จ"
+                target="เป้าหมายความแม่นยำ 100%"
+                value={safeData.successRate || 0}
+                max={100}
+                color={colors.success}
+                suffix="%"
+              />
+              <EfficiencyBar
+                label="เวลาที่ใช้ในการเตรียมอาหาร"
+                target="เป้าหมายความเร็ว < 15 นาที"
+                value={safeData.averagePrepTime || 0}
+                max={30} // เซ็ต max ไว้ที่ 30 นาทีสำหรับการวาดกราฟแท่ง
+                color={colors.warning}
+                suffix=" นาที"
+              />
+            </View>
+
+            {/* Section: สัดส่วนออเดอร์ */}
+            <View style={styles.section}>
+              <View style={styles.sectionTitleBox}>
+                <Text style={styles.sectionTitle}>สัดส่วนสถานะออเดอร์</Text>
+              </View>
+              <View style={styles.statusGrid}>
+                <View
+                  style={[
+                    styles.statusBox,
+                    {
+                      backgroundColor: colors.successBg,
+                      borderColor: "#a7f3d0",
+                    },
+                  ]}
+                >
+                  <Text style={[styles.statusNum, { color: colors.success }]}>
+                    {countSuccess}
+                  </Text>
+                  <Text style={[styles.statusLabel, { color: colors.success }]}>
+                    สำเร็จแล้ว
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.statusBox,
+                    {
+                      backgroundColor: colors.warningBg,
+                      borderColor: "#fde68a",
+                    },
+                  ]}
+                >
+                  <Text style={[styles.statusNum, { color: colors.warning }]}>
+                    {countPending}
+                  </Text>
+                  <Text style={[styles.statusLabel, { color: colors.warning }]}>
+                    รอปรุง / รอชำระ
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.statusBox,
+                    {
+                      backgroundColor: colors.dangerBg,
+                      borderColor: "#fecdd3",
+                    },
+                  ]}
+                >
+                  <Text style={[styles.statusNum, { color: colors.danger }]}>
+                    {countCancel}
+                  </Text>
+                  <Text style={[styles.statusLabel, { color: colors.danger }]}>
+                    ยกเลิก
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* --- COLUMN RIGHT: สินค้าขายดี --- */}
+          <View style={styles.colRight}>
+            <View style={[styles.section, { flex: 1 }]}>
+              <View style={styles.sectionTitleBox}>
+                <Text style={styles.sectionTitle}>
+                  สินค้าขายดีที่สุด (Top 5)
+                </Text>
+              </View>
+
+              {topItems.length > 0 ? (
+                topItems.slice(0, 5).map((item: any, idx: number) => {
+                  // ดักข้อมูลแบบครอบจักรวาล ให้ตรงกับ API
+                  const itemName =
+                    item.name ||
+                    item.menuItemName ||
+                    item.itemName ||
+                    item.title ||
+                    "ไม่ระบุชื่อสินค้า";
+
+                  // หา quantity: บางทีมาเป็น totalQuantity, soldQuantity หรือ qty
+                  const itemQty =
+                    item.quantity ||
+                    item.qty ||
+                    item.count ||
+                    item.totalQuantity ||
+                    item.soldQuantity ||
+                    0;
+
+                  // หา revenue: บางทีมาเป็น revenue, totalRevenue, totalAmount, totalPrice
+                  const itemRev =
+                    item.revenue ||
+                    item.totalRevenue ||
+                    item.totalPrice ||
+                    item.totalAmount ||
+                    item.sales ||
+                    0;
+
+                  return (
+                    <View key={idx} style={styles.itemRow}>
+                      <View
+                        style={[
+                          styles.itemRankBox,
+                          // เปลี่ยนสีเหรียญตามอันดับ
+                          idx === 0
+                            ? {
+                                backgroundColor: "#fef08a",
+                                borderColor: "#eab308",
+                              }
+                            : idx === 1
+                              ? {
+                                  backgroundColor: "#f1f5f9",
+                                  borderColor: "#cbd5e1",
+                                }
+                              : idx === 2
+                                ? {
+                                    backgroundColor: "#ffedd5",
+                                    borderColor: "#f97316",
+                                  }
+                                : {
+                                    backgroundColor: "#f9fafb",
+                                    borderColor: "#e5e7eb",
+                                  },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.itemRankText,
+                            idx === 0
+                              ? { color: "#ca8a04" }
+                              : idx === 1
+                                ? { color: "#64748b" }
+                                : idx === 2
+                                  ? { color: "#c2410c" }
+                                  : { color: "#9ca3af" },
+                          ]}
+                        >
+                          {idx + 1}
+                        </Text>
+                      </View>
+
+                      <View style={styles.itemNameBox}>
+                        <Text style={styles.itemName}>{itemName}</Text>
+                        <Text style={styles.itemQty}>
+                          จำหน่ายแล้ว {fmtNum(itemQty)} จาน
+                        </Text>
+                      </View>
+
+                      <Text style={styles.itemPrice}>฿{fmtMoney(itemRev)}</Text>
+                    </View>
+                  );
+                })
+              ) : (
+                <Text
+                  style={{
+                    fontSize: 9,
+                    color: colors.textMuted,
+                    textAlign: "center",
+                    marginTop: 20,
+                  }}
+                >
+                  ยังไม่มีข้อมูลการขายในช่วงเวลานี้
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* ================= FOOTER ================= */}
+        <View style={styles.footer} fixed>
+          <Text style={styles.footerText}>
+            เอกสารฉบับนี้สร้างโดยระบบอัตโนมัติเมื่อ {generatedAt}
+          </Text>
+          <Text style={styles.footerText}>ระบบการจัดการร้านอาหาร (POS)</Text>
+        </View>
+      </Page>
+    </Document>
+  );
+};

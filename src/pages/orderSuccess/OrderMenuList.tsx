@@ -19,7 +19,7 @@ import { getItemStatusConfig } from "../../utility/OrderHelpers";
 import { Sd } from "../../helpers/SD";
 import { getImage } from "../../helpers/imageHelper";
 import type { OrderHeader } from "../../@types/dto/OrderHeader";
-import OrderReceiptPDF from "../../components/pages/adminManage/order/orderDetails/OrderReceiptPDF";
+import OrderReceiptPDF from "../../components/receipts/OrderReceiptPDF";
 
 interface OrderDetailOption {
   optionGroupName: string;

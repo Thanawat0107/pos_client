@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { ROOT_PATH } from "../../../helpers/SD";
 
-const path = "http://tee.kru.ac.th/cs66/s07/cnmswep/";
+const path = "/cs66/s07/cnmswep/";
 // const path = "/";
 
 export const Logo = () => (

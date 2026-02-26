@@ -1,7 +1,7 @@
 import { Font } from '@react-pdf/renderer';
 
-// const path = "http://tee.kru.ac.th/cs66/s07/cnmswep/";
-const path = "/";
+const path = "/cs66/s07/cnmswep/";
+// const path = "/";
 
 export const registerPdfFonts = () => {
 Font.register({

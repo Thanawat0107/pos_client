@@ -7,8 +7,19 @@ class SignalRService {
   private connection: signalR.HubConnection | null = null;
   private eventHandlers: { [eventName: string]: Array<(...args: any[]) => void> } = {};
   private startPromise: Promise<void> | null = null;
+  // ✅ เก็บ callbacks สำหรับ re-join groups หลัง reconnect
+  private reconnectedCallbacks: Array<() => void> = [];
+
   public get connectionState(): signalR.HubConnectionState {
     return this.connection?.state ?? signalR.HubConnectionState.Disconnected;
+  }
+
+  addReconnectedCallback(fn: () => void) {
+    this.reconnectedCallbacks.push(fn);
+  }
+
+  removeReconnectedCallback(fn: () => void) {
+    this.reconnectedCallbacks = this.reconnectedCallbacks.filter(cb => cb !== fn);
   }
 
   async reconnect() {
@@ -19,7 +30,6 @@ class SignalRService {
   }
 
   async startConnection() {
-    // Lock logic (เหมือนเดิม)
     if (this.startPromise) {
       return this.startPromise;
     }
@@ -35,6 +45,11 @@ class SignalRService {
 
     try {
       await this.startPromise;
+    } catch (err: any) {
+      console.error("❌ SignalR Start Error:", err);
+      // ✅ ตั้ง retry เพื่อให้ reconnect เองช่วงหลัง
+      setTimeout(() => { this.startConnection(); }, 5000);
+      throw err; // ✅ rethrow เพื่อให้ caller รู้ว่า fail
     } finally {
       this.startPromise = null;
     }
@@ -63,10 +78,13 @@ class SignalRService {
 
            return token;
         },
-        skipNegotiation: true,
-        transport: signalR.HttpTransportType.WebSockets
+     skipNegotiation: false,
+        transport: signalR.HttpTransportType.WebSockets 
+          | signalR.HttpTransportType.LongPolling,
+        withCredentials: true,
       })
-      .withAutomaticReconnect()
+      // ✅ ลบ DefaultReconnectPolicy ออก ใช้ withAutomaticReconnect() แทน
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 20000])
       .configureLogging(signalR.LogLevel.Warning)
       .build();
 
@@ -80,13 +98,15 @@ class SignalRService {
       });
     });
 
-    try {
-      await this.connection.start();
-      console.log("✅ SignalR: Connected!");
-    } catch (err: any) {
-      console.error("❌ SignalR Start Error:", err);
-      setTimeout(() => this.startConnection(), 5000);
-    }
+    // ✅ Re-join groups เมื่อ withAutomaticReconnect reconnect สำเร็จ
+    this.connection.onreconnected(() => {
+      console.log("🔄 SignalR: Reconnected! Re-joining groups...");
+      this.reconnectedCallbacks.forEach(fn => fn());
+    });
+
+    // ✅ throw error ออกมา ไม่กินแบบเงียบ เพื่อให้ caller รู้ว่า connect fail
+    await this.connection.start();
+    console.log("✅ SignalR: Connected!");
   }
 
   async stopConnection() {
@@ -139,8 +159,56 @@ class SignalRService {
     }
   }
 
+  // 🔥 เพิ่ม: Join Order Group เพื่อรับการอัปเดตออเดอร์ของลูกค้า
+  async joinOrderGroup(orderId: number | string) {
+    try {
+      await this.invoke("JoinOrderGroup", orderId.toString());
+      console.log(`✅ Joined order group: ${orderId}`);
+    } catch (err) {
+      console.error(`❌ Failed to join order group ${orderId}:`, err);
+    }
+  }
+
+  // 🔥 เพิ่ม: Join Cart Group เพื่อรับการอัปเดตตะกร้า
+  async joinCartGroup(cartToken: string) {
+    try {
+      await this.invoke("JoinCartGroup", cartToken);
+      console.log(`✅ Joined cart group: ${cartToken}`);
+    } catch (err) {
+      console.error(`❌ Failed to join cart group:`, err);
+    }
+  }
+
+  // 🔥 เพิ่ม: Join User Group เพื่อรับการแจ้งเตือนส่วนตัว
+  async joinUserGroup(userToken: string) {
+    try {
+      await this.invoke("JoinUserGroup", userToken);
+      console.log(`✅ Joined user group: ${userToken}`);
+    } catch (err) {
+      console.error(`❌ Failed to join user group:`, err);
+    }
+  }
+
   async invoke(methodName: string, ...args: any[]) {
     if (this.startPromise) await this.startPromise;
+
+    // ✅ ถ้ายัง Connecting อยู่ ให้รอจนกว่าจะ Connected (max 5 วินาที)
+    if (this.connection?.state === signalR.HubConnectionState.Connecting) {
+      const timeout = Date.now() + 5000;
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (
+            this.connection?.state === signalR.HubConnectionState.Connected ||
+            Date.now() > timeout
+          ) {
+            resolve();
+          } else {
+            setTimeout(check, 100);
+          }
+        };
+        check();
+      });
+    }
 
     if (this.connection?.state === signalR.HubConnectionState.Connected) {
       try {
@@ -149,7 +217,7 @@ class SignalRService {
         console.error(`Error invoking ${methodName}:`, err);
       }
     } else {
-      console.warn("Cannot invoke, SignalR not connected.");
+      console.warn(`Cannot invoke ${methodName}, SignalR state: ${this.connection?.state}`);
     }
   }
 }

@@ -15,6 +15,7 @@ import ManageOrderHeader from "./ManageOrderHeader";
 import ManageOrderTable from "./ManageOrderTable";
 import OrderFilterBar from "../../OrderFilterBar";
 import OrderDetailDrawer from "../orderDetails/OrderDetailDrawer";
+import { signalRService } from "../../../../../services/signalrService";
 
 export default function ManageOrderList() {
   // 1. API Call
@@ -35,6 +36,31 @@ export default function ManageOrderList() {
 
   // Reset page เมื่อ filter เปลี่ยน
   useEffect(() => { setPage(1); }, [filters]);
+
+  // 🔥 [เพิ่มใหม่] Listen to admin order updates
+  useEffect(() => {
+    const handleOrderUpdated = () => {
+      refetch();
+    };
+
+    const handleEmployeeOrderListUpdated = () => {
+      refetch();
+    };
+
+    const handleOrderDeleted = () => {
+      refetch();
+    };
+
+    signalRService.on("OrderUpdated", handleOrderUpdated);
+    signalRService.on("UpdateEmployeeOrderList", handleEmployeeOrderListUpdated);
+    signalRService.on("OrderDeleted", handleOrderDeleted);
+
+    return () => {
+      signalRService.off("OrderUpdated", handleOrderUpdated);
+      signalRService.off("UpdateEmployeeOrderList", handleEmployeeOrderListUpdated);
+      signalRService.off("OrderDeleted", handleOrderDeleted);
+    };
+  }, [refetch]);
 
   const pageRows = useMemo(
     () => filteredRows.slice((page - 1) * pageSize, page * pageSize),

@@ -1,4 +1,4 @@
- /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { baseUrlAPI, Sd } from "../helpers/SD";
 import type { OrderHeader } from "../@types/dto/OrderHeader";
@@ -88,13 +88,13 @@ export const orderApi = createApi({
           signalRService.on("NewOrderReceived", handleNewOrder);
           signalRService.on("OrderUpdated", handleUpdateOrder);
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
-          signalRService.on("UpdateEmployeeOrderList", handleUpdateOrder);
+          signalRService.on("UpdateEmployeeOrderList", handleUpdateOrder); // ✅ เพิ่ม
 
           await cacheEntryRemoved;
           signalRService.off("NewOrderReceived", handleNewOrder);
           signalRService.off("OrderUpdated", handleUpdateOrder);
           signalRService.off("OrderDetailUpdated", handleDetailUpdate);
-          signalRService.off("UpdateEmployeeOrderList", handleUpdateOrder);
+          signalRService.off("UpdateEmployeeOrderList", handleUpdateOrder); // ✅ เพิ่ม
         } catch (err) {
           console.error("SignalR Admin Error:", err);
         }
@@ -103,7 +103,7 @@ export const orderApi = createApi({
 
     getOrderById: builder.query<
       OrderHeader,
-      { id: number; guestToken?: string }
+      { id: number; guestToken?: string; userId?: string }
     >({
       query: ({ id, guestToken }) => ({
         url: `orders/${id}`,
@@ -119,7 +119,29 @@ export const orderApi = createApi({
         try {
           await cacheDataLoaded;
           await signalRService.startConnection();
-          await signalRService.invoke("JoinOrderGroup", arg.id.toString());
+
+          // ✅ แยก join logic ออกมาเพื่อ re-use ตอน reconnect
+          const joinGroups = async () => {
+            try {
+              await signalRService.invoke("JoinOrderGroup", arg.id.toString());
+              if (arg.userId) {
+                await signalRService.invoke("JoinUserGroup", `User_${arg.userId}`);
+              }
+              if (arg.guestToken) {
+                const tokens = arg.guestToken.split(",").map((t) => t.trim());
+                for (const t of tokens) {
+                  if (t) await signalRService.invoke("JoinUserGroup", `Guest_${t}`);
+                }
+              }
+            } catch (e) {
+              console.error("SignalR joinGroups error:", e);
+            }
+          };
+
+          // Join ห้องสำหรับครั้งแรก
+          await joinGroups();
+          // ✅ Re-join ห้องอัตโนมัติเมื่อ SignalR reconnect
+          signalRService.addReconnectedCallback(joinGroups);
 
           // Handler สำหรับ Header (สถานะแม่)
           const handleUpdate = (updatedOrder: OrderHeader) => {
@@ -169,11 +191,15 @@ export const orderApi = createApi({
           };
 
           signalRService.on("OrderStatusUpdated", handleUpdate);
+          signalRService.on("OrderUpdated", handleUpdate);
           signalRService.on("OrderDetailUpdated", handleDetailUpdate);
           signalRService.on("UpdateEmployeeOrderList", handleUpdate);
 
           await cacheEntryRemoved;
+          // ✅ Cleanup: ลบ reconnect callback เมื่อ cache หมดอายุ
+          signalRService.removeReconnectedCallback(joinGroups);
           signalRService.off("OrderStatusUpdated", handleUpdate);
+          signalRService.off("OrderUpdated", handleUpdate);
           signalRService.off("OrderDetailUpdated", handleDetailUpdate);
           signalRService.off("UpdateEmployeeOrderList", handleUpdate);
         } catch (err) {
@@ -236,12 +262,14 @@ export const orderApi = createApi({
 
           // --- Subscribe Events ---
           signalRService.on("OrderStatusUpdated", handleUpdateList);
+          signalRService.on("OrderUpdated", handleUpdateList);      // ✅ เพิ่ม
           signalRService.on("NewOrderReceived", handleUpdateList);
           signalRService.on("UpdateEmployeeOrderList", handleUpdateList);
 
           // --- Cleanup ---
           await cacheEntryRemoved;
           signalRService.off("OrderStatusUpdated", handleUpdateList);
+          signalRService.off("OrderUpdated", handleUpdateList);      // ✅ เพิ่ม
           signalRService.off("NewOrderReceived", handleUpdateList);
           signalRService.off("UpdateEmployeeOrderList", handleUpdateList);
         } catch (err) {

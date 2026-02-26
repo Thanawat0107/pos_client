@@ -14,6 +14,7 @@ export const registerValidate = Yup.object({
 
 export const menuSchema = Yup.object().shape({
   name: Yup.string().required("กรุณากรอกชื่อเมนู"),
+  description: Yup.string().required("กรุณากรอกรายละเอียดเมนู"),
   basePrice: Yup.number().min(0, "ราคาต้องไม่ติดลบ").required("กรุณาระบุราคา"),
   menuCategoryId: Yup.number()
     .min(1, "กรุณาเลือกหมวดหมู่")
@@ -41,7 +42,6 @@ export const optionSchema = Yup.object().shape({
 
 export const categorySchema = Yup.object({
   name: Yup.string().trim().required("กรุณากรอกชื่อหมวดหมู่"),
-  slug: Yup.string().trim().required("กรุณากรอก slug"),
   isUsed: Yup.boolean().required(),
 });
 

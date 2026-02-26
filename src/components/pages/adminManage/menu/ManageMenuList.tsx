@@ -152,17 +152,20 @@ export default function ManageMenuList() {
     const item = rows.find((r) => r.id === id);
     if (!item) return;
     try {
-      await updateMenuItem({
-        id,
-        data: {
-          ...item,
-          isUsed: nextStatus,
-          menuItemOptionGroups: item.menuItemOptionGroups.map((g) => ({
-            id: (g as any).id,
-            menuItemOptionId: g.menuItemOptionId,
-          })),
-        } as UpdateMenuItem,
-      }).unwrap();
+      const payload: UpdateMenuItem = {
+        name: item.name,
+        description: item.description ?? "",
+        basePrice: item.basePrice,
+        imageUrl: item.imageUrl,
+        menuCategoryId: item.menuCategoryId,
+        isUsed: nextStatus,
+        isDeleted: item.isDeleted,
+        menuItemOptionGroups: item.menuItemOptionGroups.map((g, index) => ({
+          menuItemOptionId: g.menuItemOptionId,
+          sequence: index + 1,
+        })),
+      };
+      await updateMenuItem({ id, data: payload }).unwrap();
     } catch (error) {
       alert("เปลี่ยนสถานะไม่สำเร็จ");
     }

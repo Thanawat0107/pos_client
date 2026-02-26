@@ -24,13 +24,13 @@ import { paymentMethods, Sd, ROOT_PATH } from "../../helpers/SD";
 import { formatThaiTime } from "../../utility/utils";
 import { useAppSelector } from "../../hooks/useAppHookState";
 import { SD_Roles } from "../../@types/Enum";
+import { signalRService } from "../../services/signalrService";
 
 import OrderStatusCard from "./OrderStatusCard";
 import OrderTimeline from "./OrderTimeline";
 import OrderMenuList from "./OrderMenuList";
 import CancelDialog from "./CancelDialog";
 import OrderPaymentSection from "./OrderPaymentSection";
-import ThermalReceipt from "../../utility/reports/ThermalReceipt";
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -72,7 +72,7 @@ export default function OrderSuccess() {
     isError,
     refetch,
   } = useGetOrderByIdQuery(
-    { id: orderId, guestToken: orderToken },
+    { id: orderId, guestToken: orderToken, userId: userId ?? undefined },
     { skip: isNaN(orderId) },
   );
 
@@ -113,6 +113,59 @@ export default function OrderSuccess() {
     order &&
     (order.orderStatus === Sd.Status_PendingPayment ||
       order.orderStatus === Sd.Status_Pending);
+
+  // 🔥 [เพิ่มใหม่] Join order group และ listen to SignalR events
+  useEffect(() => {
+    if (isNaN(orderId) || orderId <= 0) return;
+
+    let hasMounted = true;
+
+    const joinAndListen = async () => {
+      try {
+        // เข้ากลุ่มของออเดอร์นี้
+        await signalRService.joinOrderGroup(orderId);
+
+        if (!hasMounted) return;
+
+        // ฟังการอัปเดตสถานะออเดอร์
+        const handleOrderStatusUpdated = () => {
+          if (hasMounted) refetch();
+        };
+
+        // ฟังการอัปเดตรายละเอียดออเดอร์
+        const handleOrderDetailUpdated = () => {
+          if (hasMounted) refetch();
+        };
+
+        signalRService.on("OrderStatusUpdated", handleOrderStatusUpdated);
+        signalRService.on("OrderDetailUpdated", handleOrderDetailUpdated);
+
+        // ส่งการ join ไปยัง Server ผ่าน reconnected callback เพื่อให้ reconnect ครั้งหลัง
+        const reconnectCallback = async () => {
+          if (hasMounted) {
+            await signalRService.joinOrderGroup(orderId);
+          }
+        };
+
+        signalRService.addReconnectedCallback(reconnectCallback);
+
+        return () => {
+          signalRService.off("OrderStatusUpdated", handleOrderStatusUpdated);
+          signalRService.off("OrderDetailUpdated", handleOrderDetailUpdated);
+          signalRService.removeReconnectedCallback(reconnectCallback);
+        };
+      } catch (err) {
+        console.error("Failed to setup SignalR for order:", err);
+      }
+    };
+
+    const cleanup = joinAndListen();
+
+    return () => {
+      hasMounted = false;
+      cleanup.then((clean) => clean?.());
+    };
+  }, [orderId, refetch]);
 
   useEffect(() => {
     if (!order) return;
@@ -415,8 +468,6 @@ export default function OrderSuccess() {
           reason={cancelReason}
           setReason={setCancelReason}
         />
-
-        <ThermalReceipt order={order} />
 
         <Snackbar
           open={toastOpen}

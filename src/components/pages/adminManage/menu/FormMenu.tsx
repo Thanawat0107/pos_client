@@ -78,9 +78,10 @@ export default function FormMenu({
         // กรอง Option ที่เป็นค่าว่างทิ้งไป และแปลง id เป็น number
         const formattedGroups = menuItemOptionGroups
           .filter((g) => g.menuItemOptionId)
-          .map((g) => ({
+          .map((g, index) => ({
             ...(g.id && { id: g.id }),
             menuItemOptionId: Number(g.menuItemOptionId),
+            sequence: index + 1,
           }));
 
         const payload = {
@@ -296,6 +297,8 @@ export default function FormMenu({
               value={values.description}
               onChange={handleChange}
               onBlur={handleBlur}
+              error={touched.description && !!errors.description}
+              helperText={touched.description && errors.description}
               fullWidth
               InputProps={{ sx: { fontSize: "1rem", borderRadius: 2 } }}
               InputLabelProps={{ sx: { fontSize: "1rem" } }}

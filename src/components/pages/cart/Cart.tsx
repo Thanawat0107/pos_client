@@ -11,6 +11,7 @@ import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import QrCode2RoundedIcon from "@mui/icons-material/QrCode2Rounded";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
+import { useEffect } from "react";
 import CartItem from "./CartItem";
 import { useGetCartQuery, useClearCartMutation } from "../../../services/shoppingCartApi";
 import { useAppDispatch, useAppSelector } from "../../../hooks/useAppHookState";
@@ -18,6 +19,7 @@ import { clearLocalCart } from "../../../stores/slices/shoppingSlice";
 import { useNavigate } from "react-router-dom";
 import { storage } from "../../../helpers/storageHelper";
 import { ROOT_PATH } from "../../../helpers/SD";
+import { signalRService } from "../../../services/signalrService";
 
 export default function Cart() {
   const theme = useTheme();
@@ -29,6 +31,43 @@ export default function Cart() {
 
   const { isLoading, refetch } = useGetCartQuery(cartToken, { skip: !cartToken });
   const [clearCart] = useClearCartMutation();
+
+  // 🔥 [เพิ่มใหม่] Join cart group เพื่อฟังการอัปเดตตะกร้า
+  useEffect(() => {
+    if (!cartToken) return;
+
+    let hasMounted = true;
+
+    const joinCartGroup = async () => {
+      try {
+        await signalRService.joinCartGroup(cartToken);
+        
+        if (!hasMounted) return;
+
+        // ส่งการ join ไปยัง Server ผ่าน reconnected callback
+        const reconnectCallback = async () => {
+          if (hasMounted) {
+            await signalRService.joinCartGroup(cartToken);
+          }
+        };
+
+        signalRService.addReconnectedCallback(reconnectCallback);
+
+        return () => {
+          signalRService.removeReconnectedCallback(reconnectCallback);
+        };
+      } catch (err) {
+        console.error("Failed to join cart group:", err);
+      }
+    };
+
+    const cleanup = joinCartGroup();
+    
+    return () => {
+      hasMounted = false;
+      cleanup.then((clean) => clean?.());
+    };
+  }, [cartToken]);
 
   const handleClear = async () => {
     if (window.confirm("คุณต้องการลบสินค้าทั้งหมดออกจากตะกร้าใช่หรือไม่?")) {

@@ -33,7 +33,7 @@ import OrderCustomerInfo from "./OrderCustomerInfo";
 import OrderItemsList from "./OrderItemsList";
 import OrderModals from "./OrderModals";
 import { paymentMethods } from "../../../../../helpers/SD";
-import OrderReceiptPDF from "./OrderReceiptPDF";
+import OrderReceiptPDF from "../../../../receipts/OrderReceiptPDF";
 
 // register Thai font for PDF
 registerPdfFonts();
